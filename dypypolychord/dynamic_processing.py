@@ -23,11 +23,6 @@ def process_dyn_run(root):
     init['theta'] = init['theta'][resume_ndead:, :]
     for key in ['nlive_array', 'logl', 'thread_labels']:
         init[key] = init[key][resume_ndead:]
-    # Check that at least one point in each thread (the point which was live at
-    # the resume) remains
-    assert np.array_equal(
-        np.asarray(range(1, init['thread_min_max'].shape[0] + 1)),
-        np.unique(init['thread_labels']))
     # We also need to remove the points that were live when the resume file was
     # written, as these show up as dead points in dyn
     live_inds = []
@@ -46,12 +41,27 @@ def process_dyn_run(root):
     init['theta'] = np.delete(init['theta'], live_inds, axis=0)
     for key in ['nlive_array', 'logl', 'thread_labels']:
         init[key] = np.delete(init[key], live_inds)
-    # remove any empty threads from logl_min_max
-    init['thread_min_max'] = np.delete(
-        init['thread_min_max'], empty_thread_inds, axis=0)
-    # Combine the threads from dyn and init
+    # Deal with the case that one of the threads is now empty
+    if empty_thread_inds:
+        # remove any empty threads from logl_min_max
+        init['thread_min_max'] = np.delete(
+            init['thread_min_max'], empty_thread_inds, axis=0)
+        # Now we need to reorder the thread labels to avoid gaps
+        thread_labels_new = np.full(init['thread_labels'].shape, np.nan)
+        for i, th_lab in enumerate(np.unique(init['thread_labels'])):
+            inds = np.where(init['thread_labels'] == th_lab)[0]
+            thread_labels_new[inds] = i
+            # Check the newly relabelled thread label matches thread_min_max
+            assert init['thread_min_max'][i, 0] <= init['logl'][inds[0]]
+            assert init['thread_min_max'][i, 1] == init['logl'][inds[-1]]
+        assert np.all(~np.isnan(thread_labels_new))
+        init['thread_labels'] = thread_labels_new.astype(int)
+    # Add the init threads to dyn with new labels that continue on from the dyn
+    # labels
+    init['thread_labels'] += dyn['thread_min_max'].shape[0]
     run = ar.combine_threads(ar.get_run_threads(dyn) +
                              ar.get_run_threads(init),
                              assert_birth_point=True)
     run['settings'] = {'resume_ndead': resume_ndead}
+    nestcheck.data_processing.check_ns_run(run)
     return run
