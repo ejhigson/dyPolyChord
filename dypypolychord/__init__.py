@@ -81,13 +81,14 @@ def run_dynamic_polychord(pc_settings_in, **kwargs):
         output = PyPolyChord.run_polychord(likelihood, ndims, nderived,
                                            pc_settings, prior)
         step_ndead.append(output.ndead - pc_settings.nlive)
-        # TESTING
         run = nestcheck.data_processing.process_polychord_run(
             pc_settings.base_dir + '/' + pc_settings.file_root)
+        # Check the run at the resume point is as expected
         assert run['thread_labels'].shape[0] == output.ndead
         assert np.unique(run['thread_labels']).shape[0] == ninit
+        # store run for later
         runs_at_resumes[output.ndead] = run
-        # END TESTING
+        # store resume file in new file path
         shutil.copyfile(pc_settings.base_dir + '/' +
                         pc_settings.file_root + '.resume',
                         pc_settings.base_dir + '/' +
