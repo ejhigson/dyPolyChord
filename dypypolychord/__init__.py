@@ -51,9 +51,9 @@ def run_standard_polychord(pc_settings, likelihood, prior, ndims, **kwargs):
     if comm.rank == 0:
         dypypolychord.save_load_utils.save_info(pc_settings, output)
         end_time = time.time()
-        print('####################################')
+        print('#####################################')
         print('run_standard_polychord took %.3f sec' % (end_time - start_time))
-        print('####################################')
+        print('#####################################')
 
 
 def run_dynamic_polychord_evidence(pc_settings_in, likelihood, prior, ndims,
@@ -121,9 +121,10 @@ def run_dynamic_polychord_evidence(pc_settings_in, likelihood, prior, ndims,
         dypypolychord.save_load_utils.save_info(
             pc_settings, dyn_output)
         end_time = time.time()
-        print('####################################')
-        print('run_dynamic_polychord took %.3f sec' % (end_time - start_time))
-        print('####################################')
+        print('#############################################')
+        print('run_dynamic_polychord_evidence took %.3f sec' %
+              (end_time - start_time))
+        print('#############################################')
 
 
 def run_dynamic_polychord_param(pc_settings_in, likelihood, prior, ndims,
@@ -230,6 +231,7 @@ def run_dynamic_polychord_param(pc_settings_in, likelihood, prior, ndims,
         dypypolychord.save_load_utils.save_info(
             pc_settings, dyn_output, resume_ndead=resume_ndead)
         end_time = time.time()
-        print('####################################')
-        print('run_dynamic_polychord took %.3f sec' % (end_time - start_time))
-        print('####################################')
+        print('##########################################')
+        print('run_dynamic_polychord_param took %.3f sec' %
+              (end_time - start_time))
+        print('##########################################')
