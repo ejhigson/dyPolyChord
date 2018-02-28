@@ -4,7 +4,6 @@ Helper functions for saving and loading PolyChord data produced with
 dypypolychord.
 """
 import nestcheck.io_utils as iou
-import nestcheck.data_processing
 import dypypolychord.dynamic_processing
 
 
@@ -23,15 +22,30 @@ def save_info(settings, output, resume_ndead=None):
                     overwrite_existing=True)
 
 
-def settings_root(pc_settings):
+def settings_root(settings, likelihood_name, prior_name, ndims, **kwargs):
     """Get a standard string containing information about settings."""
-    root = str(pc_settings.grade_dims[0]) + 'd'
-    root += '_' + str(pc_settings.nlive) + 'nlive'
-    root += '_' + str(pc_settings.num_repeats) + 'nrepeats'
+    dynamic_goal = kwargs.pop('dynamic_goal')
+    nlive_const = kwargs.pop('nlive_const')
+    ninit = kwargs.pop('ninit', None)
+    dyn_nlive_step = kwargs.pop('dyn_nlive_step', None)
+    init_step = kwargs.pop('init_step', None)
+    root = likelihood_name + '_' + prior_name + '_dg' + str(dynamic_goal)
+    if dynamic_goal is not None:
+        assert ninit is not None
+        assert dyn_nlive_step is not None
+        root += '_' + str(ninit) + 'init_' + str(dyn_nlive_step) + 'ds'
+        if dynamic_goal != 0:
+            assert init_step is not None
+            root += '_' + str(init_step) + 'is'
+    else:
+        settings.file_root += '_standard'
+    root += '_' + str(ndims) + 'd'
+    root += '_' + str(nlive_const) + 'nlive'
+    root += '_' + str(settings.num_repeats) + 'nrepeats'
     return root
 
 
-def get_polychord_data(file_root, n_runs, **kwargs):
+def get_polychord_data(file_root, n_runs, dynamic_goal, **kwargs):
     """
     Load and process polychord chains
     """
@@ -39,7 +53,6 @@ def get_polychord_data(file_root, n_runs, **kwargs):
     chains_dir = kwargs.pop('chains_dir', 'chains/')
     load = kwargs.pop('load', False)
     save = kwargs.pop('save', False)
-    dynamic = kwargs.pop('dynamic', False)
     overwrite_existing = kwargs.pop('overwrite_existing', False)
     if kwargs:
         raise TypeError('Unexpected **kwargs: %r' % kwargs)
@@ -55,12 +68,8 @@ def get_polychord_data(file_root, n_runs, **kwargs):
     for i in range(1, n_runs + 1):
         try:
             root = chains_dir + file_root + '_' + str(i)
-            if dynamic:
-                data.append(dypypolychord.dynamic_processing
-                            .process_dyn_run(root))
-            else:
-                data.append(nestcheck.data_processing
-                            .process_polychord_run(root))
+            data.append(dypypolychord.dynamic_processing
+                        .process_dypypolychord_run(root, dynamic_goal))
         except (OSError, AssertionError, KeyError) as err:
             try:
                 errors[type(err).__name__].append(i)
@@ -69,10 +78,11 @@ def get_polychord_data(file_root, n_runs, **kwargs):
     for error_name, val_list in errors.items():
         if val_list:
             save = False  # only save if every file is processed ok
-            print(error_name + ' processing ' + str(len(val_list)) + ' / ' +
-                  str(n_runs) + ' files')
+            message = (error_name + ' processing ' + str(len(val_list)) + ' / '
+                       + str(n_runs) + ' files')
             if len(val_list) != n_runs:
-                print('Runs with errors were: ' + str(val_list))
+                message += '. Runs with errors were: ' + str(val_list)
+            print(message)
     if save:
         print('Processed new chains: saving to ' + save_name)
         iou.pickle_save(data, data_dir + save_name, print_time=False,

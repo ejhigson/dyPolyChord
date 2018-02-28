@@ -7,6 +7,23 @@ import nestcheck.analyse_run as ar
 import nestcheck.data_processing
 
 
+def process_dypypolychord_run(root, dynamic_goal):
+    assert dynamic_goal in [None, 0, 1], (
+        'dynamic_goal=' + str(dynamic_goal) + '! '
+        'So far only set up for dynamic_goal = None, 0, 1')
+    if dynamic_goal is None:
+        return nestcheck.data_processing.process_polychord_run(root)
+    elif dynamic_goal == 0:
+        init = nestcheck.data_processing.process_polychord_run(root + '_init')
+        assert np.all(init['thread_min_max'][:, 0] == -np.inf)
+        dyn = nestcheck.data_processing.process_polychord_run(root + '_dyn')
+        run = ar.combine_ns_runs([init, dyn])
+        nestcheck.data_processing.check_ns_run(run)
+        return run
+    elif dynamic_goal == 1:
+        return process_dyn_run(root)
+
+
 def process_dyn_run(root):
     """
     Process dynamic nested sampling run including both initial exploratory run
@@ -32,7 +49,6 @@ def process_dyn_run(root):
         live_inds.append(th_inds[0])
         live_logl = init['logl'][th_inds[0]]
         if th_inds.shape[0] == 1:
-            print('Empty thread created')
             empty_thread_inds.append(i)
         assert np.where(dyn['logl'] == live_logl)[0].shape == (1,), \
             'this point should be present in dyn too!'
@@ -63,5 +79,11 @@ def process_dyn_run(root):
                              ar.get_run_threads(init),
                              assert_birth_point=True)
     run['settings'] = {'resume_ndead': resume_ndead}
-    nestcheck.data_processing.check_ns_run(run)
+    try:
+        nestcheck.data_processing.check_ns_run(run)
+    except Exception as err:
+        # Add info on resume_ndead to the error message
+        import sys
+        raise (type(err)(str(err) + '. resume_ndead=%s' % resume_ndead)
+               .with_traceback(sys.exc_info()[2]))
     return run
