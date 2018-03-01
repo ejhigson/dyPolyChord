@@ -45,7 +45,7 @@ def settings_root(settings, likelihood_name, prior_name, ndims, **kwargs):
     return root
 
 
-def get_polychord_data(file_root, n_runs, dynamic_goal, **kwargs):
+def get_dypypolychord_data(file_root, n_runs, dynamic_goal, **kwargs):
     """
     Load and process polychord chains
     """
