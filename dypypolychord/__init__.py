@@ -53,8 +53,8 @@ def run_standard_polychord(pc_settings, likelihood, prior, ndims, **kwargs):
         end_time = time.time()
         print('#####################################')
         print('run_standard_polychord took %.3f sec' % (end_time - start_time))
-        print('file_root = ' + pc_settings.file_root)
         print('#####################################')
+        print('file_root = ' + pc_settings.file_root)
 
 
 def run_dynamic_polychord_evidence(pc_settings_in, likelihood, prior, ndims,
@@ -126,6 +126,7 @@ def run_dynamic_polychord_evidence(pc_settings_in, likelihood, prior, ndims,
         print('run_dynamic_polychord_evidence took %.3f sec' %
               (end_time - start_time))
         print('#############################################')
+        print('file_root = ' + pc_settings.file_root)
 
 
 def run_dynamic_polychord_param(pc_settings_in, likelihood, prior, ndims,
@@ -236,3 +237,4 @@ def run_dynamic_polychord_param(pc_settings_in, likelihood, prior, ndims,
         print('run_dynamic_polychord_param took %.3f sec' %
               (end_time - start_time))
         print('##########################################')
+        print('file_root = ' + pc_settings.file_root)
