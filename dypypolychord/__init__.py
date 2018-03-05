@@ -53,6 +53,7 @@ def run_standard_polychord(pc_settings, likelihood, prior, ndims, **kwargs):
         end_time = time.time()
         print('#####################################')
         print('run_standard_polychord took %.3f sec' % (end_time - start_time))
+        print('file_root = ' + pc_settings.file_root)
         print('#####################################')
 
 

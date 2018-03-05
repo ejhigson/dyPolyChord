@@ -22,10 +22,11 @@ def save_info(settings, output, resume_ndead=None):
                     overwrite_existing=True)
 
 
-def settings_root(settings, likelihood_name, prior_name, ndims, **kwargs):
+def settings_root(likelihood_name, prior_name, ndims, **kwargs):
     """Get a standard string containing information about settings."""
     dynamic_goal = kwargs.pop('dynamic_goal')
     nlive_const = kwargs.pop('nlive_const')
+    nrepeats = kwargs.pop('nrepeats')
     ninit = kwargs.pop('ninit', None)
     dyn_nlive_step = kwargs.pop('dyn_nlive_step', None)
     init_step = kwargs.pop('init_step', None)
@@ -37,11 +38,9 @@ def settings_root(settings, likelihood_name, prior_name, ndims, **kwargs):
         if dynamic_goal != 0:
             assert init_step is not None
             root += '_' + str(init_step) + 'is'
-    else:
-        settings.file_root += '_standard'
     root += '_' + str(ndims) + 'd'
     root += '_' + str(nlive_const) + 'nlive'
-    root += '_' + str(settings.num_repeats) + 'nrepeats'
+    root += '_' + str(nrepeats) + 'nrepeats'
     return root
 
 
