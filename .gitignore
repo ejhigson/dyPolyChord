@@ -18,3 +18,8 @@ __pycache__/
 
 # Coverage test output
 .coverage
+
+# PolyChord output files
+chains
+*.stats
+*.resume

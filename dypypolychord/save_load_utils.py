@@ -24,13 +24,17 @@ def save_info(settings, output, resume_ndead=None):
 
 def settings_root(likelihood_name, prior_name, ndims, **kwargs):
     """Get a standard string containing information about settings."""
+    prior_scale = kwargs.pop('prior_scale')
     dynamic_goal = kwargs.pop('dynamic_goal')
     nlive_const = kwargs.pop('nlive_const')
     nrepeats = kwargs.pop('nrepeats')
     ninit = kwargs.pop('ninit', None)
     dyn_nlive_step = kwargs.pop('dyn_nlive_step', None)
     init_step = kwargs.pop('init_step', None)
-    root = likelihood_name + '_' + prior_name + '_dg' + str(dynamic_goal)
+    if kwargs:
+        raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
+    root = likelihood_name + '_' + prior_name + '_' + str(prior_scale)
+    root += '_dg' + str(dynamic_goal)
     if dynamic_goal is not None:
         assert ninit is not None
         assert dyn_nlive_step is not None
