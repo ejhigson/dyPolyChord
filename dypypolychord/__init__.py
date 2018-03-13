@@ -8,7 +8,7 @@ import time
 import shutil
 import copy
 import numpy as np
-from mpi4py import MPI
+# from mpi4py import MPI
 import PyPolyChord
 import nestcheck.analyse_run as ar
 import nestcheck.data_processing
@@ -38,7 +38,7 @@ def run_standard_polychord(pc_settings, likelihood, prior, ndims, **kwargs):
     Wrapper function of same format as run_dynamic_polychord for running
     standard polychord runs.
     """
-    comm = MPI.COMM_WORLD
+    # comm = MPI.COMM_WORLD
     nderived = kwargs.pop('nderived', 0)
     assert not pc_settings.nlives, (
         'nlive should not change in standard nested sampling! nlives=' +
@@ -48,7 +48,8 @@ def run_standard_polychord(pc_settings, likelihood, prior, ndims, **kwargs):
     # --------------
     output = PyPolyChord.run_polychord(likelihood, ndims, nderived,
                                        pc_settings, prior)
-    if comm.rank == 0:
+    # if comm.rank == 0:
+    if True:
         dypypolychord.save_load_utils.save_info(pc_settings, output)
         end_time = time.time()
         print('#####################################')
@@ -62,7 +63,7 @@ def run_dynamic_polychord_evidence(pc_settings_in, likelihood, prior, ndims,
     """
     Dynamic nested sampling using polychord.
     """
-    comm = MPI.COMM_WORLD
+    # comm = MPI.COMM_WORLD
     ninit = kwargs.pop('ninit', 10)
     dyn_nlive_step = kwargs.pop('dyn_nlive_step', 1)
     nlive_const = kwargs.pop('nlive_const', pc_settings_in.nlive)
@@ -89,6 +90,7 @@ def run_dynamic_polychord_evidence(pc_settings_in, likelihood, prior, ndims,
     # Work out a new allocation of live points
     # ----------------------------------------
     pc_settings = copy.deepcopy(pc_settings_in)  # remove edits from init
+    # pc_settings.seed += 100
     logx_init = ar.get_logx(init_run['nlive_array'])
     w_rel = ar.rel_posterior_mass(logx_init, init_run['logl'])
     w_rel = np.cumsum(w_rel)
@@ -118,7 +120,8 @@ def run_dynamic_polychord_evidence(pc_settings_in, likelihood, prior, ndims,
     # # broadcast dynamic settings to other threads
     dyn_output = PyPolyChord.run_polychord(likelihood, ndims, nderived,
                                            pc_settings, prior)
-    if comm.rank == 0:
+    # if comm.rank == 0:
+    if True:
         dypypolychord.save_load_utils.save_info(
             pc_settings, dyn_output)
         end_time = time.time()
@@ -134,7 +137,7 @@ def run_dynamic_polychord_param(pc_settings_in, likelihood, prior, ndims,
     """
     Dynamic nested sampling using polychord.
     """
-    comm = MPI.COMM_WORLD
+    # comm = MPI.COMM_WORLD
     ninit = kwargs.pop('ninit', 10)
     init_step = kwargs.pop('init_step', ninit)
     dyn_nlive_step = kwargs.pop('dyn_nlive_step', 1)
@@ -161,6 +164,7 @@ def run_dynamic_polychord_param(pc_settings_in, likelihood, prior, ndims,
         if len(step_ndead) == 1:
             pc_settings.read_resume = True
         pc_settings.max_ndead = (len(step_ndead) + 1) * init_step
+        # pc_settings.seed += 100
         output = PyPolyChord.run_polychord(likelihood, ndims, nderived,
                                            pc_settings, prior)
         step_ndead.append(output.ndead - pc_settings.nlive)
@@ -185,6 +189,7 @@ def run_dynamic_polychord_param(pc_settings_in, likelihood, prior, ndims,
     # Work out a new allocation of live points
     # ----------------------------------------
     pc_settings = copy.deepcopy(pc_settings_in)  # remove edits from init
+    # pc_settings.seed += 100
     logx_init = ar.get_logx(init_run['nlive_array'])
     w_rel = ar.rel_posterior_mass(logx_init, init_run['logl'])
     # calculate a distribution of nlive points in proportion to w_rel
@@ -205,7 +210,7 @@ def run_dynamic_polychord_param(pc_settings_in, likelihood, prior, ndims,
         # Assign nlives to the logl one step before to make sure the number of
         # live points is increased in time
         nlive_i = int(nlives_array[steps[i + 1]])
-        if nlive_i >= 1:
+        if nlive_i >= 5:
             nlives_dict[init_run['logl'][step]] = nlive_i
     # subtract 1 as ndead=1 corresponds to point 0
     resume_steps = np.asarray(step_ndead) - 1
@@ -213,6 +218,7 @@ def run_dynamic_polychord_param(pc_settings_in, likelihood, prior, ndims,
     resume_ndead = step_ndead[np.where(
         resume_steps < peak_start_ind)[0][-1]]
     pc_settings.nlive = dyn_nlive_step
+    pc_settings.precision_criterion = 0.1
     pc_settings.nlives = nlives_dict
     pc_settings.read_resume = True
     # copy resume step to dynamic file root
@@ -225,7 +231,8 @@ def run_dynamic_polychord_param(pc_settings_in, likelihood, prior, ndims,
     pc_settings.file_root = pc_settings_in.file_root + '_dyn'
     dyn_output = PyPolyChord.run_polychord(likelihood, ndims, nderived,
                                            pc_settings, prior)
-    if comm.rank == 0:
+    # if comm.rank == 0:
+    if True:
         for snd in step_ndead:
             os.remove(pc_settings_in.base_dir + '/' +
                       pc_settings_in.file_root +
