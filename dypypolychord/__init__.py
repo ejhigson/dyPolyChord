@@ -90,7 +90,7 @@ def run_dynamic_polychord_evidence(pc_settings_in, likelihood, prior, ndims,
     # Work out a new allocation of live points
     # ----------------------------------------
     pc_settings = copy.deepcopy(pc_settings_in)  # remove edits from init
-    # pc_settings.seed += 100
+    pc_settings.seed += 100
     logx_init = ar.get_logx(init_run['nlive_array'])
     w_rel = ar.rel_posterior_mass(logx_init, init_run['logl'])
     w_rel = np.cumsum(w_rel)
@@ -146,7 +146,6 @@ def run_dynamic_polychord_param(pc_settings_in, likelihood, prior, ndims,
     nderived = kwargs.pop('nderived', 0)
     if kwargs:
         raise TypeError('Unexpected **kwargs: %r' % kwargs)
-    # if comm.rank == 0:
     start_time = time.time()
     assert not pc_settings_in.nlives
     assert not pc_settings_in.read_resume
@@ -164,7 +163,7 @@ def run_dynamic_polychord_param(pc_settings_in, likelihood, prior, ndims,
         if len(step_ndead) == 1:
             pc_settings.read_resume = True
         pc_settings.max_ndead = (len(step_ndead) + 1) * init_step
-        # pc_settings.seed += 100
+        pc_settings.seed += 100
         output = PyPolyChord.run_polychord(likelihood, ndims, nderived,
                                            pc_settings, prior)
         step_ndead.append(output.ndead - pc_settings.nlive)
@@ -189,7 +188,7 @@ def run_dynamic_polychord_param(pc_settings_in, likelihood, prior, ndims,
     # Work out a new allocation of live points
     # ----------------------------------------
     pc_settings = copy.deepcopy(pc_settings_in)  # remove edits from init
-    # pc_settings.seed += 100
+    pc_settings.seed += 100
     logx_init = ar.get_logx(init_run['nlive_array'])
     w_rel = ar.rel_posterior_mass(logx_init, init_run['logl'])
     # calculate a distribution of nlive points in proportion to w_rel
@@ -231,17 +230,15 @@ def run_dynamic_polychord_param(pc_settings_in, likelihood, prior, ndims,
     pc_settings.file_root = pc_settings_in.file_root + '_dyn'
     dyn_output = PyPolyChord.run_polychord(likelihood, ndims, nderived,
                                            pc_settings, prior)
-    # if comm.rank == 0:
-    if True:
-        for snd in step_ndead:
-            os.remove(pc_settings_in.base_dir + '/' +
-                      pc_settings_in.file_root +
-                      '_init_' + str(snd) + '.resume')
-        dypypolychord.save_load_utils.save_info(
-            pc_settings, dyn_output, resume_ndead=resume_ndead)
-        end_time = time.time()
-        print('##########################################')
-        print('run_dynamic_polychord_param took %.3f sec' %
-              (end_time - start_time))
-        print('##########################################')
-        print('file_root = ' + pc_settings.file_root)
+    for snd in step_ndead:
+        os.remove(pc_settings_in.base_dir + '/' +
+                  pc_settings_in.file_root +
+                  '_init_' + str(snd) + '.resume')
+    dypypolychord.save_load_utils.save_info(
+        pc_settings, dyn_output, resume_ndead=resume_ndead)
+    end_time = time.time()
+    print('##########################################')
+    print('run_dynamic_polychord_param took %.3f sec' %
+          (end_time - start_time))
+    print('##########################################')
+    print('file_root = ' + pc_settings.file_root)
