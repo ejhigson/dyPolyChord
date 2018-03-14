@@ -40,6 +40,7 @@ def run_standard_polychord(pc_settings, likelihood, prior, ndims, **kwargs):
     """
     # comm = MPI.COMM_WORLD
     nderived = kwargs.pop('nderived', 0)
+    print_time = kwargs.pop('print_time', False)
     assert not pc_settings.nlives, (
         'nlive should not change in standard nested sampling! nlives=' +
         str(pc_settings.nlives))
@@ -49,13 +50,13 @@ def run_standard_polychord(pc_settings, likelihood, prior, ndims, **kwargs):
     output = PyPolyChord.run_polychord(likelihood, ndims, nderived,
                                        pc_settings, prior)
     # if comm.rank == 0:
-    if True:
-        dypypolychord.save_load_utils.save_info(pc_settings, output)
+    dypypolychord.save_load_utils.save_info(pc_settings, output)
+    if print_time:
         end_time = time.time()
         print('#####################################')
         print('run_standard_polychord took %.3f sec' % (end_time - start_time))
-        print('#####################################')
         print('file_root = ' + pc_settings.file_root)
+        print('#####################################')
 
 
 def run_dynamic_polychord_evidence(pc_settings_in, likelihood, prior, ndims,
@@ -70,6 +71,7 @@ def run_dynamic_polychord_evidence(pc_settings_in, likelihood, prior, ndims,
     # n_samples_max = kwargs.pop('n_samples_max', None)
     nderived = kwargs.pop('nderived', 0)
     kwargs.pop('init_step')  # only needed for dg!=0
+    print_time = kwargs.pop('print_time', False)
     if kwargs:
         raise TypeError('Unexpected **kwargs: %r' % kwargs)
     # if comm.rank == 0:
@@ -121,15 +123,15 @@ def run_dynamic_polychord_evidence(pc_settings_in, likelihood, prior, ndims,
     dyn_output = PyPolyChord.run_polychord(likelihood, ndims, nderived,
                                            pc_settings, prior)
     # if comm.rank == 0:
-    if True:
-        dypypolychord.save_load_utils.save_info(
-            pc_settings, dyn_output)
+    dypypolychord.save_load_utils.save_info(
+        pc_settings, dyn_output)
+    if print_time:
         end_time = time.time()
         print('#############################################')
         print('run_dynamic_polychord_evidence took %.3f sec' %
               (end_time - start_time))
+        print('file_root = ' + pc_settings_in.file_root)
         print('#############################################')
-        print('file_root = ' + pc_settings.file_root)
 
 
 def run_dynamic_polychord_param(pc_settings_in, likelihood, prior, ndims,
@@ -144,6 +146,7 @@ def run_dynamic_polychord_param(pc_settings_in, likelihood, prior, ndims,
     nlive_const = kwargs.pop('nlive_const', pc_settings_in.nlive)
     # n_samples_max = kwargs.pop('n_samples_max', None)
     nderived = kwargs.pop('nderived', 0)
+    print_time = kwargs.pop('print_time', False)
     if kwargs:
         raise TypeError('Unexpected **kwargs: %r' % kwargs)
     start_time = time.time()
@@ -236,9 +239,10 @@ def run_dynamic_polychord_param(pc_settings_in, likelihood, prior, ndims,
                   '_init_' + str(snd) + '.resume')
     dypypolychord.save_load_utils.save_info(
         pc_settings, dyn_output, resume_ndead=resume_ndead)
-    end_time = time.time()
-    print('##########################################')
-    print('run_dynamic_polychord_param took %.3f sec' %
-          (end_time - start_time))
-    print('##########################################')
-    print('file_root = ' + pc_settings.file_root)
+    if print_time:
+        end_time = time.time()
+        print('##########################################')
+        print('run_dynamic_polychord_param took %.3f sec' %
+              (end_time - start_time))
+        print('file_root = ' + pc_settings_in.file_root)
+        print('##########################################')

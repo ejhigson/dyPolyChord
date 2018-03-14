@@ -3,6 +3,7 @@
 Likelihood functions for use with PyPolyChord.
 """
 import numpy as np
+import scipy.special
 
 
 def gaussian(theta, sigma=0.5, n_derived=0):
@@ -14,6 +15,16 @@ def gaussian(theta, sigma=0.5, n_derived=0):
         phi[0] = np.sqrt(rad2) * 0
     logl = -np.log(2 * np.pi * sigma * sigma) * dim_theta / 2.0
     logl += -rad2 / 2 / sigma / sigma
+    return logl, phi
+
+
+def twin_gaussian(theta, sigma=0.5, sep_sigma=10, n_derived=0):
+    """Two Gaussians seperated by sep_sigma."""
+    theta1 = [theta[0] + sigma * 0.5 * sep_sigma] + theta[1:]
+    theta2 = [theta[0] - sigma * 0.5 * sep_sigma] + theta[1:]
+    twin_logls = [gaussian(t, sigma)[0] for t in [theta1, theta2]]
+    logl = scipy.special.logsumexp(twin_logls) - np.log(2)
+    phi = [0.0] * n_derived
     return logl, phi
 
 
