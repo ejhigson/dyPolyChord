@@ -18,12 +18,25 @@ def gaussian(theta, sigma=0.5, n_derived=0):
     return logl, phi
 
 
-def twin_gaussian(theta, sigma=0.5, sep_sigma=10, n_derived=0):
+def twin_gaussian(theta, sigma=1, sep_sigma=10, n_derived=0):
     """Two Gaussians seperated by sep_sigma."""
     theta1 = [theta[0] + sigma * 0.5 * sep_sigma] + theta[1:]
     theta2 = [theta[0] - sigma * 0.5 * sep_sigma] + theta[1:]
     twin_logls = [gaussian(t, sigma)[0] for t in [theta1, theta2]]
     logl = scipy.special.logsumexp(twin_logls) - np.log(2)
+    phi = [0.0] * n_derived
+    return logl, phi
+
+
+def gaussian_3mix(theta, n_derived=0):
+    """3 gaussian mixture."""
+    positions = [(4, 0), (-4, 0), (0, 4)]
+    sigmas = [0.75, 1, 1.25]
+    thetas = []
+    for pos in positions:
+        thetas.append([theta[0] + pos[0], theta[1] + pos[1]] + theta[2:])
+    logls = [gaussian(thetas[i], sigmas[i])[0] for i in range(3)]
+    logl = scipy.special.logsumexp(logls) - np.log(3)
     phi = [0.0] * n_derived
     return logl, phi
 
