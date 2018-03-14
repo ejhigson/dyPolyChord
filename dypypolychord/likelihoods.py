@@ -31,12 +31,14 @@ def twin_gaussian(theta, sigma=1, sep_sigma=10, n_derived=0):
 def gaussian_3mix(theta, n_derived=0):
     """3 gaussian mixture."""
     positions = [(4, 0), (-4, 0), (0, 4)]
-    sigmas = [0.75, 1, 1.25]
     thetas = []
     for pos in positions:
         thetas.append([theta[0] + pos[0], theta[1] + pos[1]] + theta[2:])
-    logls = [gaussian(thetas[i], sigmas[i])[0] for i in range(3)]
-    logl = scipy.special.logsumexp(logls) - np.log(3)
+    sigmas = [1, 1, 1]
+    weights = [0.2, 0.3, 0.5]
+    logls = [(gaussian(thetas[i], sigmas[i])[0] + np.log(weights[i]))
+             for i in range(3)]
+    logl = scipy.special.logsumexp(logls)
     phi = [0.0] * n_derived
     return logl, phi
 
