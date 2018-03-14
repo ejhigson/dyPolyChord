@@ -106,17 +106,18 @@ def run_dynamic_polychord_evidence(pc_settings_in, likelihood, prior, ndims,
         nlives_array = (w_rel * init_run['logl'].shape[0] *
                         (nlive_const - ninit) / ninit)
     assert nlives_array[0] == nlives_array.max()
+    # convert to ints
+    nlives_array = np.rint(nlives_array).astype(int)
+    assert nlives_array.min() >= 0
     # get nlives dict
     nlives_dict = {}
     steps = dyn_nlive_step * np.asarray(range(w_rel.shape[0] //
                                               dyn_nlive_step))
     for step in steps:
-        nlive_i = int(nlives_array[step])
-        if nlive_i >= 1:
-            nlives_dict[init_run['logl'][step]] = nlive_i
+        nlives_dict[init_run['logl'][step]] = int(nlives_array[step])
     # update settings for the dynamic step
     pc_settings.nlives = nlives_dict
-    pc_settings.nlive = int(nlives_array.max())
+    pc_settings.nlive = nlives_array.max()
     pc_settings.resume = False
     pc_settings.file_root = pc_settings_in.file_root + '_dyn'
     # # broadcast dynamic settings to other threads
@@ -201,26 +202,25 @@ def run_dynamic_polychord_param(pc_settings_in, likelihood, prior, ndims,
     else:
         nlives_array = (w_rel * init_run['logl'].shape[0] *
                         (nlive_const - ninit) / ninit)
+    nlives_array = np.rint(nlives_array).astype(int)
     # make sure it does not dip below ninit until it reaches the peak
-    peak_start_ind = np.where(nlives_array > ninit)[0][0]
+    peak_start_ind = np.where(nlives_array >= ninit)[0][0]
     nlives_array[:peak_start_ind] = ninit
+    assert nlives_array.min() >= 0
     # get nlives dict
-    nlives_dict = {-1. * 10e100: ninit}
+    nlives_dict = {-1e100: ninit}
     steps = dyn_nlive_step * np.asarray(range(w_rel.shape[0] //
                                               dyn_nlive_step))
     for i, step in enumerate(steps[:-1]):
         # Assign nlives to the logl one step before to make sure the number of
         # live points is increased in time
-        nlive_i = int(nlives_array[steps[i + 1]])
-        if nlive_i >= 5:
-            nlives_dict[init_run['logl'][step]] = nlive_i
+        nlives_dict[init_run['logl'][step]] = int(nlives_array[steps[i + 1]])
     # subtract 1 as ndead=1 corresponds to point 0
     resume_steps = np.asarray(step_ndead) - 1
     # Load the last resume before we reach the peak
     resume_ndead = step_ndead[np.where(
         resume_steps < peak_start_ind)[0][-1]]
     pc_settings.nlive = dyn_nlive_step
-    pc_settings.precision_criterion = 0.1
     pc_settings.nlives = nlives_dict
     pc_settings.read_resume = True
     # copy resume step to dynamic file root
