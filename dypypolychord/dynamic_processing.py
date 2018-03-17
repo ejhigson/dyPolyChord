@@ -18,6 +18,9 @@ def process_dypypolychord_run(root, dynamic_goal):
         assert np.all(init['thread_min_max'][:, 0] == -np.inf)
         dyn = nestcheck.data_processing.process_polychord_run(root + '_dyn')
         run = ar.combine_ns_runs([init, dyn])
+        run['output'] = {}
+        run['output']['nlike'] = (init['output']['nlike'] +
+                                  dyn['output']['nlike'])
         nestcheck.data_processing.check_ns_run(run)
         return run
     elif dynamic_goal == 1:
@@ -79,6 +82,14 @@ def process_dyn_run(root):
                              ar.get_run_threads(init),
                              assert_birth_point=True)
     run['settings'] = {'resume_ndead': resume_ndead}
+    try:
+        run['output'] = {'nlike': (init['output']['nlike'] +
+                                   dyn['output']['nlike'] -
+                                   dyn['settings']['resume_nlike'])}
+    except KeyError:
+        run['output'] = {'nlike': np.nan}
+        # run['output'] = {'nlike': (dyn['output']['avnlike'] *
+        #                            run['logl'].shape[0])}
     try:
         nestcheck.data_processing.check_ns_run(run)
     except Exception as err:

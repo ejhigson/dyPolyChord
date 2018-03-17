@@ -162,7 +162,8 @@ def run_dynamic_polychord_param(pc_settings_in, likelihood, prior, ndims,
     pc_settings.read_resume = False
     add_points = True
     step_ndead = []
-    runs_at_resumes = {}
+    # runs_at_resumes = {}
+    run_outputs_at_resumes = {}
     while add_points:
         if len(step_ndead) == 1:
             pc_settings.read_resume = True
@@ -170,14 +171,14 @@ def run_dynamic_polychord_param(pc_settings_in, likelihood, prior, ndims,
         pc_settings.seed += 100
         output = PyPolyChord.run_polychord(likelihood, ndims, nderived,
                                            pc_settings, prior)
+        # store run for use getting nlike
+        run_outputs_at_resumes[output.ndead] = output
         step_ndead.append(output.ndead - pc_settings.nlive)
-        run = nestcheck.data_processing.process_polychord_run(
-            pc_settings.base_dir + '/' + pc_settings.file_root)
-        # Check the run at the resume point is as expected
-        assert run['thread_labels'].shape[0] == output.ndead
-        assert np.unique(run['thread_labels']).shape[0] == ninit
-        # store run for later
-        runs_at_resumes[output.ndead] = run
+        # # Check the run at the resume point is as expected
+        # run = nestcheck.data_processing.process_polychord_run(
+        #     pc_settings.base_dir + '/' + pc_settings.file_root)
+        # assert run['thread_labels'].shape[0] == output.ndead
+        # assert np.unique(run['thread_labels']).shape[0] == ninit
         # store resume file in new file path
         shutil.copyfile(pc_settings.base_dir + '/' +
                         pc_settings.file_root + '.resume',
@@ -238,7 +239,9 @@ def run_dynamic_polychord_param(pc_settings_in, likelihood, prior, ndims,
                   pc_settings_in.file_root +
                   '_init_' + str(snd) + '.resume')
     dypypolychord.save_load_utils.save_info(
-        pc_settings, dyn_output, resume_ndead=resume_ndead)
+        pc_settings, dyn_output, resume_ndead=resume_ndead,
+        resume_nlike=run_outputs_at_resumes[resume_ndead].nlike)
+
     if print_time:
         end_time = time.time()
         print('##########################################')
