@@ -18,14 +18,12 @@ setuptools.setup(name='dypypolychord',
                  author_email='ejhigson@gmail.com',
                  description=('Dynamic nested sampling with PolyChord using '
                               'python wrappers.'),
-                 url='https://github.com/ejhigson/nestcheck',
+                 url='https://github.com/ejhigson/dyPolyChord',
                  # long_description=read_file('README.md'),
-                 # install_requires=['numpy>=1.13',
-                 #                   'scipy>=0.18.1',
-                 #                   'nestcheck',
-                 #                   'PyPolyChord'],
-                 # Add minimum PyPolyChord version to install_requires when
-                 # it is publically released
-                 # test_suite='nose.collector',
-                 # tests_require=['nose'],
+                 install_requires=['numpy>=1.13',
+                                   'scipy>=1.0.0',
+                                   'nestcheck',
+                                   'PyPolyChord>=1.12'],
+                 test_suite='nose.collector',
+                 tests_require=['nose'],
                  packages=['dypypolychord'])
