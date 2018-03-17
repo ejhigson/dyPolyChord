@@ -7,15 +7,16 @@ import nestcheck.io_utils as iou
 import dypypolychord.dynamic_processing
 
 
-def save_info(settings, output, resume_ndead=None):
+def save_info(settings, output, **kwargs):
     """
     Save settings and output information using pickle and a standard file
     name based on the settings' file root.
     """
     info_to_save = {'output': output.__dict__, 'settings': settings.__dict__}
-    if resume_ndead is not None:
+    if kwargs:
         assert settings.nlives
-        info_to_save['settings']['resume_ndead'] = resume_ndead
+        for key, value in kwargs.items():
+            info_to_save['settings'][key] = value
     iou.pickle_save(info_to_save,
                     'chains/' + settings.file_root + '_info',
                     print_time=False, print_filename=False,
