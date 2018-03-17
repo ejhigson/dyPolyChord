@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 """
-__init__.py. Includes wrapper for running dyPyPolyChord with different
+__init__.py. Includes wrapper for running dyPolyChord with different
 dynamic goals.
 """
-import dypypolychord.run
+import dyPolyChord.run
 
 
-def run_dypypolychord(pc_settings, likelihood, prior, ndims, **kwargs):
+def run_dyPolyChord(pc_settings, likelihood, prior, ndims, **kwargs):
     """
     Wrapper for running dynamic polychord with different dynamic goals.
     """
@@ -15,11 +15,11 @@ def run_dypypolychord(pc_settings, likelihood, prior, ndims, **kwargs):
         'dynamic_goal=' + str(dynamic_goal) + '! '
         'So far only set up for dynamic_goal = None, 0, 1')
     if dynamic_goal == 1:
-        dypypolychord.run.run_dynamic_polychord_param(
+        dyPolyChord.run.run_dynamic_polychord_param(
             pc_settings, likelihood, prior, ndims, **kwargs)
     elif dynamic_goal == 0:
-        dypypolychord.run.run_dynamic_polychord_evidence(
+        dyPolyChord.run.run_dynamic_polychord_evidence(
             pc_settings, likelihood, prior, ndims, **kwargs)
     elif dynamic_goal is None:
-        dypypolychord.run.run_standard_polychord(
+        dyPolyChord.run.run_standard_polychord(
             pc_settings, likelihood, prior, ndims, **kwargs)

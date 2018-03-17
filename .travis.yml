@@ -9,6 +9,6 @@ install:
  - pip install .
  - pip install coveralls
 script:
- - nosetests --with-coverage --cover-erase --cover-package=dypypolychord
+ - nosetests --with-coverage --cover-erase --cover-package=dyPolyChord
 after_success:
  - coveralls

@@ -12,7 +12,7 @@ import numpy as np
 import PyPolyChord
 import nestcheck.analyse_run as ar
 import nestcheck.data_processing
-import dypypolychord.save_load_utils
+import dyPolyChord.save_load_utils
 
 
 def run_standard_polychord(pc_settings, likelihood, prior, ndims, **kwargs):
@@ -32,7 +32,7 @@ def run_standard_polychord(pc_settings, likelihood, prior, ndims, **kwargs):
     output = PyPolyChord.run_polychord(likelihood, ndims, nderived,
                                        pc_settings, prior)
     # if comm.rank == 0:
-    dypypolychord.save_load_utils.save_info(pc_settings, output)
+    dyPolyChord.save_load_utils.save_info(pc_settings, output)
     if print_time:
         end_time = time.time()
         print('#####################################')
@@ -67,7 +67,7 @@ def run_dynamic_polychord_evidence(pc_settings_in, likelihood, prior, ndims,
     pc_settings.nlive = ninit
     init_output = PyPolyChord.run_polychord(likelihood, ndims, nderived,
                                             pc_settings, prior)
-    dypypolychord.save_load_utils.save_info(
+    dyPolyChord.save_load_utils.save_info(
         pc_settings, init_output)
     init_run = nestcheck.data_processing.process_polychord_run(
         pc_settings.base_dir + '/' + pc_settings.file_root)
@@ -106,7 +106,7 @@ def run_dynamic_polychord_evidence(pc_settings_in, likelihood, prior, ndims,
     dyn_output = PyPolyChord.run_polychord(likelihood, ndims, nderived,
                                            pc_settings, prior)
     # if comm.rank == 0:
-    dypypolychord.save_load_utils.save_info(
+    dyPolyChord.save_load_utils.save_info(
         pc_settings, dyn_output)
     if print_time:
         end_time = time.time()
@@ -220,7 +220,7 @@ def run_dynamic_polychord_param(pc_settings_in, likelihood, prior, ndims,
         os.remove(pc_settings_in.base_dir + '/' +
                   pc_settings_in.file_root +
                   '_init_' + str(snd) + '.resume')
-    dypypolychord.save_load_utils.save_info(
+    dyPolyChord.save_load_utils.save_info(
         pc_settings, dyn_output, resume_ndead=resume_ndead,
         resume_nlike=run_outputs_at_resumes[resume_ndead].nlike)
 

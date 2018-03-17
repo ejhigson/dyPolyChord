@@ -12,14 +12,13 @@ import numpy as np
 from PyPolyChord.settings import PolyChordSettings
 # # import PyPolyChord
 # import nestcheck.parallel_utils
-import dypypolychord.likelihoods as likelihoods
-import dypypolychord.priors as priors
-import dypypolychord
-# import dypypolychord.save_load_utils as slu
+import dyPolyChord.likelihoods as likelihoods
+import dyPolyChord.priors as priors
+import dyPolyChord
+# import dyPolyChord.save_load_utils as slu
 # # import mpi4py
 
 TEST_DIR = 'test_chains'
-
 SETTINGS_KWARGS = {
     'do_clustering': True,
     'posteriors': False,
@@ -62,10 +61,10 @@ SETTINGS_KWARGS = {
 #
 #    def test_dynamic_evidence(self):
 #        dynamic_goal = 0
-#        dypypolychord.run_dypypolychord(
+#        dyPolyChord.run_dyPolyChord(
 #            self.settings, self.likelihood, self.prior, self.ndims,
 #            dynamic_goal=dynamic_goal, ninit=5, dyn_nlive_step=10)
-#        run = dypypolychord.dynamic_processing.process_dypypolychord_run(
+#        run = dyPolyChord.dynamic_processing.process_dyPolyChord_run(
 #            self.settings.base_dir + '/' + self.settings.file_root,
 #            dynamic_goal)
 #        print(run)

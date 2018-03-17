@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""dypypolychord setup."""
+"""dyPolyChord setup."""
 import os
 import setuptools
 
@@ -12,7 +12,7 @@ def read_file(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 
-setuptools.setup(name='dypypolychord',
+setuptools.setup(name='dyPolyChord',
                  version='0.0.0',
                  author='Edward Higson',
                  author_email='ejhigson@gmail.com',
@@ -26,4 +26,4 @@ setuptools.setup(name='dypypolychord',
                                    'PyPolyChord>=1.12'],
                  test_suite='nose.collector',
                  tests_require=['nose'],
-                 packages=['dypypolychord'])
+                 packages=['dyPolyChord'])

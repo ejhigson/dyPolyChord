@@ -7,7 +7,7 @@ import nestcheck.analyse_run as ar
 import nestcheck.data_processing
 
 
-def process_dypypolychord_run(root, dynamic_goal):
+def process_dypolychord_run(root, dynamic_goal):
     assert dynamic_goal in [None, 0, 1], (
         'dynamic_goal=' + str(dynamic_goal) + '! '
         'So far only set up for dynamic_goal = None, 0, 1')

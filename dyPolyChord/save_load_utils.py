@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 """
 Helper functions for saving and loading PolyChord data produced with
-dypypolychord.
+dyPolyChord.
 """
 import nestcheck.io_utils as iou
-import dypypolychord.dynamic_processing
+import dyPolyChord.dynamic_processing
 
 
 def save_info(settings, output, **kwargs):
@@ -49,7 +49,7 @@ def settings_root(likelihood_name, prior_name, ndims, **kwargs):
     return root
 
 
-def get_dypypolychord_data(file_root, n_runs, dynamic_goal, **kwargs):
+def get_dyPolyChord_data(file_root, n_runs, dynamic_goal, **kwargs):
     """
     Load and process polychord chains
     """
@@ -72,8 +72,8 @@ def get_dypypolychord_data(file_root, n_runs, dynamic_goal, **kwargs):
     for i in range(1, n_runs + 1):
         try:
             root = chains_dir + file_root + '_' + str(i)
-            data.append(dypypolychord.dynamic_processing
-                        .process_dypypolychord_run(root, dynamic_goal))
+            data.append(dyPolyChord.dynamic_processing
+                        .process_dypolychord_run(root, dynamic_goal))
         except (OSError, AssertionError, KeyError) as err:
             try:
                 errors[type(err).__name__].append(i)
