@@ -19,6 +19,8 @@ def process_dypypolychord_run(root, dynamic_goal):
         dyn = nestcheck.data_processing.process_polychord_run(root + '_dyn')
         run = ar.combine_ns_runs([init, dyn])
         run['output'] = {}
+        print(init['output'])
+        print(dyn['output'])
         run['output']['nlike'] = (init['output']['nlike'] +
                                   dyn['output']['nlike'])
         nestcheck.data_processing.check_ns_run(run)

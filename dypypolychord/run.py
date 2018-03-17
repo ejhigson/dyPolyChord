@@ -48,11 +48,11 @@ def run_dynamic_polychord_evidence(pc_settings_in, likelihood, prior, ndims,
     """
     # comm = MPI.COMM_WORLD
     ninit = kwargs.pop('ninit', 10)
-    dyn_nlive_step = kwargs.pop('dyn_nlive_step', 1)
+    dyn_nlive_step = kwargs.pop('dyn_nlive_step', 10)
     nlive_const = kwargs.pop('nlive_const', pc_settings_in.nlive)
     # n_samples_max = kwargs.pop('n_samples_max', None)
     nderived = kwargs.pop('nderived', 0)
-    kwargs.pop('init_step')  # only needed for dg!=0
+    kwargs.pop('init_step', None)
     print_time = kwargs.pop('print_time', False)
     if kwargs:
         raise TypeError('Unexpected **kwargs: %r' % kwargs)

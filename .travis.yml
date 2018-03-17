@@ -1,0 +1,14 @@
+language: python
+python:
+ - '2.7'
+ - '3.3'
+ - '3.4'
+ - '3.5'
+ - '3.6'
+install:
+ - pip install .
+ - pip install coveralls
+script:
+ - nosetests --with-coverage --cover-erase --cover-package=dypypolychord
+after_success:
+ - coveralls

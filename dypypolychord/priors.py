@@ -5,23 +5,21 @@ Prior functions.
 import PyPolyChord.priors
 
 
-def uniform_prior(hypercube, ndims=2, prior_scale=5):
-    """ Uniform prior. """
-
+def uniform(hypercube, prior_scale=5):
+    """Uniform prior."""
+    ndims = len(hypercube)
     theta = [0.0] * ndims
-    uniform = PyPolyChord.priors.UniformPrior(-prior_scale, prior_scale)
+    func = PyPolyChord.priors.UniformPrior(-prior_scale, prior_scale)
     for i, x in enumerate(hypercube):
-        theta[i] = uniform(x)
-
+        theta[i] = func(x)
     return theta
 
 
-def gaussian_prior(hypercube, ndims=2, prior_scale=5):
-    """Gaussian prior centred on the origin. """
-
+def gaussian(hypercube, prior_scale=5):
+    """Spherically symmetric Gaussian prior centred on the origin. """
+    ndims = len(hypercube)
     theta = [0.0] * ndims
-    uniform = PyPolyChord.priors.GaussianPrior(0., prior_scale)
+    func = PyPolyChord.priors.GaussianPrior(0., prior_scale)
     for i, x in enumerate(hypercube):
-        theta[i] = uniform(x)
-
+        theta[i] = func(x)
     return theta

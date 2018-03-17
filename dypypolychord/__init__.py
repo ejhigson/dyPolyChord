@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-__init__. Also includes wrapper for running dyPyPolyChord with different
+__init__.py. Includes wrapper for running dyPyPolyChord with different
 dynamic goals.
 """
 import dypypolychord.run
