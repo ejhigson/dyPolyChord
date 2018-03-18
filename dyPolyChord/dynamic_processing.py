@@ -5,43 +5,47 @@ Processing dynamic runs.
 import numpy as np
 import nestcheck.analyse_run as ar
 import nestcheck.data_processing
+import nestcheck.io_utils as iou
 
 
-def process_dypolychord_run(root, dynamic_goal):
-    assert dynamic_goal in [None, 0, 1], (
+def process_dypolychord_run(file_root, base_dir, dynamic_goal):
+    assert dynamic_goal in [0, 1], (
         'dynamic_goal=' + str(dynamic_goal) + '! '
-        'So far only set up for dynamic_goal = None, 0, 1')
-    if dynamic_goal is None:
-        return nestcheck.data_processing.process_polychord_run(root)
-    elif dynamic_goal == 0:
-        init = nestcheck.data_processing.process_polychord_run(root + '_init')
-        assert np.all(init['thread_min_max'][:, 0] == -np.inf)
-        dyn = nestcheck.data_processing.process_polychord_run(root + '_dyn')
+        'So far only set up for dynamic_goal = 0 or 1')
+    init = nestcheck.data_processing.process_polychord_run(
+        file_root + '_init', base_dir)
+    dyn = nestcheck.data_processing.process_polychord_run(
+        file_root + '_dyn', base_dir)
+    assert np.all(init['thread_min_max'][:, 0] == -np.inf)
+    if dynamic_goal == 0:
+        # dyn was not resumed part way through init and we can simply combine
+        # dyn and init
         run = ar.combine_ns_runs([init, dyn])
-        run['output'] = {}
-        print(init['output'])
-        print(dyn['output'])
-        run['output']['nlike'] = (init['output']['nlike'] +
-                                  dyn['output']['nlike'])
-        nestcheck.data_processing.check_ns_run(run)
-        return run
+        run['output'] = {'nlike': (init['output']['nlike'] +
+                                   dyn['output']['nlike'])}
     elif dynamic_goal == 1:
-        return process_dyn_run(root)
+        # dyn was resumed part way through init and we need to remove duplicate
+        # points
+        dyn_info = iou.pickle_load(base_dir + '/' + file_root + '_dyn_info')
+        run = combine_resumed_dyn_run(init, dyn, dyn_info['resume_ndead'])
+        run['output'] = dyn_info
+        run['output']['nlike'] = (init['output']['nlike'] +
+                                  dyn['output']['nlike'] -
+                                  dyn_info['resume_nlike'])
+    # check the nested sampling run has the expected properties and resume
+    nestcheck.data_processing.check_ns_run(run)
+    return run
 
 
-def process_dyn_run(root):
+def combine_resumed_dyn_run(init, dyn, resume_ndead):
     """
     Process dynamic nested sampling run including both initial exploratory run
     and second dynamic run.
     """
-    init = nestcheck.data_processing.process_polychord_run(root + '_init')
-    dyn = nestcheck.data_processing.process_polychord_run(root + '_dyn')
-    # Do some tests
-    assert np.all(init['thread_min_max'][:, 0] == -np.inf)
-    resume_ndead = dyn['settings']['resume_ndead']
+    # Remove the first resume_ndead points which are in both dyn and init from
+    # init
     assert np.array_equal(init['logl'][:resume_ndead],
                           dyn['logl'][:resume_ndead])
-    # Now lets remove the points which are in both dyn and init from init
     init['theta'] = init['theta'][resume_ndead:, :]
     for key in ['nlive_array', 'logl', 'thread_labels']:
         init[key] = init[key][resume_ndead:]
@@ -83,20 +87,4 @@ def process_dyn_run(root):
     run = ar.combine_threads(ar.get_run_threads(dyn) +
                              ar.get_run_threads(init),
                              assert_birth_point=True)
-    run['settings'] = {'resume_ndead': resume_ndead}
-    try:
-        run['output'] = {'nlike': (init['output']['nlike'] +
-                                   dyn['output']['nlike'] -
-                                   dyn['settings']['resume_nlike'])}
-    except KeyError:
-        run['output'] = {'nlike': np.nan}
-        # run['output'] = {'nlike': (dyn['output']['avnlike'] *
-        #                            run['logl'].shape[0])}
-    try:
-        nestcheck.data_processing.check_ns_run(run)
-    except Exception as err:
-        # Add info on resume_ndead to the error message
-        import sys
-        raise (type(err)(str(err) + '. resume_ndead=%s' % resume_ndead)
-               .with_traceback(sys.exc_info()[2]))
     return run

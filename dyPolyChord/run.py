@@ -8,37 +8,11 @@ import time
 import shutil
 import copy
 import numpy as np
-# from mpi4py import MPI
 import PyPolyChord
+import nestcheck.io_utils as iou
 import nestcheck.analyse_run as ar
 import nestcheck.data_processing
-import dyPolyChord.save_load_utils
-
-
-def run_standard_polychord(pc_settings, likelihood, prior, ndims, **kwargs):
-    """
-    Wrapper function of same format as run_dynamic_polychord for running
-    standard polychord runs.
-    """
-    # comm = MPI.COMM_WORLD
-    nderived = kwargs.pop('nderived', 0)
-    print_time = kwargs.pop('print_time', False)
-    assert not pc_settings.nlives, (
-        'nlive should not change in standard nested sampling! nlives=' +
-        str(pc_settings.nlives))
-    start_time = time.time()
-    # do initial run
-    # --------------
-    output = PyPolyChord.run_polychord(likelihood, ndims, nderived,
-                                       pc_settings, prior)
-    # if comm.rank == 0:
-    dyPolyChord.save_load_utils.save_info(pc_settings, output)
-    if print_time:
-        end_time = time.time()
-        print('#####################################')
-        print('run_standard_polychord took %.3f sec' % (end_time - start_time))
-        print('file_root = ' + pc_settings.file_root)
-        print('#####################################')
+# from mpi4py import MPI
 
 
 def run_dynamic_polychord_evidence(pc_settings_in, likelihood, prior, ndims,
@@ -65,12 +39,9 @@ def run_dynamic_polychord_evidence(pc_settings_in, likelihood, prior, ndims,
     pc_settings = copy.deepcopy(pc_settings_in)  # so we dont edit settings
     pc_settings.file_root = pc_settings_in.file_root + '_init'
     pc_settings.nlive = ninit
-    init_output = PyPolyChord.run_polychord(likelihood, ndims, nderived,
-                                            pc_settings, prior)
-    dyPolyChord.save_load_utils.save_info(
-        pc_settings, init_output)
+    PyPolyChord.run_polychord(likelihood, ndims, nderived, pc_settings, prior)
     init_run = nestcheck.data_processing.process_polychord_run(
-        pc_settings.base_dir + '/' + pc_settings.file_root)
+        pc_settings.file_root, pc_settings.base_dir)
     # Work out a new allocation of live points
     # ----------------------------------------
     pc_settings = copy.deepcopy(pc_settings_in)  # remove edits from init
@@ -102,12 +73,7 @@ def run_dynamic_polychord_evidence(pc_settings_in, likelihood, prior, ndims,
     pc_settings.nlive = nlives_array.max()
     pc_settings.resume = False
     pc_settings.file_root = pc_settings_in.file_root + '_dyn'
-    # # broadcast dynamic settings to other threads
-    dyn_output = PyPolyChord.run_polychord(likelihood, ndims, nderived,
-                                           pc_settings, prior)
-    # if comm.rank == 0:
-    dyPolyChord.save_load_utils.save_info(
-        pc_settings, dyn_output)
+    PyPolyChord.run_polychord(likelihood, ndims, nderived, pc_settings, prior)
     if print_time:
         end_time = time.time()
         print('#############################################')
@@ -144,7 +110,6 @@ def run_dynamic_polychord_param(pc_settings_in, likelihood, prior, ndims,
     pc_settings.read_resume = False
     add_points = True
     step_ndead = []
-    # runs_at_resumes = {}
     run_outputs_at_resumes = {}
     while add_points:
         if len(step_ndead) == 1:
@@ -153,7 +118,7 @@ def run_dynamic_polychord_param(pc_settings_in, likelihood, prior, ndims,
         pc_settings.seed += 100
         output = PyPolyChord.run_polychord(likelihood, ndims, nderived,
                                            pc_settings, prior)
-        # store run for use getting nlike
+        # store run outputs for use getting nlike
         run_outputs_at_resumes[output.ndead] = output
         step_ndead.append(output.ndead - pc_settings.nlive)
         # # Check the run at the resume point is as expected
@@ -171,7 +136,7 @@ def run_dynamic_polychord_param(pc_settings_in, likelihood, prior, ndims,
             if step_ndead[-1] == step_ndead[-2] + 1:
                 add_points = False
     init_run = nestcheck.data_processing.process_polychord_run(
-        pc_settings.base_dir + '/' + pc_settings.file_root)
+        pc_settings.file_root, pc_settings.base_dir)
     # Work out a new allocation of live points
     # ----------------------------------------
     pc_settings = copy.deepcopy(pc_settings_in)  # remove edits from init
@@ -214,16 +179,18 @@ def run_dynamic_polychord_param(pc_settings_in, likelihood, prior, ndims,
     # Remove the mess of other resume files
     # update settings for the dynamic step
     pc_settings.file_root = pc_settings_in.file_root + '_dyn'
-    dyn_output = PyPolyChord.run_polychord(likelihood, ndims, nderived,
-                                           pc_settings, prior)
+    PyPolyChord.run_polychord(likelihood, ndims, nderived, pc_settings, prior)
     for snd in step_ndead:
         os.remove(pc_settings_in.base_dir + '/' +
                   pc_settings_in.file_root +
                   '_init_' + str(snd) + '.resume')
-    dyPolyChord.save_load_utils.save_info(
-        pc_settings, dyn_output, resume_ndead=resume_ndead,
-        resume_nlike=run_outputs_at_resumes[resume_ndead].nlike)
-
+    dyn_info = {'resume_ndead': resume_ndead,
+                'resume_nlike': run_outputs_at_resumes[resume_ndead].nlike}
+    iou.pickle_save(dyn_info,
+                    (pc_settings_in.base_dir + '/' +
+                     pc_settings_in.file_root + '_dyn_info'),
+                    print_time=False, print_filename=False,
+                    overwrite_existing=True)
     if print_time:
         end_time = time.time()
         print('##########################################')

@@ -7,20 +7,20 @@ import nestcheck.io_utils as iou
 import dyPolyChord.dynamic_processing
 
 
-def save_info(settings, output, **kwargs):
-    """
-    Save settings and output information using pickle and a standard file
-    name based on the settings' file root.
-    """
-    info_to_save = {'output': output.__dict__, 'settings': settings.__dict__}
-    if kwargs:
-        assert settings.nlives
-        for key, value in kwargs.items():
-            info_to_save['settings'][key] = value
-    iou.pickle_save(info_to_save,
-                    'chains/' + settings.file_root + '_info',
-                    print_time=False, print_filename=False,
-                    overwrite_existing=True)
+# def save_info(settings, output, **kwargs):
+#     """
+#     Save settings and output information using pickle and a standard file
+#     name based on the settings' file root.
+#     """
+#     info_to_save = {'output': output.__dict__, 'settings': settings.__dict__}
+#     if kwargs:
+#         assert settings.nlives
+#         for key, value in kwargs.items():
+#             info_to_save['settings'][key] = value
+#     iou.pickle_save(info_to_save,
+#                     'chains/' + settings.file_root + '_info',
+#                     print_time=False, print_filename=False,
+#                     overwrite_existing=True)
 
 
 def settings_root(likelihood_name, prior_name, ndims, **kwargs):
