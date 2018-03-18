@@ -3,7 +3,7 @@
 __init__.py. Includes wrapper for running dyPolyChord with different
 dynamic goals.
 """
-import dyPolyChord.run
+import dyPolyChord.run_dynamic_ns
 
 
 def run_dypolychord(pc_settings, likelihood, prior, ndims, **kwargs):
@@ -15,8 +15,8 @@ def run_dypolychord(pc_settings, likelihood, prior, ndims, **kwargs):
         'dynamic_goal=' + str(dynamic_goal) + '! '
         'So far only set up for dynamic_goal = 0 or 1')
     if dynamic_goal == 1:
-        dyPolyChord.run.run_dynamic_polychord_param(
+        dyPolyChord.run_dynamic_ns.run_dynamic_polychord_param(
             pc_settings, likelihood, prior, ndims, **kwargs)
     elif dynamic_goal == 0:
-        dyPolyChord.run.run_dynamic_polychord_evidence(
+        dyPolyChord.run_dynamic_ns.run_dynamic_polychord_evidence(
             pc_settings, likelihood, prior, ndims, **kwargs)

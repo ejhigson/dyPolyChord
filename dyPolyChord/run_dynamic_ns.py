@@ -1,4 +1,4 @@
-#!/usr/bin/envython
+#!/usr/bin/env python
 """
 Functions for using PyPolyChord, including using it to perform dynamic nested
 sampling.
