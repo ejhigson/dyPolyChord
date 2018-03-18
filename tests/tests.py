@@ -14,9 +14,8 @@ from PyPolyChord.settings import PolyChordSettings
 import nestcheck.estimators as e
 import dyPolyChord.likelihoods as likelihoods
 import dyPolyChord.priors as priors
-import dyPolyChord.dynamic_processing
+import dyPolyChord.output_processing
 import dyPolyChord
-import dyPolyChord.save_load_utils
 # # import mpi4py
 
 TEST_CACHE_DIR = 'test_chains'
@@ -69,7 +68,7 @@ class TestRun(unittest.TestCase):
             self.settings, self.likelihood, self.prior, self.ndims,
             dynamic_goal=dynamic_goal, ninit=self.ninit,
             dyn_nlive_step=self.dyn_nlive_step, print_time=True)
-        run = dyPolyChord.save_load_utils.get_dypolychord_data(
+        run = dyPolyChord.output_processing.get_dypolychord_data(
             self.settings.file_root[:-2], 1, dynamic_goal,
             base_dir=self.settings.base_dir, cache_dir=TEST_CACHE_DIR,
             save=True, load=True)[0]
@@ -86,7 +85,7 @@ class TestRun(unittest.TestCase):
             self.settings, self.likelihood, self.prior, self.ndims,
             dynamic_goal=dynamic_goal, ninit=self.ninit,
             dyn_nlive_step=self.dyn_nlive_step, print_time=True)
-        run = dyPolyChord.save_load_utils.get_dypolychord_data(
+        run = dyPolyChord.output_processing.get_dypolychord_data(
             self.settings.file_root[:-2], 2, dynamic_goal,
             base_dir=self.settings.base_dir, cache_dir=TEST_CACHE_DIR,
             save=True, load=True)[0]
@@ -113,21 +112,21 @@ class TestRun(unittest.TestCase):
 class TestSaveLoadUtils(unittest.TestCase):
 
     def test_settings_root(self):
-        root = dyPolyChord.save_load_utils.settings_root(
+        root = dyPolyChord.output_processing.settings_root(
             'gaussian', 'uniform', 2, prior_scale=1, dynamic_goal=1,
             nlive_const=1, ninit=1, nrepeats=1, dyn_nlive_step=1, init_step=1)
         self.assertIsInstance(root, str)
 
     def test_settings_root_unexpected_kwarg(self):
         self.assertRaises(
-            TypeError, dyPolyChord.save_load_utils.settings_root,
+            TypeError, dyPolyChord.output_processing.settings_root,
             'gaussian', 'uniform', 2, prior_scale=1, dynamic_goal=1,
             nlive_const=1, ninit=1, nrepeats=1, dyn_nlive_step=1, init_step=1,
             unexpected=1)
 
     def test_get_dypolychord_data_unexpected_kwarg(self):
         self.assertRaises(
-            TypeError, dyPolyChord.save_load_utils.get_dypolychord_data,
+            TypeError, dyPolyChord.output_processing.get_dypolychord_data,
             'file_root', 1, 1, unexpected=1)
 
 
