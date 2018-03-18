@@ -8,17 +8,14 @@ import unittest
 import functools
 import scipy.special
 import numpy as np
-# import numpy.testing
 from PyPolyChord.settings import PolyChordSettings
-# # import PyPolyChord
 import nestcheck.estimators as e
 import dyPolyChord.likelihoods as likelihoods
 import dyPolyChord.priors as priors
 import dyPolyChord.output_processing
 import dyPolyChord
-# # import mpi4py
 
-TEST_CACHE_DIR = 'test_chains'
+TEST_CACHE_DIR = 'chains_test'
 TEST_DIR_EXISTS_MSG = ('Directory ' + TEST_CACHE_DIR + ' exists! Tests use '
                        'this dir to check caching then delete it afterwards, '
                        'so the path should be left empty.')
@@ -42,7 +39,7 @@ SETTINGS_KWARGS = {
     'nlives': {}}
 
 
-class TestRun(unittest.TestCase):
+class TestRunDyPolyChord(unittest.TestCase):
 
     def setUp(self):
         """Make a directory for saving test results."""

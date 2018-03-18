@@ -15,22 +15,20 @@ import nestcheck.data_processing
 # from mpi4py import MPI
 
 
-def run_dynamic_polychord_evidence(pc_settings_in, likelihood, prior, ndims,
-                                   **kwargs):
+def run_dypolychord_evidence(pc_settings_in, likelihood, prior, ndims,
+                             **kwargs):
     """
-    Dynamic nested sampling using polychord.
+    Dynamic nested sampling targeting increased evidence accuracy using
+    polychord.
     """
-    # comm = MPI.COMM_WORLD
     ninit = kwargs.pop('ninit', 10)
     dyn_nlive_step = kwargs.pop('dyn_nlive_step', 10)
     nlive_const = kwargs.pop('nlive_const', pc_settings_in.nlive)
-    # n_samples_max = kwargs.pop('n_samples_max', None)
     nderived = kwargs.pop('nderived', 0)
     kwargs.pop('init_step', None)
     print_time = kwargs.pop('print_time', False)
     if kwargs:
         raise TypeError('Unexpected **kwargs: %r' % kwargs)
-    # if comm.rank == 0:
     start_time = time.time()
     assert not pc_settings_in.nlives
     assert not pc_settings_in.read_resume
@@ -77,23 +75,21 @@ def run_dynamic_polychord_evidence(pc_settings_in, likelihood, prior, ndims,
     if print_time:
         end_time = time.time()
         print('#############################################')
-        print('run_dynamic_polychord_evidence took %.3f sec' %
+        print('run_dypolychord_evidence took %.3f sec' %
               (end_time - start_time))
         print('file_root = ' + pc_settings_in.file_root)
         print('#############################################')
 
 
-def run_dynamic_polychord_param(pc_settings_in, likelihood, prior, ndims,
-                                **kwargs):
+def run_dypolychord_param(pc_settings_in, likelihood, prior, ndims, **kwargs):
     """
-    Dynamic nested sampling using polychord.
+    Dynamic nested sampling targeting increased parameter estimation accuracy
+    using polychord.
     """
-    # comm = MPI.COMM_WORLD
     ninit = kwargs.pop('ninit', 10)
     init_step = kwargs.pop('init_step', ninit)
     dyn_nlive_step = kwargs.pop('dyn_nlive_step', 1)
     nlive_const = kwargs.pop('nlive_const', pc_settings_in.nlive)
-    # n_samples_max = kwargs.pop('n_samples_max', None)
     nderived = kwargs.pop('nderived', 0)
     print_time = kwargs.pop('print_time', False)
     if kwargs:
@@ -121,11 +117,6 @@ def run_dynamic_polychord_param(pc_settings_in, likelihood, prior, ndims,
         # store run outputs for use getting nlike
         run_outputs_at_resumes[output.ndead] = output
         step_ndead.append(output.ndead - pc_settings.nlive)
-        # # Check the run at the resume point is as expected
-        # run = nestcheck.data_processing.process_polychord_run(
-        #     pc_settings.base_dir + '/' + pc_settings.file_root)
-        # assert run['thread_labels'].shape[0] == output.ndead
-        # assert np.unique(run['thread_labels']).shape[0] == ninit
         # store resume file in new file path
         shutil.copyfile(pc_settings.base_dir + '/' +
                         pc_settings.file_root + '.resume',
@@ -176,14 +167,15 @@ def run_dynamic_polychord_param(pc_settings_in, likelihood, prior, ndims,
                     '_init_' + str(resume_ndead) + '.resume',
                     pc_settings.base_dir + '/' +
                     pc_settings.file_root + '_dyn.resume')
-    # Remove the mess of other resume files
     # update settings for the dynamic step
     pc_settings.file_root = pc_settings_in.file_root + '_dyn'
     PyPolyChord.run_polychord(likelihood, ndims, nderived, pc_settings, prior)
+    # Remove the mess of other resume files
     for snd in step_ndead:
         os.remove(pc_settings_in.base_dir + '/' +
                   pc_settings_in.file_root +
                   '_init_' + str(snd) + '.resume')
+    # Save info about where the dynamic run was resumed from
     dyn_info = {'resume_ndead': resume_ndead,
                 'resume_nlike': run_outputs_at_resumes[resume_ndead].nlike}
     iou.pickle_save(dyn_info,
@@ -194,7 +186,7 @@ def run_dynamic_polychord_param(pc_settings_in, likelihood, prior, ndims,
     if print_time:
         end_time = time.time()
         print('##########################################')
-        print('run_dynamic_polychord_param took %.3f sec' %
-              (end_time - start_time))
+        print('run_dypolychord_param took {} sec'
+              .format(end_time - start_time))
         print('file_root = ' + pc_settings_in.file_root)
         print('##########################################')
