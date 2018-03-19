@@ -65,10 +65,9 @@ class TestRunDyPolyChord(unittest.TestCase):
             self.settings, self.likelihood, self.prior, self.ndims,
             dynamic_goal=dynamic_goal, ninit=self.ninit,
             dyn_nlive_step=self.dyn_nlive_step, print_time=True)
-        run = dyPolyChord.output_processing.get_dypolychord_data(
-            self.settings.file_root[:-2], 1, dynamic_goal,
-            base_dir=self.settings.base_dir, cache_dir=TEST_CACHE_DIR,
-            save=True, load=True)[0]
+        run = dyPolyChord.output_processing.process_dypolychord_run(
+            self.settings.file_root, self.settings.base_dir,
+            dynamic_goal=dynamic_goal)
         self.assertEqual(run['output']['nlike'], 549)
         print(run['output'])
         self.assertAlmostEqual(-6.428463223381643, e.logz(run), places=12)
@@ -82,10 +81,9 @@ class TestRunDyPolyChord(unittest.TestCase):
             self.settings, self.likelihood, self.prior, self.ndims,
             dynamic_goal=dynamic_goal, ninit=self.ninit,
             dyn_nlive_step=self.dyn_nlive_step, print_time=True)
-        run = dyPolyChord.output_processing.get_dypolychord_data(
-            self.settings.file_root[:-2], 2, dynamic_goal,
-            base_dir=self.settings.base_dir, cache_dir=TEST_CACHE_DIR,
-            save=True, load=True)[0]
+        run = dyPolyChord.output_processing.process_dypolychord_run(
+            self.settings.file_root, self.settings.base_dir,
+            dynamic_goal=dynamic_goal)
         self.assertEqual(run['output']['nlike'], 1112)
         self.assertEqual(run['output']['resume_ndead'], 20)
         self.assertEqual(run['output']['resume_nlike'], 62)
@@ -106,7 +104,7 @@ class TestRunDyPolyChord(unittest.TestCase):
             dyn_nlive_step=self.dyn_nlive_step, unexpected=1)
 
 
-class TestSaveLoadUtils(unittest.TestCase):
+class TestOutputProcessing(unittest.TestCase):
 
     def test_settings_root(self):
         root = dyPolyChord.output_processing.settings_root(
@@ -121,10 +119,10 @@ class TestSaveLoadUtils(unittest.TestCase):
             nlive_const=1, ninit=1, nrepeats=1, dyn_nlive_step=1, init_step=1,
             unexpected=1)
 
-    def test_get_dypolychord_data_unexpected_kwarg(self):
+    def test_process_dypolychord_run_unexpected_kwarg(self):
         self.assertRaises(
-            TypeError, dyPolyChord.output_processing.get_dypolychord_data,
-            'file_root', 1, 1, unexpected=1)
+            TypeError, dyPolyChord.output_processing.process_dypolychord_run,
+            'file_root', 'base_dir', dynamic_goal=1, unexpected=1)
 
 
 class TestPriors(unittest.TestCase):
@@ -175,17 +173,10 @@ class TestLikelihoods(unittest.TestCase):
         self.assertIsInstance(phi, list)
         self.assertEqual(len(phi), 0)
 
-    def test_gaussian_3mix(self):
+    def test_gaussian_mix(self):
         dim = 5
         theta = list(np.random.random(dim))
-        _, phi = likelihoods.gaussian_3mix(theta)
-        self.assertIsInstance(phi, list)
-        self.assertEqual(len(phi), 0)
-
-    def test_twin_gaussian(self):
-        dim = 5
-        theta = list(np.random.random(dim))
-        _, phi = likelihoods.twin_gaussian(theta)
+        _, phi = likelihoods.gaussian_mix(theta)
         self.assertIsInstance(phi, list)
         self.assertEqual(len(phi), 0)
 

@@ -35,6 +35,10 @@ def settings_root(likelihood_name, prior_name, ndims, **kwargs):
 
 
 def process_dypolychord_run(file_root, base_dir, **kwargs):
+    """
+    Load the output files of a dynamic run and process them to the nestcheck
+    format.
+    """
     dynamic_goal = kwargs.pop('dynamic_goal')
     logl_warn_only = kwargs.pop('logl_warn_only', False)
     if kwargs:
@@ -66,6 +70,8 @@ def process_dypolychord_run(file_root, base_dir, **kwargs):
     run['output']['file_root'] = file_root
     run['output']['base_dir'] = base_dir
     run['output']['dynamic_goal'] = dynamic_goal
+    run['output']['init_nlike'] = init['output']['nlike']
+    run['output']['dyn_nlike'] = dyn['output']['nlike']
     # check the nested sampling run has the expected properties and resume
     nestcheck.data_processing.check_ns_run(run)
     return run
