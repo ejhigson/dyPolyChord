@@ -7,7 +7,7 @@ import scipy.special
 
 
 def gaussian(theta, sigma=0.5, n_derived=0):
-    """ Simple Gaussian Likelihood centred on the origin."""
+    """ Simple Gaussian Likelihood centered on the origin."""
     phi = [0.0] * n_derived
     dim = len(theta)
     rad2 = sum([t ** 2 for t in theta])
@@ -16,26 +16,22 @@ def gaussian(theta, sigma=0.5, n_derived=0):
     return logl, phi
 
 
-def twin_gaussian(theta, sigma=1, sep_sigma=10, n_derived=0):
-    """Two Gaussians seperated by sep_sigma."""
-    theta1 = [theta[0] + sigma * 0.5 * sep_sigma] + theta[1:]
-    theta2 = [theta[0] - sigma * 0.5 * sep_sigma] + theta[1:]
-    twin_logls = [gaussian(t, sigma)[0] for t in [theta1, theta2]]
-    logl = scipy.special.logsumexp(twin_logls) - np.log(2)
-    phi = [0.0] * n_derived
-    return logl, phi
-
-
-def gaussian_3mix(theta, n_derived=0):
-    """3 gaussian mixture."""
-    positions = [(4, 0), (-4, 0), (0, 4)]
+def gaussian_mix(theta, n_derived=0, sep=4, weights=(0.1, 0.2, 0.3, 0.4)):
+    """Gaussian mixture model."""
+    assert len(weights) in [2, 3, 4], (
+        'So far only set up for 2, 3 or 4 components. Weights=' + str(weights))
+    assert sum(weights) == 1, 'Weights must sum to 1! Weights=' + str(weights)
+    sigmas = [1] * len(weights)
+    positions = [(sep, 0), (-sep, 0)]
+    if len(weights) >= 3:
+        positions.append((0, sep))
+    if len(weights) >= 4:
+        positions.append((0, -sep))
     thetas = []
     for pos in positions:
         thetas.append([theta[0] + pos[0], theta[1] + pos[1]] + theta[2:])
-    sigmas = [1, 1, 1]
-    weights = [0.2, 0.3, 0.5]
     logls = [(gaussian(thetas[i], sigmas[i])[0] + np.log(weights[i]))
-             for i in range(3)]
+             for i in range(len(weights))]
     logl = scipy.special.logsumexp(logls)
     phi = [0.0] * n_derived
     return logl, phi
