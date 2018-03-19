@@ -34,50 +34,6 @@ def settings_root(likelihood_name, prior_name, ndims, **kwargs):
     return root
 
 
-def get_dypolychord_data(file_root, n_runs, dynamic_goal, **kwargs):
-    """
-    Load and process polychord chains
-    """
-    cache_dir = kwargs.pop('cache_dir', 'cache')
-    base_dir = kwargs.pop('base_dir', 'chains')
-    load = kwargs.pop('load', False)
-    save = kwargs.pop('save', False)
-    overwrite_existing = kwargs.pop('overwrite_existing', True)
-    if kwargs:
-        raise TypeError('Unexpected **kwargs: %r' % kwargs)
-    save_name = file_root + '_' + str(n_runs) + 'runs'
-    if load:
-        try:
-            return iou.pickle_load(cache_dir + '/' + save_name)
-        except OSError:  # FileNotFoundError is a subclass of OSError
-            pass
-    data = []
-    errors = {}
-    # load and process chains
-    for i in range(1, n_runs + 1):
-        try:
-            data.append(process_dypolychord_run(file_root + '_' + str(i),
-                                                base_dir, dynamic_goal))
-        except (OSError, AssertionError, KeyError) as err:
-            try:
-                errors[type(err).__name__].append(i)
-            except KeyError:
-                errors[type(err).__name__] = [i]
-    for error_name, val_list in errors.items():
-        if val_list:
-            save = False  # only save if every file is processed ok
-            message = (error_name + ' processing ' + str(len(val_list)) + ' / '
-                       + str(n_runs) + ' files')
-            if len(val_list) != n_runs:
-                message += '. Runs with errors were: ' + str(val_list)
-            print(message)
-    if save:
-        print('Processed new chains: saving to ' + save_name)
-        iou.pickle_save(data, cache_dir + '/' + save_name, print_time=False,
-                        overwrite_existing=overwrite_existing)
-    return data
-
-
 def process_dypolychord_run(file_root, base_dir, dynamic_goal):
     assert dynamic_goal in [0, 1], (
         'dynamic_goal=' + str(dynamic_goal) + '! '
