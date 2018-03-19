@@ -34,30 +34,38 @@ def settings_root(likelihood_name, prior_name, ndims, **kwargs):
     return root
 
 
-def process_dypolychord_run(file_root, base_dir, dynamic_goal):
+def process_dypolychord_run(file_root, base_dir, **kwargs):
+    dynamic_goal = kwargs.pop('dynamic_goal')
+    logl_warn_only = kwargs.pop('logl_warn_only', False)
+    if kwargs:
+        raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
     assert dynamic_goal in [0, 1], (
         'dynamic_goal=' + str(dynamic_goal) + '! '
         'So far only set up for dynamic_goal = 0 or 1')
     init = nestcheck.data_processing.process_polychord_run(
-        file_root + '_init', base_dir)
+        file_root + '_init', base_dir, logl_warn_only=logl_warn_only)
     dyn = nestcheck.data_processing.process_polychord_run(
-        file_root + '_dyn', base_dir)
+        file_root + '_dyn', base_dir, logl_warn_only=logl_warn_only)
     assert np.all(init['thread_min_max'][:, 0] == -np.inf)
     if dynamic_goal == 0:
-        # dyn was not resumed part way through init and we can simply combine
-        # dyn and init
+        # If dynamic_goal == 0, dyn was not resumed part way through init
+        # and we can simply combine dyn and init using standard nestcheck
+        # functions
         run = ar.combine_ns_runs([init, dyn])
         run['output'] = {'nlike': (init['output']['nlike'] +
                                    dyn['output']['nlike'])}
     elif dynamic_goal == 1:
-        # dyn was resumed part way through init and we need to remove duplicate
-        # points
+        # If dynamic_goal == 1, dyn was resumed part way through init and we
+        # need to remove duplicate points from the combined run
         dyn_info = iou.pickle_load(base_dir + '/' + file_root + '_dyn_info')
         run = combine_resumed_dyn_run(init, dyn, dyn_info['resume_ndead'])
         run['output'] = dyn_info
         run['output']['nlike'] = (init['output']['nlike'] +
                                   dyn['output']['nlike'] -
                                   dyn_info['resume_nlike'])
+    run['output']['file_root'] = file_root
+    run['output']['base_dir'] = base_dir
+    run['output']['dynamic_goal'] = dynamic_goal
     # check the nested sampling run has the expected properties and resume
     nestcheck.data_processing.check_ns_run(run)
     return run
