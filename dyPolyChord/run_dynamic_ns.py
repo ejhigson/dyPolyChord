@@ -21,11 +21,16 @@ def run_dypolychord_evidence(pc_settings_in, likelihood, prior, ndims,
     Dynamic nested sampling targeting increased evidence accuracy using
     polychord.
 
-    dyn_nlive_step is used only to set how often the dynamic run
-    reloads.
+    dyn_nlive_step gives the fraction of points from the initial run to include
+    in nlives. The dynamic run checks nlives to see if point should be added or
+    removed every single step.
+
+    The dynamic run uses settings.nlive = max(nlives.values()). This controls
+    the starting number of live points as well as how often clustering and
+    resume writing is done.
     """
     ninit = kwargs.pop('ninit', 10)
-    dyn_nlive_step = kwargs.pop('dyn_nlive_step', 10)
+    dyn_nlive_step = kwargs.pop('dyn_nlive_step', 1)
     nlive_const = kwargs.pop('nlive_const', pc_settings_in.nlive)
     nderived = kwargs.pop('nderived', 0)
     print_time = kwargs.pop('print_time', False)
@@ -92,13 +97,18 @@ def run_dypolychord_param(pc_settings_in, likelihood, prior, ndims, **kwargs):
     Dynamic nested sampling targeting increased parameter estimation accuracy
     using polychord.
 
-    dyn_nlive_step is used to both decide what fraction of the inital dead
-    points are included in nlives and also to set how often the dynamic run
-    reloads.
+
+    dyn_nlive_step gives the fraction of points from the initial run to include
+    in nlives. The dynamic run checks nlives to see if point should be added or
+    removed every single step.
+
+    The dynamic run uses settings.nlive = ninit. This controls
+    the starting number of live points as well as how often clustering and
+    resume writing is done.
     """
     ninit = kwargs.pop('ninit', 10)
     init_step = kwargs.pop('init_step', ninit)
-    dyn_nlive_step = kwargs.pop('dyn_nlive_step', 10)
+    dyn_nlive_step = kwargs.pop('dyn_nlive_step', 1)
     nlive_const = kwargs.pop('nlive_const', pc_settings_in.nlive)
     nderived = kwargs.pop('nderived', 0)
     print_time = kwargs.pop('print_time', False)
@@ -181,7 +191,7 @@ def run_dypolychord_param(pc_settings_in, likelihood, prior, ndims, **kwargs):
     # ----------------------
     pc_settings = copy.deepcopy(pc_settings_in)  # remove edits from init
     pc_settings.seed += 100
-    pc_settings.nlive = dyn_nlive_step
+    pc_settings.nlive = ninit
     pc_settings.nlives = nlives_dict
     pc_settings.read_resume = True
     pc_settings.file_root = pc_settings_in.file_root + '_dyn'
