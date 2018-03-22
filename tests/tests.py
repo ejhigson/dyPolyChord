@@ -69,7 +69,6 @@ class TestRunDyPolyChord(unittest.TestCase):
             self.settings.file_root, self.settings.base_dir,
             dynamic_goal=dynamic_goal)
         self.assertEqual(run['output']['nlike'], 549)
-        print(run['output'])
         self.assertAlmostEqual(-6.428463223381643, e.logz(run), places=12)
         self.assertAlmostEqual(-0.40217150003234303, e.param_mean(run),
                                places=12)

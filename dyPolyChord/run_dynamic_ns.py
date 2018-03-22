@@ -20,30 +20,33 @@ def run_dypolychord_evidence(pc_settings_in, likelihood, prior, ndims,
     """
     Dynamic nested sampling targeting increased evidence accuracy using
     polychord.
+
+    dyn_nlive_step is used only to set how often the dynamic run
+    reloads.
     """
     ninit = kwargs.pop('ninit', 10)
     dyn_nlive_step = kwargs.pop('dyn_nlive_step', 10)
     nlive_const = kwargs.pop('nlive_const', pc_settings_in.nlive)
     nderived = kwargs.pop('nderived', 0)
-    kwargs.pop('init_step', None)
     print_time = kwargs.pop('print_time', False)
+    if 'init_step' in kwargs:
+        # init_step not needed for dynamic ns targeting evidence
+        kwargs.pop('init_step')
     if kwargs:
         raise TypeError('Unexpected **kwargs: %r' % kwargs)
     start_time = time.time()
     assert not pc_settings_in.nlives
     assert not pc_settings_in.read_resume
-    # do initial run
-    # --------------
+    # Step 1: do initial run
+    # ----------------------
     pc_settings = copy.deepcopy(pc_settings_in)  # so we dont edit settings
     pc_settings.file_root = pc_settings_in.file_root + '_init'
     pc_settings.nlive = ninit
     PyPolyChord.run_polychord(likelihood, ndims, nderived, pc_settings, prior)
     init_run = nestcheck.data_processing.process_polychord_run(
         pc_settings.file_root, pc_settings.base_dir)
-    # Work out a new allocation of live points
-    # ----------------------------------------
-    pc_settings = copy.deepcopy(pc_settings_in)  # remove edits from init
-    pc_settings.seed += 100
+    # Step 2: calculate an allocation of live points
+    # ----------------------------------------------
     logx_init = ar.get_logx(init_run['nlive_array'])
     w_rel = ar.rel_posterior_mass(logx_init, init_run['logl'])
     w_rel = np.cumsum(w_rel)
@@ -66,7 +69,10 @@ def run_dypolychord_evidence(pc_settings_in, likelihood, prior, ndims,
                                               dyn_nlive_step))
     for step in steps:
         nlives_dict[init_run['logl'][step]] = int(nlives_array[step])
-    # update settings for the dynamic step
+    # Step 3: do dynamic run
+    # ----------------------
+    pc_settings = copy.deepcopy(pc_settings_in)  # remove edits from init
+    pc_settings.seed += 100
     pc_settings.nlives = nlives_dict
     pc_settings.nlive = nlives_array.max()
     pc_settings.resume = False
@@ -85,10 +91,14 @@ def run_dypolychord_param(pc_settings_in, likelihood, prior, ndims, **kwargs):
     """
     Dynamic nested sampling targeting increased parameter estimation accuracy
     using polychord.
+
+    dyn_nlive_step is used to both decide what fraction of the inital dead
+    points are included in nlives and also to set how often the dynamic run
+    reloads.
     """
     ninit = kwargs.pop('ninit', 10)
     init_step = kwargs.pop('init_step', ninit)
-    dyn_nlive_step = kwargs.pop('dyn_nlive_step', 1)
+    dyn_nlive_step = kwargs.pop('dyn_nlive_step', 10)
     nlive_const = kwargs.pop('nlive_const', pc_settings_in.nlive)
     nderived = kwargs.pop('nderived', 0)
     print_time = kwargs.pop('print_time', False)
@@ -97,8 +107,8 @@ def run_dypolychord_param(pc_settings_in, likelihood, prior, ndims, **kwargs):
     start_time = time.time()
     assert not pc_settings_in.nlives
     assert not pc_settings_in.read_resume
-    # do initial run
-    # --------------
+    # Step 1: do initial run
+    # ----------------------
     pc_settings = copy.deepcopy(pc_settings_in)  # so we dont edit settings
     pc_settings.file_root = pc_settings_in.file_root + '_init'
     pc_settings.nlive = ninit
@@ -128,10 +138,8 @@ def run_dypolychord_param(pc_settings_in, likelihood, prior, ndims, **kwargs):
                 add_points = False
     init_run = nestcheck.data_processing.process_polychord_run(
         pc_settings.file_root, pc_settings.base_dir)
-    # Work out a new allocation of live points
-    # ----------------------------------------
-    pc_settings = copy.deepcopy(pc_settings_in)  # remove edits from init
-    pc_settings.seed += 100
+    # Step 2: calculate an allocation of live points
+    # ----------------------------------------------
     logx_init = ar.get_logx(init_run['nlive_array'])
     w_rel = ar.rel_posterior_mass(logx_init, init_run['logl'])
     # calculate a distribution of nlive points in proportion to w_rel
@@ -159,22 +167,25 @@ def run_dypolychord_param(pc_settings_in, likelihood, prior, ndims, **kwargs):
     # Load the last resume before we reach the peak
     resume_ndead = step_ndead[np.where(
         resume_steps < peak_start_ind)[0][-1]]
-    pc_settings.nlive = dyn_nlive_step
-    pc_settings.nlives = nlives_dict
-    pc_settings.read_resume = True
     # copy resume step to dynamic file root
-    shutil.copyfile(pc_settings.base_dir + '/' + pc_settings.file_root +
+    shutil.copyfile(pc_settings_in.base_dir + '/' + pc_settings_in.file_root +
                     '_init_' + str(resume_ndead) + '.resume',
-                    pc_settings.base_dir + '/' +
-                    pc_settings.file_root + '_dyn.resume')
-    # update settings for the dynamic step
-    pc_settings.file_root = pc_settings_in.file_root + '_dyn'
-    PyPolyChord.run_polychord(likelihood, ndims, nderived, pc_settings, prior)
-    # Remove the mess of other resume files
+                    pc_settings_in.base_dir + '/' +
+                    pc_settings_in.file_root + '_dyn.resume')
+    # Remove all the temporary resume files
     for snd in step_ndead:
         os.remove(pc_settings_in.base_dir + '/' +
                   pc_settings_in.file_root +
                   '_init_' + str(snd) + '.resume')
+    # Step 3: do dynamic run
+    # ----------------------
+    pc_settings = copy.deepcopy(pc_settings_in)  # remove edits from init
+    pc_settings.seed += 100
+    pc_settings.nlive = dyn_nlive_step
+    pc_settings.nlives = nlives_dict
+    pc_settings.read_resume = True
+    pc_settings.file_root = pc_settings_in.file_root + '_dyn'
+    PyPolyChord.run_polychord(likelihood, ndims, nderived, pc_settings, prior)
     # Save info about where the dynamic run was resumed from
     dyn_info = {'resume_ndead': resume_ndead,
                 'resume_nlike': run_outputs_at_resumes[resume_ndead].nlike}
