@@ -83,11 +83,11 @@ class TestRunDyPolyChord(unittest.TestCase):
         run = dyPolyChord.output_processing.process_dypolychord_run(
             self.settings.file_root, self.settings.base_dir,
             dynamic_goal=dynamic_goal)
-        self.assertEqual(run['output']['nlike'], 1112)
+        self.assertEqual(run['output']['nlike'], 1348)
         self.assertEqual(run['output']['resume_ndead'], 20)
         self.assertEqual(run['output']['resume_nlike'], 62)
-        self.assertAlmostEqual(-7.711683486952201, e.logz(run), places=12)
-        self.assertAlmostEqual(0.13859338573369537, e.param_mean(run),
+        self.assertAlmostEqual(-7.6566108848939685, e.logz(run), places=12)
+        self.assertAlmostEqual(0.20262461334272378, e.param_mean(run),
                                places=12)
 
     def test_run_dypolychord_unexpected_kwargs(self):

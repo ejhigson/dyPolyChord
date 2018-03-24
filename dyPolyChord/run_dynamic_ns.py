@@ -202,7 +202,6 @@ def run_dypolychord_param(pc_settings_in, likelihood, prior, ndims, **kwargs):
     iou.pickle_save(dyn_info,
                     (pc_settings_in.base_dir + '/' +
                      pc_settings_in.file_root + '_dyn_info'),
-                    print_time=False, print_filename=False,
                     overwrite_existing=True)
     if print_time:
         end_time = time.time()
