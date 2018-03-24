@@ -84,7 +84,6 @@ def run_dypolychord_evidence(pc_settings_in, likelihood, prior, ndims,
     # In order to start by sampling nlives_array.max() live points but do
     # clustering and resume writing with pc_settings.nlive = ninit we run the
     # first few steps then resume with pc_settings.nlive changed
-    print(nlives_array.max(), ninit)
     pc_settings.seed += 100
     pc_settings.nlive = nlives_array.max()
     pc_settings.max_ndead = pc_settings.nlive
