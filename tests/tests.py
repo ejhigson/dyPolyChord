@@ -60,7 +60,7 @@ class TestRunDyPolyChord(unittest.TestCase):
 
     def test_dynamic_evidence(self):
         dynamic_goal = 0
-        self.settings.file_root = 'test_' + str(dynamic_goal) + '_1'
+        self.settings.file_root = 'test_' + str(dynamic_goal)
         dyPolyChord.run_dypolychord(
             self.settings, self.likelihood, self.prior, self.ndims,
             dynamic_goal=dynamic_goal, ninit=self.ninit,
@@ -68,14 +68,15 @@ class TestRunDyPolyChord(unittest.TestCase):
         run = dyPolyChord.output_processing.process_dypolychord_run(
             self.settings.file_root, self.settings.base_dir,
             dynamic_goal=dynamic_goal)
-        self.assertEqual(run['output']['nlike'], 549)
-        self.assertAlmostEqual(-6.428463223381643, e.logz(run), places=12)
-        self.assertAlmostEqual(-0.40217150003234303, e.param_mean(run),
+        self.assertEqual(run['output']['nlike'], 1135)
+        self.assertEqual(e.count_samples(run), 155)
+        self.assertAlmostEqual(e.logz(run), -7.51364774014402, places=12)
+        self.assertAlmostEqual(e.param_mean(run), 0.2745325558109413,
                                places=12)
 
     def test_dynamic_param(self):
         dynamic_goal = 1
-        self.settings.file_root = 'test_dg' + str(dynamic_goal) + '_1'
+        self.settings.file_root = 'test_dg' + str(dynamic_goal)
         dyPolyChord.run_dypolychord(
             self.settings, self.likelihood, self.prior, self.ndims,
             dynamic_goal=dynamic_goal, ninit=self.ninit,

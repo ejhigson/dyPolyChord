@@ -25,9 +25,10 @@ def run_dypolychord_evidence(pc_settings_in, likelihood, prior, ndims,
     in nlives. The dynamic run checks nlives to see if point should be added or
     removed every single step.
 
-    The dynamic run uses settings.nlive = max(nlives.values()). This controls
-    the starting number of live points as well as how often clustering and
-    resume writing is done.
+    The dynamic run's live points are determined by the dynamic ns importance
+    calculation.
+    Both the initial and dynamic runs use settings.nlive = ninit to determine
+    clustering and resume writing.
     """
     ninit = kwargs.pop('ninit', 10)
     dyn_nlive_step = kwargs.pop('dyn_nlive_step', 1)
@@ -74,14 +75,28 @@ def run_dypolychord_evidence(pc_settings_in, likelihood, prior, ndims,
                                               dyn_nlive_step))
     for step in steps:
         nlives_dict[init_run['logl'][step]] = int(nlives_array[step])
+    # nlives_dict[-1e100] = int(nlives_array.max())
     # Step 3: do dynamic run
     # ----------------------
     pc_settings = copy.deepcopy(pc_settings_in)  # remove edits from init
-    pc_settings.seed += 100
     pc_settings.nlives = nlives_dict
-    pc_settings.nlive = nlives_array.max()
-    pc_settings.resume = False
     pc_settings.file_root = pc_settings_in.file_root + '_dyn'
+    # In order to start by sampling nlives_array.max() live points but do
+    # clustering and resume writing with pc_settings.nlive = ninit we run the
+    # first few steps then resume with pc_settings.nlive changed
+    print(nlives_array.max(), ninit)
+    pc_settings.seed += 100
+    pc_settings.nlive = nlives_array.max()
+    pc_settings.max_ndead = pc_settings.nlive
+    pc_settings.read_resume = False
+    PyPolyChord.run_polychord(likelihood, ndims, nderived, pc_settings, prior)
+    # Now load with pc_settings.nlive = ninit. This is just for resume writing
+    # and clustering - the number of live points is controlled by
+    # pc_settings.nlives
+    pc_settings.seed += 100
+    pc_settings.nlive = ninit
+    pc_settings.read_resume = True
+    pc_settings.max_ndead = pc_settings_in.max_ndead
     PyPolyChord.run_polychord(likelihood, ndims, nderived, pc_settings, prior)
     if print_time:
         end_time = time.time()
@@ -102,9 +117,10 @@ def run_dypolychord_param(pc_settings_in, likelihood, prior, ndims, **kwargs):
     in nlives. The dynamic run checks nlives to see if point should be added or
     removed every single step.
 
-    The dynamic run uses settings.nlive = ninit. This controls
-    the starting number of live points as well as how often clustering and
-    resume writing is done.
+    The dynamic run's live points are determined by the dynamic ns importance
+    calculation.
+    Both the initial and dynamic runs use settings.nlive = ninit to determine
+    clustering and resume writing.
     """
     ninit = kwargs.pop('ninit', 10)
     init_step = kwargs.pop('init_step', ninit)
