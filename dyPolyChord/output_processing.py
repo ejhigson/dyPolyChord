@@ -58,6 +58,7 @@ def process_dypolychord_run(file_root, base_dir, **kwargs):
         run = ar.combine_ns_runs([init, dyn])
         run['output'] = {'nlike': (init['output']['nlike'] +
                                    dyn['output']['nlike'])}
+        assert np.all(run['thread_min_max'][:, 0] == -np.inf)
     elif dynamic_goal == 1:
         # If dynamic_goal == 1, dyn was resumed part way through init and we
         # need to remove duplicate points from the combined run

@@ -41,7 +41,7 @@ def run_dypolychord_evidence(pc_settings_in, likelihood, prior, ndims,
         # init_step not needed for dynamic ns targeting evidence
         kwargs.pop('init_step')
     if kwargs:
-        raise TypeError('Unexpected **kwargs: %r' % kwargs)
+        raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
     start_time = time.time()
     assert not pc_settings_in.nlives
     assert not pc_settings_in.read_resume
@@ -65,6 +65,7 @@ def run_dypolychord_evidence(pc_settings_in, likelihood, prior, ndims,
     pc_settings.seed += 100
     pc_settings.nlive = max(nlives_dict.values())
     pc_settings.max_ndead = pc_settings.nlive
+    pc_settings.write_resume = True
     pc_settings.read_resume = False
     PyPolyChord.run_polychord(likelihood, ndims, nderived, pc_settings, prior)
     # Now load with pc_settings.nlive = ninit. This is just for resume writing
@@ -84,7 +85,15 @@ def run_dypolychord_evidence(pc_settings_in, likelihood, prior, ndims,
         print('#############################################')
 
 
-def nlive_allocation(pc_settings_in, ninit, nlive_const, dynamic_goal):
+def nlive_allocation(pc_settings_in, ninit, nlive_const, dynamic_goal,
+                     **kwargs):
+    """
+    Loads initial run and calculates an allocation of life points for dynamic
+    run.
+    """
+    nodd = (ninit // 2) * 2 + 1  # round ninit up to nearest odd number
+    smoothing_filter = kwargs.pop(
+        'smoothing_filter', lambda x: scipy.signal.savgol_filter(x, nodd, 3))
     assert dynamic_goal in [0, 1]
     init_run = nestcheck.data_processing.process_polychord_run(
         pc_settings_in.file_root + '_init', pc_settings_in.base_dir)
@@ -104,9 +113,8 @@ def nlive_allocation(pc_settings_in, ninit, nlive_const, dynamic_goal):
     else:
         samp_remain = init_run['logl'].shape[0] * ((nlive_const / ninit) - 1)
     nlives_array = imp * samp_remain
-    ninit_odd = (ninit // 2) * 4 + 1  # round ninit down to nearest odd number
-    print(ninit, ninit_odd)
-    nlives_array = scipy.signal.savgol_filter(nlives_array, ninit_odd, 1)
+    if smoothing_filter is not None:
+        nlives_array = smoothing_filter(nlives_array)
     nlives_array = np.rint(nlives_array).astype(int)
     assert nlives_array.min() >= 0
     if dynamic_goal == 1:
@@ -120,8 +128,15 @@ def nlive_allocation(pc_settings_in, ninit, nlive_const, dynamic_goal):
     # get nlives dict
     nlives = nlives_array[1:][np.where(np.diff(nlives_array) != 0)]
     logls = init_run['logl'][1:][np.where(np.diff(nlives_array) != 0)]
-    print('number of sign changes in nlive:',
-          (np.diff(np.sign(np.diff(nlives))) != 0).sum())
+    if dynamic_goal == 0:
+        assert np.all(np.diff(nlives) < 0), (
+            'When targeting evidence, nlive should monotincally decrease!' +
+            'nlives = ' + str(nlives))
+    elif dynamic_goal == 1:
+        turning_points = (np.diff(np.sign(np.diff(nlives))) != 0).sum()
+        if turning_points > 1:
+            print(turning_points, 'turning points in nlive.',
+                  'Perhaps consider using more smoothing?')
     for i, nlive in enumerate(nlives):
         nlives_dict[logls[i]] = int(nlive)
     if dynamic_goal == 0:
@@ -153,7 +168,7 @@ def run_dypolychord_param(pc_settings_in, likelihood, prior, ndims, **kwargs):
     nderived = kwargs.pop('nderived', 0)
     print_time = kwargs.pop('print_time', False)
     if kwargs:
-        raise TypeError('Unexpected **kwargs: %r' % kwargs)
+        raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
     start_time = time.time()
     assert not pc_settings_in.nlives
     assert not pc_settings_in.read_resume
