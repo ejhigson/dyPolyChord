@@ -98,8 +98,8 @@ def combine_resumed_dyn_run(init, dyn, resume_ndead):
         live_logl = init['logl'][th_inds[0]]
         if th_inds.shape[0] == 1:
             empty_thread_inds.append(i)
-        assert np.where(dyn['logl'] == live_logl)[0].shape == (1,), \
-            'this point should be present in dyn too!'
+        assert np.where(dyn['logl'] == live_logl)[0].shape == (1,), (
+            'point should be present in dyn too! logl=' + str(live_logl))
         init['thread_min_max'][i, 0] = live_logl
     # lets remove the live points at init
     init['theta'] = np.delete(init['theta'], live_inds, axis=0)

@@ -107,6 +107,8 @@ def nlive_allocation(pc_settings_in, ninit, nlive_const, dynamic_goal,
     # calculate a distribution of nlive points in proportion to w_rel
     if pc_settings_in.max_ndead > 0:
         samp_remain = pc_settings_in.max_ndead - init_run['logl'].shape[0]
+        assert samp_remain > 0, (
+            'all points used in initial run and none left for dynamic run!')
     else:
         samp_remain = init_run['logl'].shape[0] * ((nlive_const / ninit) - 1)
     nlives_array = imp * samp_remain

@@ -8,6 +8,7 @@ import unittest
 import functools
 import scipy.special
 import numpy as np
+import numpy.testing
 from PyPolyChord.settings import PolyChordSettings
 import nestcheck.estimators as e
 import dyPolyChord.likelihoods as likelihoods
@@ -35,7 +36,7 @@ SETTINGS_KWARGS = {
     'precision_criterion': 0.001,
     'seed': 1,
     'base_dir': TEST_CACHE_DIR,
-    'nlive': 10,
+    'nlive': 10,  # used for nlive_const
     'nlives': {}}
 
 
@@ -62,6 +63,7 @@ class TestRunDyPolyChord(unittest.TestCase):
         self.settings.file_root = 'test_' + str(dynamic_goal)
         dyPolyChord.run_dypolychord(
             self.settings, self.likelihood, self.prior, self.ndims,
+            init_step=self.ninit,
             dynamic_goal=dynamic_goal, ninit=self.ninit, print_time=True)
         run = dyPolyChord.output_processing.process_dypolychord_run(
             self.settings.file_root, self.settings.base_dir,
@@ -71,12 +73,17 @@ class TestRunDyPolyChord(unittest.TestCase):
         self.assertAlmostEqual(e.logz(run), -7.486929584611977, places=12)
         self.assertAlmostEqual(e.param_mean(run), -0.026106208699393615,
                                places=12)
+        self.settings.max_ndead = 1
+        self.assertRaises(
+            AssertionError, dyPolyChord.run_dynamic_ns.nlive_allocation,
+            self.settings, self.ninit, self.settings.nlive, dynamic_goal)
 
     def test_dynamic_param(self):
         dynamic_goal = 1
         self.settings.file_root = 'test_dg' + str(dynamic_goal)
         dyPolyChord.run_dypolychord(
             self.settings, self.likelihood, self.prior, self.ndims,
+            init_step=self.ninit,
             dynamic_goal=dynamic_goal, ninit=self.ninit, print_time=True)
         run = dyPolyChord.output_processing.process_dypolychord_run(
             self.settings.file_root, self.settings.base_dir,
@@ -118,6 +125,30 @@ class TestOutputProcessing(unittest.TestCase):
         self.assertRaises(
             TypeError, dyPolyChord.output_processing.process_dypolychord_run,
             'file_root', 'base_dir', dynamic_goal=1, unexpected=1)
+
+    def test_combine_resumed_dyn_run(self):
+        """
+        Test combining resumed dynamic and initial runs and removing
+        duplicate points using dummy ns runs.
+        """
+        init = {'logl': np.asarray([0, 1, 2, 3]),
+                'thread_labels': np.asarray([0, 1, 0, 1])}
+        dyn = {'logl': np.asarray([0, 1, 2, 4, 5, 6]),
+               'thread_labels': np.asarray([0, 1, 0, 1, 0, 1])}
+        for run in [init, dyn]:
+            run['theta'] = np.random.random((run['logl'].shape[0], 2))
+            run['nlive_array'] = np.zeros(run['logl'].shape[0]) + 2
+            run['nlive_array'][-1] = 1
+            run['thread_min_max'] = np.asarray(
+                [[-np.inf, run['logl'][-2]], [-np.inf, run['logl'][-1]]])
+        comb = dyPolyChord.output_processing.combine_resumed_dyn_run(
+            init, dyn, 1)
+        numpy.testing.assert_array_equal(
+            comb['thread_labels'], np.asarray([0, 1, 0, 2, 1, 0, 1]))
+        numpy.testing.assert_array_equal(
+            comb['logl'], np.asarray([0., 1., 2., 3., 4., 5., 6.]))
+        numpy.testing.assert_array_equal(
+            comb['nlive_array'], np.asarray([2., 2., 3., 3., 2., 2., 1.]))
 
 
 class TestPriors(unittest.TestCase):
