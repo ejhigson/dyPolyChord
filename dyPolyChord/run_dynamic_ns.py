@@ -22,8 +22,7 @@ def run_dypolychord_evidence(pc_settings_in, likelihood, prior, ndims,
     Dynamic nested sampling targeting increased evidence accuracy using
     polychord.
 
-    dyn_nlive_step gives the fraction of points from the initial run to include
-    in nlives. The dynamic run checks nlives to see if point should be added or
+    PolyChord checks nlives to see if point should be added or
     removed every single step.
 
     The dynamic run's live points are determined by the dynamic ns importance
@@ -32,8 +31,6 @@ def run_dypolychord_evidence(pc_settings_in, likelihood, prior, ndims,
     clustering and resume writing.
     """
     ninit = kwargs.pop('ninit', 10)
-    # dyn_nlive_step = kwargs.pop('dyn_nlive_step', 1)
-    kwargs.pop('dyn_nlive_step', 1)
     nlive_const = kwargs.pop('nlive_const', pc_settings_in.nlive)
     nderived = kwargs.pop('nderived', 0)
     print_time = kwargs.pop('print_time', False)
@@ -151,8 +148,7 @@ def run_dypolychord_param(pc_settings_in, likelihood, prior, ndims, **kwargs):
     using polychord.
 
 
-    dyn_nlive_step gives the fraction of points from the initial run to include
-    in nlives. The dynamic run checks nlives to see if point should be added or
+    PolyChord checks nlives to see if point should be added or
     removed every single step.
 
     The dynamic run's live points are determined by the dynamic ns importance
@@ -162,8 +158,6 @@ def run_dypolychord_param(pc_settings_in, likelihood, prior, ndims, **kwargs):
     """
     ninit = kwargs.pop('ninit', 10)
     init_step = kwargs.pop('init_step', ninit)
-    # dyn_nlive_step = kwargs.pop('dyn_nlive_step', 1)
-    kwargs.pop('dyn_nlive_step', 1)
     nlive_const = kwargs.pop('nlive_const', pc_settings_in.nlive)
     nderived = kwargs.pop('nderived', 0)
     print_time = kwargs.pop('print_time', False)

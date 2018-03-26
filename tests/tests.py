@@ -46,7 +46,6 @@ class TestRunDyPolyChord(unittest.TestCase):
         assert not os.path.exists(TEST_CACHE_DIR), TEST_DIR_EXISTS_MSG
         self.ndims = 2
         self.ninit = 5
-        self.dyn_nlive_step = 2
         self.likelihood = functools.partial(likelihoods.gaussian, sigma=1)
         self.prior = functools.partial(priors.gaussian, prior_scale=10)
         self.settings = PolyChordSettings(self.ndims, 0, **SETTINGS_KWARGS)
@@ -63,15 +62,14 @@ class TestRunDyPolyChord(unittest.TestCase):
         self.settings.file_root = 'test_' + str(dynamic_goal)
         dyPolyChord.run_dypolychord(
             self.settings, self.likelihood, self.prior, self.ndims,
-            dynamic_goal=dynamic_goal, ninit=self.ninit,
-            dyn_nlive_step=self.dyn_nlive_step, print_time=True)
+            dynamic_goal=dynamic_goal, ninit=self.ninit, print_time=True)
         run = dyPolyChord.output_processing.process_dypolychord_run(
             self.settings.file_root, self.settings.base_dir,
             dynamic_goal=dynamic_goal)
-        self.assertEqual(run['output']['nlike'], 1135)
-        self.assertEqual(e.count_samples(run), 155)
-        self.assertAlmostEqual(e.logz(run), -7.51364774014402, places=12)
-        self.assertAlmostEqual(e.param_mean(run), 0.2745325558109413,
+        self.assertEqual(run['output']['nlike'], 666)
+        self.assertEqual(e.count_samples(run), 146)
+        self.assertAlmostEqual(e.logz(run), -7.486929584611977, places=12)
+        self.assertAlmostEqual(e.param_mean(run), -0.026106208699393615,
                                places=12)
 
     def test_dynamic_param(self):
@@ -79,29 +77,26 @@ class TestRunDyPolyChord(unittest.TestCase):
         self.settings.file_root = 'test_dg' + str(dynamic_goal)
         dyPolyChord.run_dypolychord(
             self.settings, self.likelihood, self.prior, self.ndims,
-            dynamic_goal=dynamic_goal, ninit=self.ninit,
-            dyn_nlive_step=self.dyn_nlive_step, print_time=True)
+            dynamic_goal=dynamic_goal, ninit=self.ninit, print_time=True)
         run = dyPolyChord.output_processing.process_dypolychord_run(
             self.settings.file_root, self.settings.base_dir,
             dynamic_goal=dynamic_goal)
-        self.assertEqual(run['output']['nlike'], 1348)
+        self.assertEqual(run['output']['nlike'], 1242)
         self.assertEqual(run['output']['resume_ndead'], 20)
         self.assertEqual(run['output']['resume_nlike'], 62)
-        self.assertAlmostEqual(-7.6566108848939685, e.logz(run), places=12)
-        self.assertAlmostEqual(0.20262461334272378, e.param_mean(run),
+        self.assertAlmostEqual(e.logz(run), -7.9485462568513565, places=12)
+        self.assertAlmostEqual(e.param_mean(run), 0.23213733118755056,
                                places=12)
 
     def test_run_dypolychord_unexpected_kwargs(self):
         self.assertRaises(
             TypeError, dyPolyChord.run_dypolychord,
             self.settings, self.likelihood, self.prior, self.ndims,
-            dynamic_goal=1, ninit=self.ninit,
-            dyn_nlive_step=self.dyn_nlive_step, unexpected=1)
+            dynamic_goal=1, ninit=self.ninit, unexpected=1)
         self.assertRaises(
             TypeError, dyPolyChord.run_dypolychord,
             self.settings, self.likelihood, self.prior, self.ndims,
-            dynamic_goal=0, ninit=self.ninit,
-            dyn_nlive_step=self.dyn_nlive_step, unexpected=1)
+            dynamic_goal=0, ninit=self.ninit, unexpected=1)
 
 
 class TestOutputProcessing(unittest.TestCase):
@@ -109,14 +104,14 @@ class TestOutputProcessing(unittest.TestCase):
     def test_settings_root(self):
         root = dyPolyChord.output_processing.settings_root(
             'gaussian', 'uniform', 2, prior_scale=1, dynamic_goal=1,
-            nlive_const=1, ninit=1, nrepeats=1, dyn_nlive_step=1, init_step=1)
+            nlive_const=1, ninit=1, nrepeats=1, init_step=1)
         self.assertIsInstance(root, str)
 
     def test_settings_root_unexpected_kwarg(self):
         self.assertRaises(
             TypeError, dyPolyChord.output_processing.settings_root,
             'gaussian', 'uniform', 2, prior_scale=1, dynamic_goal=1,
-            nlive_const=1, ninit=1, nrepeats=1, dyn_nlive_step=1, init_step=1,
+            nlive_const=1, ninit=1, nrepeats=1, init_step=1,
             unexpected=1)
 
     def test_process_dypolychord_run_unexpected_kwarg(self):
