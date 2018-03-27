@@ -36,7 +36,7 @@ SETTINGS_KWARGS = {
     'precision_criterion': 0.001,
     'seed': 1,
     'base_dir': TEST_CACHE_DIR,
-    'nlive': 10,  # used for nlive_const
+    'nlive': 50,  # used for nlive_const
     'nlives': {}}
 
 
@@ -46,9 +46,9 @@ class TestRunDyPolyChord(unittest.TestCase):
         """Make a directory for saving test results."""
         assert not os.path.exists(TEST_CACHE_DIR), TEST_DIR_EXISTS_MSG
         self.ndims = 2
-        self.ninit = 5
+        self.ninit = 20
         self.likelihood = functools.partial(likelihoods.gaussian, sigma=1)
-        self.prior = functools.partial(priors.gaussian, prior_scale=10)
+        self.prior = functools.partial(priors.uniform, prior_scale=10)
         self.settings = PolyChordSettings(self.ndims, 0, **SETTINGS_KWARGS)
 
     def tearDown(self):
@@ -61,6 +61,7 @@ class TestRunDyPolyChord(unittest.TestCase):
     def test_dynamic_evidence(self):
         dynamic_goal = 0
         self.settings.file_root = 'test_' + str(dynamic_goal)
+        self.settings.seed = 1
         dyPolyChord.run_dypolychord(
             self.settings, self.likelihood, self.prior, self.ndims,
             init_step=self.ninit,
@@ -68,10 +69,10 @@ class TestRunDyPolyChord(unittest.TestCase):
         run = dyPolyChord.output_processing.process_dypolychord_run(
             self.settings.file_root, self.settings.base_dir,
             dynamic_goal=dynamic_goal)
-        self.assertEqual(run['output']['nlike'], 666)
-        self.assertEqual(e.count_samples(run), 146)
-        self.assertAlmostEqual(e.logz(run), -7.486929584611977, places=12)
-        self.assertAlmostEqual(e.param_mean(run), -0.026106208699393615,
+        self.assertEqual(run['output']['nlike'], 2789)
+        self.assertEqual(e.count_samples(run), 635)
+        self.assertAlmostEqual(e.logz(run), -5.930083999343032, places=12)
+        self.assertAlmostEqual(e.param_mean(run), 0.03862939316859601,
                                places=12)
         self.settings.max_ndead = 1
         self.assertRaises(
@@ -88,11 +89,11 @@ class TestRunDyPolyChord(unittest.TestCase):
         run = dyPolyChord.output_processing.process_dypolychord_run(
             self.settings.file_root, self.settings.base_dir,
             dynamic_goal=dynamic_goal)
-        self.assertEqual(run['output']['nlike'], 1242)
-        self.assertEqual(run['output']['resume_ndead'], 20)
-        self.assertEqual(run['output']['resume_nlike'], 62)
-        self.assertAlmostEqual(e.logz(run), -7.9485462568513565, places=12)
-        self.assertAlmostEqual(e.param_mean(run), 0.23213733118755056,
+        self.assertEqual(run['output']['nlike'], 3686)
+        self.assertEqual(run['output']['resume_ndead'], 40)
+        self.assertEqual(run['output']['resume_nlike'], 56)
+        self.assertAlmostEqual(e.logz(run), -6.422732658796067, places=12)
+        self.assertAlmostEqual(e.param_mean(run), 0.1282768769758982,
                                places=12)
 
     def test_run_dypolychord_unexpected_kwargs(self):

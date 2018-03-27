@@ -48,7 +48,8 @@ def process_dypolychord_run(file_root, base_dir, **kwargs):
         file_root + '_init', base_dir, logl_warn_only=logl_warn_only)
     dyn = nestcheck.data_processing.process_polychord_run(
         file_root + '_dyn', base_dir, logl_warn_only=logl_warn_only)
-    assert np.all(init['thread_min_max'][:, 0] == -np.inf)
+    assert np.all(init['thread_min_max'][:, 0] == -np.inf), (
+        str(init['thread_min_max']))
     if dynamic_goal == 0:
         # If dynamic_goal == 0, dyn was not resumed part way through init
         # and we can simply combine dyn and init using standard nestcheck
@@ -56,7 +57,9 @@ def process_dypolychord_run(file_root, base_dir, **kwargs):
         run = ar.combine_ns_runs([init, dyn])
         run['output'] = {'nlike': (init['output']['nlike'] +
                                    dyn['output']['nlike'])}
-        assert np.all(run['thread_min_max'][:, 0] == -np.inf)
+        assert np.all(run['thread_min_max'][:, 0] == -np.inf), (
+            str(run['thread_min_max']) + '\n' +
+            str(np.all(run['thread_min_max'][:, 0] == -np.inf)))
     elif dynamic_goal == 1:
         # If dynamic_goal == 1, dyn was resumed part way through init and we
         # need to remove duplicate points from the combined run

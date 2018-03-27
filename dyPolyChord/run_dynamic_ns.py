@@ -69,7 +69,7 @@ def run_dypolychord_evidence(pc_settings_in, likelihood, prior, ndims,
     # and clustering - the number of live points is controlled by
     # pc_settings.nlives
     pc_settings.seed += 100
-    pc_settings.nlive = ninit
+    pc_settings.nlive = min(ninit, max(nlives_dict.values()))
     pc_settings.read_resume = True
     pc_settings.max_ndead = pc_settings_in.max_ndead
     PyPolyChord.run_polychord(likelihood, ndims, nderived, pc_settings, prior)
@@ -90,7 +90,8 @@ def nlive_allocation(pc_settings_in, ninit, nlive_const, dynamic_goal,
     """
     nodd = (ninit // 2) * 2 + 1  # round ninit up to nearest odd number
     smoothing_filter = kwargs.pop(
-        'smoothing_filter', lambda x: scipy.signal.savgol_filter(x, nodd, 3))
+        'smoothing_filter',
+        lambda x: scipy.signal.savgol_filter(x, nodd, 3, mode='nearest'))
     assert dynamic_goal in [0, 1]
     init_run = nestcheck.data_processing.process_polychord_run(
         pc_settings_in.file_root + '_init', pc_settings_in.base_dir)
@@ -122,6 +123,7 @@ def nlive_allocation(pc_settings_in, ninit, nlive_const, dynamic_goal,
         nlives_array[:peak_start_ind] = ninit
         nlives_dict = {-1e100: ninit}
     elif dynamic_goal == 0:
+        assert nlives_array.max() == nlives_array[0]
         nlives_dict = {-1e100: int(nlives_array.max())}
     nlives_dict[init_run['logl'][0]] = int(nlives_array[0])
     # get nlives dict
