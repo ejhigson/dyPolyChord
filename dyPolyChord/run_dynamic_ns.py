@@ -92,6 +92,8 @@ def nlive_allocation(pc_settings_in, ninit, nlive_const, dynamic_goal,
     smoothing_filter = kwargs.pop(
         'smoothing_filter',
         lambda x: scipy.signal.savgol_filter(x, nodd, 3, mode='nearest'))
+    if kwargs:
+        raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
     assert dynamic_goal in [0, 1]
     init_run = nestcheck.data_processing.process_polychord_run(
         pc_settings_in.file_root + '_init', pc_settings_in.base_dir)
