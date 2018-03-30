@@ -80,6 +80,12 @@ def run_dypolychord_evidence(pc_settings_in, likelihood, prior, ndims,
     # pc_settings.max_ndead = pc_settings_in.max_ndead
     # PyPolyChord.run_polychord(likelihood, ndims, nderived, pc_settings, prior)
     # ######################################################
+    # Save info about the dynamic run
+    dyn_info = {'nlives': pc_settings.nlives}
+    iou.pickle_save(dyn_info,
+                    (pc_settings_in.base_dir + '/' +
+                     pc_settings_in.file_root + '_dyn_info'),
+                    overwrite_existing=True)
     if print_time:
         end_time = time.time()
         print('#############################################')
