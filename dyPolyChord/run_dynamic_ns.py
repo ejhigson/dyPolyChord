@@ -61,18 +61,25 @@ def run_dypolychord_evidence(pc_settings_in, likelihood, prior, ndims,
     # first few steps then resume with pc_settings.nlive changed
     pc_settings.seed += 100
     pc_settings.nlive = max(nlives_dict.values())
-    pc_settings.max_ndead = pc_settings.nlive
-    pc_settings.write_resume = True
-    pc_settings.read_resume = False
+    # ######################################################
+    # Commented out save and load due for now to memory leak
+    # replaced with below line
+    # ######################################################
     PyPolyChord.run_polychord(likelihood, ndims, nderived, pc_settings, prior)
-    # Now load with pc_settings.nlive = ninit. This is just for resume writing
-    # and clustering - the number of live points is controlled by
-    # pc_settings.nlives
-    pc_settings.seed += 100
-    pc_settings.nlive = min(ninit, max(nlives_dict.values()))
-    pc_settings.read_resume = True
-    pc_settings.max_ndead = pc_settings_in.max_ndead
-    PyPolyChord.run_polychord(likelihood, ndims, nderived, pc_settings, prior)
+    # ######################################################
+    # pc_settings.max_ndead = pc_settings.nlive
+    # pc_settings.write_resume = True
+    # pc_settings.read_resume = False
+    # PyPolyChord.run_polychord(likelihood, ndims, nderived, pc_settings, prior)
+    # # Now load with pc_settings.nlive = ninit. This is just for resume writing
+    # # and clustering - the number of live points is controlled by
+    # # pc_settings.nlives
+    # pc_settings.seed += 100
+    # pc_settings.nlive = min(ninit, max(nlives_dict.values()))
+    # pc_settings.read_resume = True
+    # pc_settings.max_ndead = pc_settings_in.max_ndead
+    # PyPolyChord.run_polychord(likelihood, ndims, nderived, pc_settings, prior)
+    # ######################################################
     if print_time:
         end_time = time.time()
         print('#############################################')
