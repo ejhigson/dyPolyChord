@@ -55,6 +55,20 @@ def process_dypolychord_run(file_root, base_dir, **kwargs):
         # and we can simply combine dyn and init using standard nestcheck
         # functions
         run = ar.combine_ns_runs([init, dyn])
+        # Test nlive is decreasing (cannot check
+        # np.all(run['thread_min_max'][:, 0] == -np.inf)
+        # as clustering means this may not be true for multimodal likelihoods)
+        # # assert np.all(run['thread_min_max'][:, 0] == -np.inf), (
+        # If not np.all(run['thread_min_max'][:, 0] == -np.inf):
+        #     print(
+        #         str((run['thread_min_max'][:, 0] != -np.inf).sum()) + ' / ' +
+        #         str(run['thread_min_max'].shape[0]) + ' threads dont start at ' +
+        #         '-np.inf. They have thread_min_max values: ' +
+        #         str(run['thread_min_max']
+        #             [np.where(run['thread_min_max'][:, 0] != -np.inf)[0], :]))
+        assert np.all(np.diff(run['nlive_array']) <= 0), (
+            'nlive should only decrease for evidence targeting ns! ' +
+            'nlive=' + str(run['nlive_array']))
         try:
             dyn_info = iou.pickle_load(base_dir + '/' + file_root + '_dyn_info')
             run['output'] = dyn_info
@@ -63,14 +77,6 @@ def process_dypolychord_run(file_root, base_dir, **kwargs):
         except OSError:
             run['output'] = {'nlike': (init['output']['nlike'] +
                                        dyn['output']['nlike'])}
-        # assert np.all(run['thread_min_max'][:, 0] == -np.inf), (
-        if not np.all(run['thread_min_max'][:, 0] == -np.inf):
-            print(
-                str((run['thread_min_max'][:, 0] != -np.inf).sum()) + ' / ' +
-                str(run['thread_min_max'].shape[0]) + ' threads dont start at ' +
-                '-np.inf. They have thread_min_max values: ' +
-                str(run['thread_min_max']
-                    [np.where(run['thread_min_max'][:, 0] != -np.inf)[0], :]))
     elif dynamic_goal == 1:
         # If dynamic_goal == 1, dyn was resumed part way through init and we
         # need to remove duplicate points from the combined run
