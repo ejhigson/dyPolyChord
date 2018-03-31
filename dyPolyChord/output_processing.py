@@ -80,8 +80,8 @@ def process_dypolychord_run(file_root, base_dir, **kwargs):
     elif dynamic_goal == 1:
         # If dynamic_goal == 1, dyn was resumed part way through init and we
         # need to remove duplicate points from the combined run
-        run = combine_resumed_dyn_run(init, dyn, dyn_info['resume_ndead'])
         dyn_info = iou.pickle_load(base_dir + '/' + file_root + '_dyn_info')
+        run = combine_resumed_dyn_run(init, dyn, dyn_info['resume_ndead'])
         run['output'] = dyn_info
         run['output']['nlike'] = (init['output']['nlike'] +
                                   dyn['output']['nlike'] -
