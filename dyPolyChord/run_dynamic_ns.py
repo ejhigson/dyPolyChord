@@ -200,13 +200,12 @@ def nlive_allocation(pc_settings_in, ninit, nlive_const, dynamic_goal,
     Loads initial run and calculates an allocation of life points for dynamic
     run.
     """
-    nodd = (ninit // 2) * 2 + 1  # round ninit up to nearest odd number
-    smoothing_filter = kwargs.pop(
-        'smoothing_filter',
-        lambda x: scipy.signal.savgol_filter(x, nodd, 3, mode='nearest'))
+    assert dynamic_goal in [0, 1]
+    default_smoothing = (lambda x: scipy.signal.savgol_filter(
+        x, 1 + (2 * ninit), 3, mode='nearest'))
+    smoothing_filter = kwargs.pop('smoothing_filter', default_smoothing)
     if kwargs:
         raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
-    assert dynamic_goal in [0, 1]
     init_run = nestcheck.data_processing.process_polychord_run(
         pc_settings_in.file_root + '_init', pc_settings_in.base_dir)
     logx_init = ar.get_logx(init_run['nlive_array'])
@@ -230,7 +229,7 @@ def nlive_allocation(pc_settings_in, ninit, nlive_const, dynamic_goal,
     nlives_unsmoothed = imp * samp_remain
     # Smooth and round nlive
     if smoothing_filter is not None:
-        # Perform smoothing *before* rounding nlives_unsmoothed
+        # Perform smoothing *before* rounding to nearest integer
         nlives = np.rint(smoothing_filter(nlives_unsmoothed))
     else:
         nlives = np.rint(nlives_unsmoothed)
@@ -248,11 +247,15 @@ def nlive_allocation(pc_settings_in, ninit, nlive_const, dynamic_goal,
                                   np.where(np.diff(nlives) != 0)[0] + 1))
     # ################################################
     # Perform some checks
+    assert np.all(np.diff(init_run['logl']) > 0)
     assert (count_turning_points(nlives) ==
             count_turning_points(nlives[inds_to_use]))
     if dynamic_goal == 0:
         assert nlives[0] == nlives.max()
-        assert np.all(np.diff(nlives) < 0), (
+        assert np.all(np.diff(nlives) <= 0), (
+            'When targeting evidence, nlive should monotincally decrease!'
+            + ' nlives = ' + str(nlives))
+        assert np.all(np.diff(nlives[inds_to_use]) < 0), (
             'When targeting evidence, nlive should monotincally decrease!'
             + ' nlives = ' + str(nlives))
     elif dynamic_goal == 1:
@@ -266,7 +269,7 @@ def nlive_allocation(pc_settings_in, ninit, nlive_const, dynamic_goal,
         print(msg)
     # ################################################
     # Check logl = approx -inf is mapped to the starting number of live points
-    nlives_dict = {-1e100: nlives[0]}
+    nlives_dict = {-1.e100: int(nlives[0])}
     for ind in inds_to_use:
         nlives_dict[init_run['logl'][ind]] = int(nlives[ind])
     # Store the nlive allocations for dyn_info
