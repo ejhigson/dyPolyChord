@@ -50,6 +50,10 @@ class TestRunDyPolyChord(unittest.TestCase):
         self.likelihood = functools.partial(likelihoods.gaussian, sigma=1)
         self.prior = functools.partial(priors.uniform, prior_scale=10)
         self.settings = PolyChordSettings(self.ndims, 0, **SETTINGS_KWARGS)
+        self.random_seed_msg = (
+            'This test is not affected by most of dyPolyChord, so if it fails '
+            'your PolyChord install\'s random seed number generator is '
+            'probably different to the one used to set the expected values.')
 
     def tearDown(self):
         """Remove any caches saved by the tests."""
@@ -68,16 +72,14 @@ class TestRunDyPolyChord(unittest.TestCase):
             dynamic_goal=dynamic_goal, ninit=self.ninit, print_time=True)
         run = dyPolyChord.output_processing.process_dypolychord_run(
             self.settings.file_root, self.settings.base_dir,
-            dynamic_goal=dynamic_goal)
-        self.assertEqual(run['output']['nlike'], 2789)
-        self.assertEqual(e.count_samples(run), 635)
-        self.assertAlmostEqual(e.logz(run), -5.930083999343032, places=12)
-        self.assertAlmostEqual(e.param_mean(run), 0.03862939316859601,
+            dynamic_goal=dynamic_goal, evidence_check_nlive=True)
+        self.assertEqual(run['logl'][0], -89.9267531982664,
+                         msg=self.random_seed_msg)
+        self.assertEqual(run['output']['nlike'], 2682)
+        self.assertEqual(e.count_samples(run), 619)
+        self.assertAlmostEqual(e.logz(run), -6.032431451312453, places=12)
+        self.assertAlmostEqual(e.param_mean(run), 0.0017177429597278412,
                                places=12)
-        self.settings.max_ndead = 1
-        self.assertRaises(
-            AssertionError, dyPolyChord.run_dynamic_ns.nlive_allocation,
-            self.settings, self.ninit, self.settings.nlive, dynamic_goal)
 
     def test_dynamic_param(self):
         dynamic_goal = 1
@@ -89,12 +91,32 @@ class TestRunDyPolyChord(unittest.TestCase):
         run = dyPolyChord.output_processing.process_dypolychord_run(
             self.settings.file_root, self.settings.base_dir,
             dynamic_goal=dynamic_goal)
-        self.assertEqual(run['output']['nlike'], 3686)
+        self.assertEqual(run['logl'][0], -73.2283115991452,
+                         msg=self.random_seed_msg)
+        self.assertEqual(run['output']['nlike'], 3681)
         self.assertEqual(run['output']['resume_ndead'], 40)
         self.assertEqual(run['output']['resume_nlike'], 56)
-        self.assertAlmostEqual(e.logz(run), -6.422732658796067, places=12)
-        self.assertAlmostEqual(e.param_mean(run), 0.1282768769758982,
+        self.assertAlmostEqual(e.logz(run), -6.576638644810947, places=12)
+        self.assertAlmostEqual(e.param_mean(run), 0.1835618129038787,
                                places=12)
+        # test nlive allocation before tearDown removes the runs
+        dyn_info = dyPolyChord.run_dynamic_ns.nlive_allocation(
+            self.settings, self.ninit, self.settings.nlive, dynamic_goal,
+            smoothing_filter=None)
+        numpy.testing.assert_array_equal(
+            dyn_info['init_nlive_allocation'],
+            dyn_info['init_nlive_allocation_unsmoothed'])
+        # Check turning off filter
+        self.assertRaises(
+            TypeError, dyPolyChord.run_dynamic_ns.nlive_allocation,
+            self.settings, self.ninit, self.settings.nlive, dynamic_goal,
+            unexpected=1)
+        # Check no points remaining message
+        self.settings.max_ndead = 1
+        # Check unexpected kwargs
+        self.assertRaises(
+            AssertionError, dyPolyChord.run_dynamic_ns.nlive_allocation,
+            self.settings, self.ninit, self.settings.nlive, dynamic_goal)
 
     def test_run_dypolychord_unexpected_kwargs(self):
         self.assertRaises(
