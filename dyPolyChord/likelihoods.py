@@ -16,20 +16,17 @@ def gaussian(theta, sigma=0.5, n_derived=0):
     return logl, phi
 
 
-def gaussian_mix(theta, n_derived=0, sep=4, weights=(0.1, 0.2, 0.3, 0.4)):
+def gaussian_mix(theta, n_derived=0, sep=4, weights=(0.4, 0.3, 0.2, 0.1)):
     """Gaussian mixture model."""
     assert len(weights) in [2, 3, 4], (
         'So far only set up for 2, 3 or 4 components. Weights=' + str(weights))
-    assert sum(weights) == 1, 'Weights must sum to 1! Weights=' + str(weights)
+    assert np.isclose(sum(weights), 1), (
+        'Weights must sum to 1! Weights=' + str(weights))
     sigmas = [1] * len(weights)
-    positions = [(sep, 0), (-sep, 0)]
-    if len(weights) >= 3:
-        positions.append((0, sep))
-    if len(weights) >= 4:
-        positions.append((0, -sep))
+    positions = [(0, sep), (0, -sep), (sep, 0), (-sep, 0)][:len(weights)]
     thetas = []
     for pos in positions:
-        thetas.append([theta[0] + pos[0], theta[1] + pos[1]] + theta[2:])
+        thetas.append([theta[0] - pos[0], theta[1] - pos[1]] + theta[2:])
     logls = [(gaussian(thetas[i], sigmas[i])[0] + np.log(weights[i]))
              for i in range(len(weights))]
     logl = scipy.special.logsumexp(logls)
