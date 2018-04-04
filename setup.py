@@ -22,7 +22,7 @@ setuptools.setup(name='dyPolyChord',
                  install_requires=['numpy>=1.13',
                                    'scipy>=1.0.0',
                                    'nestcheck',
-                                   'PyPolyChord>=1.12'],
+                                   'PyPolyChord>=1.13'],
                  test_suite='nose.collector',
                  tests_require=['nose'],
                  packages=['dyPolyChord'])
