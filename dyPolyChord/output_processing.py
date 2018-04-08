@@ -39,7 +39,6 @@ def process_dypolychord_run(file_root, base_dir, **kwargs):
     """
     dynamic_goal = kwargs.pop('dynamic_goal')
     logl_warn_only = kwargs.pop('logl_warn_only', False)
-    evidence_check_nlive = kwargs.pop('evidence_check_nlive', False)
     if kwargs:
         raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
     assert dynamic_goal in [0, 1], (
@@ -53,40 +52,15 @@ def process_dypolychord_run(file_root, base_dir, **kwargs):
         file_root + '_dyn', base_dir, logl_warn_only=logl_warn_only)
     dyn_info = iou.pickle_load(base_dir + '/' + file_root + '_dyn_info')
     if dynamic_goal == 0:
-        assert np.all(np.diff(dyn_info['init_nlive_allocation'])) <= 0
-        dyn_info['nlike'] = init['output']['nlike'] + dyn['output']['nlike']
-        # If dynamic_goal == 0, dyn was not resumed part way through init
-        # and we can simply combine dyn and init using standard nestcheck
-        # functions
+        # If dynamic_goal == 0 nlive only decreases, so check all threads
+        # start by sampling
+        assert np.all(dyn['thread_min_max'][:, 0] == -np.inf), (
+            str(dyn['thread_min_max']))
+        # If dynamic_goal == 0, dyn was not resumed part way through init:
+        # hence there are no samples repeated in both runs' files and we can
+        # simply combine dyn and init using standard nestcheck functions.
         run = ar.combine_ns_runs([init, dyn])
-        # ###################################################################
-        # We expect the number of live points to only decrease for evidence -
-        # if specified, do some tests for this.
-        if evidence_check_nlive:
-            # Test nlive is decreasing (cannot check
-            # np.all(run['thread_min_max'][:, 0] == -np.inf)
-            # as clustering means this may not be true for multimodal likelihoods)
-            # # assert np.all(run['thread_min_max'][:, 0] == -np.inf), (
-            # If not np.all(run['thread_min_max'][:, 0] == -np.inf):
-            #     print(
-            #         str((run['thread_min_max'][:, 0] != -np.inf).sum()) + ' / ' +
-            #         str(run['thread_min_max'].shape[0]) + ' threads dont start at ' +
-            #         '-np.inf. They have thread_min_max values: ' +
-            #         str(run['thread_min_max']
-            #             [np.where(run['thread_min_max'][:, 0] != -np.inf)[0], :]))
-            try:
-                assert np.all(np.diff(run['nlive_array']) <= 0), (
-                    'nlive should only decrease for evidence targeting ns!')
-            except AssertionError as err:
-                inds = np.where(np.diff(run['nlive_array']) > 0)[0]
-                err.args += (
-                    '# occurances=' + str(inds.shape[0]),
-                    'nlive=' + str(run['nlive_array'][inds]),
-                    'logl=' + str(run['logl'][inds]),
-                    (run['thread_min_max']
-                     [np.where(run['thread_min_max'][:, 0] != -np.inf)[0], :],))
-                raise
-        # ###################################################################
+        dyn_info['nlike'] = init['output']['nlike'] + dyn['output']['nlike']
     elif dynamic_goal == 1:
         # If dynamic_goal == 1, dyn was resumed part way through init and we
         # need to remove duplicate points from the combined run
@@ -109,9 +83,11 @@ def combine_resumed_dyn_run(init, dyn, resume_ndead):
     """
     Process dynamic nested sampling run including both initial exploratory run
     and second dynamic run.
+
+    This function is used to remove duplicate points which are in both the dyn
+    and init output files: these are the dead and live points present at the
+    step at which dyn was resumed from init.
     """
-    # Remove the first resume_ndead points which are in both dyn and init from
-    # init
     assert np.array_equal(init['logl'][:resume_ndead],
                           dyn['logl'][:resume_ndead])
     init['theta'] = init['theta'][resume_ndead:, :]

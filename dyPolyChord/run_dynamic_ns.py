@@ -137,15 +137,15 @@ def run_dypolychord_param(pc_settings_in, likelihood, prior, ndims, **kwargs):
         # store run outputs for use getting nlike
         run_outputs_at_resumes[output.ndead] = output
         step_ndead.append(output.ndead - pc_settings.nlive)
+        if len(step_ndead) >= 2:
+            if step_ndead[-1] == step_ndead[-2]:
+                break
         # store resume file in new file path
         shutil.copyfile(pc_settings.base_dir + '/' +
                         pc_settings.file_root + '.resume',
                         pc_settings.base_dir + '/' +
                         pc_settings.file_root +
                         '_' + str(step_ndead[-1]) + '.resume')
-        if len(step_ndead) >= 2:
-            if step_ndead[-1] <= step_ndead[-2] + 1:
-                add_points = False
     # Step 2: calculate an allocation of live points
     # ----------------------------------------------
     # calculate a distribution of nlive points in proportion to w_rel
@@ -160,8 +160,9 @@ def run_dypolychord_param(pc_settings_in, likelihood, prior, ndims, **kwargs):
                     '_init_' + str(resume_ndead) + '.resume',
                     pc_settings_in.base_dir + '/' +
                     pc_settings_in.file_root + '_dyn.resume')
-    # Remove all the temporary resume files
-    for snd in step_ndead:
+    # Remove all the temporary resume files. Use set to avoid duplicates as
+    # these cause OSErrors.
+    for snd in set(step_ndead):
         os.remove(pc_settings_in.base_dir + '/' +
                   pc_settings_in.file_root +
                   '_init_' + str(snd) + '.resume')

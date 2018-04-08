@@ -33,7 +33,11 @@ SETTINGS_KWARGS = {
     'num_repeats': 1,
     'feedback': -1,
     'cluster_posteriors': False,
-    'precision_criterion': 0.001,
+    # Set precision_criterion low to avoid non-deterministic likelihood errors.
+    # These occur due in the low dimension and low and nlive cases we use for
+    # fast testing as runs sometimes get very close to the peak where the
+    # likelihood becomes approximately constant.
+    'precision_criterion': 0.01,
     'seed': 1,
     'base_dir': TEST_CACHE_DIR,
     'nlive': 50,  # used for nlive_const
@@ -72,13 +76,12 @@ class TestRunDyPolyChord(unittest.TestCase):
             dynamic_goal=dynamic_goal, ninit=self.ninit, print_time=True)
         run = dyPolyChord.output_processing.process_dypolychord_run(
             self.settings.file_root, self.settings.base_dir,
-            dynamic_goal=dynamic_goal, evidence_check_nlive=True)
+            dynamic_goal=dynamic_goal)
         self.assertEqual(run['logl'][0], -89.9267531982664,
                          msg=self.random_seed_msg)
-        self.assertEqual(run['output']['nlike'], 2682)
-        self.assertEqual(e.count_samples(run), 619)
-        self.assertAlmostEqual(e.logz(run), -6.032431451312453, places=12)
-        self.assertAlmostEqual(e.param_mean(run), 0.0017177429597278412,
+        self.assertEqual(e.count_samples(run), 470)
+        self.assertAlmostEqual(e.logz(run), -5.99813424487512, places=12)
+        self.assertAlmostEqual(e.param_mean(run), -0.011725372420821929,
                                places=12)
 
     def test_dynamic_param(self):
@@ -93,11 +96,10 @@ class TestRunDyPolyChord(unittest.TestCase):
             dynamic_goal=dynamic_goal)
         self.assertEqual(run['logl'][0], -73.2283115991452,
                          msg=self.random_seed_msg)
-        self.assertEqual(run['output']['nlike'], 3681)
         self.assertEqual(run['output']['resume_ndead'], 40)
-        self.assertEqual(run['output']['resume_nlike'], 56)
-        self.assertAlmostEqual(e.logz(run), -6.576638644810947, places=12)
-        self.assertAlmostEqual(e.param_mean(run), 0.1835618129038787,
+        self.assertEqual(run['output']['resume_nlike'], 85)
+        self.assertAlmostEqual(e.logz(run), -6.150334026130597, places=12)
+        self.assertAlmostEqual(e.param_mean(run), 0.1054356767020377,
                                places=12)
         # test nlive allocation before tearDown removes the runs
         dyn_info = dyPolyChord.run_dynamic_ns.nlive_allocation(
