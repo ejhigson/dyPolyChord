@@ -144,7 +144,7 @@ def run_dypolychord_param(pc_settings_in, likelihood, prior, ndims, **kwargs):
                         pc_settings.file_root +
                         '_' + str(step_ndead[-1]) + '.resume')
         if len(step_ndead) >= 2:
-            if step_ndead[-1] == step_ndead[-2] + 1:
+            if step_ndead[-1] <= step_ndead[-2] + 1:
                 add_points = False
     # Step 2: calculate an allocation of live points
     # ----------------------------------------------
