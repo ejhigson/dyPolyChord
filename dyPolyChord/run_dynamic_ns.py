@@ -12,7 +12,8 @@ import numpy as np
 import scipy.signal
 import PyPolyChord
 import nestcheck.io_utils as iou
-import nestcheck.analyse_run as ar
+import nestcheck.plots
+import nestcheck.ns_run_utils
 import nestcheck.data_processing
 
 
@@ -61,25 +62,7 @@ def run_dypolychord_evidence(pc_settings_in, likelihood, prior, ndims,
     # first few steps then resume with pc_settings.nlive changed
     pc_settings.seed += 100
     pc_settings.nlive = max(dyn_info['nlives_dict'].values())
-    # ######################################################
-    # Commented out save and load due for now to memory leak
-    # replaced with below line
-    # ######################################################
     PyPolyChord.run_polychord(likelihood, ndims, nderived, pc_settings, prior)
-    # ######################################################
-    # pc_settings.max_ndead = pc_settings.nlive
-    # pc_settings.write_resume = True
-    # pc_settings.read_resume = False
-    # PyPolyChord.run_polychord(likelihood, ndims, nderived, pc_settings, prior)
-    # # Now load with pc_settings.nlive = ninit. This is just for resume writing
-    # # and clustering - the number of live points is controlled by
-    # # pc_settings.nlives
-    # pc_settings.seed += 100
-    # pc_settings.nlive = min(ninit, max(nlives_dict.values()))
-    # pc_settings.read_resume = True
-    # pc_settings.max_ndead = pc_settings_in.max_ndead
-    # PyPolyChord.run_polychord(likelihood, ndims, nderived, pc_settings, prior)
-    # ######################################################
     # Save info about the dynamic run
     iou.pickle_save(dyn_info,
                     (pc_settings_in.base_dir + '/' +
@@ -209,8 +192,8 @@ def nlive_allocation(pc_settings_in, ninit, nlive_const, dynamic_goal,
         raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
     init_run = nestcheck.data_processing.process_polychord_run(
         pc_settings_in.file_root + '_init', pc_settings_in.base_dir)
-    logx_init = ar.get_logx(init_run['nlive_array'])
-    w_rel = ar.rel_posterior_mass(logx_init, init_run['logl'])
+    logx_init = nestcheck.ns_run_utils.get_logx(init_run['nlive_array'])
+    w_rel = nestcheck.plots.rel_posterior_mass(logx_init, init_run['logl'])
     # Calculate the importance of each point
     if dynamic_goal == 0:
         imp = np.cumsum(w_rel)

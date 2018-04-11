@@ -3,7 +3,7 @@
 Functions for loading and processing dynamic runs.
 """
 import numpy as np
-import nestcheck.analyse_run as ar
+import nestcheck.ns_run_utils
 import nestcheck.data_processing
 import nestcheck.io_utils as iou
 
@@ -59,7 +59,7 @@ def process_dypolychord_run(file_root, base_dir, **kwargs):
         # If dynamic_goal == 0, dyn was not resumed part way through init:
         # hence there are no samples repeated in both runs' files and we can
         # simply combine dyn and init using standard nestcheck functions.
-        run = ar.combine_ns_runs([init, dyn])
+        run = nestcheck.ns_run_utils.combine_ns_runs([init, dyn])
         dyn_info['nlike'] = init['output']['nlike'] + dyn['output']['nlike']
     elif dynamic_goal == 1:
         # If dynamic_goal == 1, dyn was resumed part way through init and we
@@ -128,7 +128,8 @@ def combine_resumed_dyn_run(init, dyn, resume_ndead):
     # Add the init threads to dyn with new labels that continue on from the dyn
     # labels
     init['thread_labels'] += dyn['thread_min_max'].shape[0]
-    run = ar.combine_threads(ar.get_run_threads(dyn) +
-                             ar.get_run_threads(init),
-                             assert_birth_point=True)
+    run = nestcheck.ns_run_utils.combine_threads(
+        nestcheck.ns_run_utils.get_run_threads(dyn) +
+        nestcheck.ns_run_utils.get_run_threads(init),
+        assert_birth_point=True)
     return run
