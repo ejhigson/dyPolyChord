@@ -7,12 +7,116 @@ import scipy.special
 
 
 def gaussian(theta, sigma=0.5, n_derived=0):
-    """ Simple Gaussian Likelihood centered on the origin."""
+    """
+    Symmetric Gaussian log-likelihood centered on the origin.
+
+    Parameters
+    ----------
+    theta: list of floats
+        Parameters.
+    sigma: float, optional
+        Standard deviation of Gaussian (the same for each parameter).
+    phi: int, optional
+        Number of derived parameters.
+
+    Returns
+    -------
+    logl: float
+        Log-likelihood.
+    phi: list of floats
+        Values of any derived parameters.
+    """
     phi = [0.0] * n_derived
     dim = len(theta)
     rad2 = sum([t ** 2 for t in theta])
     logl = -np.log(2 * np.pi * (sigma ** 2)) * dim / 2.0
     logl += -rad2 / (2 * sigma ** 2)
+    return logl, phi
+
+
+def gaussian_shell(theta, sigma=0.2, rshell=2, n_derived=0):
+    """
+    Gaussian Shell log-likelihood.
+
+    Parameters
+    ----------
+    theta: list of floats
+        Parameters.
+    sigma: float, optional
+        Standard deviation of shell.
+    rshell: float, optional
+        Distance of shell peak from origin.
+    phi: int, optional
+        Number of derived parameters.
+
+    Returns
+    -------
+    logl: float
+        Log-likelihood.
+    phi: list of floats
+        Values of any derived parameters.
+    """
+    phi = [0.0] * n_derived
+    rad = np.sqrt(sum([t ** 2 for t in theta]))
+    logl = - ((rad - rshell) ** 2) / (2 * sigma ** 2)
+    return logl, phi
+
+
+def rastrigin(theta, A=10, n_derived=0):
+    """
+    Rastrigin log-likelihood as described in the PolyChord paper
+
+    Parameters
+    ----------
+    theta: list of floats
+        Parameters.
+    A: float, optional
+    phi: int, optional
+        Number of derived parameters.
+
+    Returns
+    -------
+    logl: float
+        Log-likelihood.
+    phi: list of floats
+        Values of any derived parameters.
+    """
+    phi = [0.0] * n_derived
+    dim = len(theta)
+    ftheta = A * dim
+    for th in theta:
+        ftheta += (th ** 2) - A * np.cos(2 * np.pi * th)
+    logl = -ftheta
+    return logl, phi
+
+
+def rosenbrock(theta, a=1, b=100, n_derived=0):
+    """
+    Rosenbrock log-likelihood as described in the PolyChord paper.
+
+    Parameters
+    ----------
+    theta: list of floats
+        Parameters.
+    a: float, optional
+    b: float, optional
+    phi: int, optional
+        Number of derived parameters.
+
+    Returns
+    -------
+    logl: float
+        Log-likelihood.
+    phi: list of floats
+        Values of any derived parameters.
+    """
+    phi = [0.0] * n_derived
+    dim = len(theta)
+    ftheta = 0
+    for i in range(dim - 1):
+        ftheta += (a - theta[i]) ** 2
+        ftheta += b * ((theta[i + 1] - (theta[i] ** 2)) ** 2)
+    logl = -ftheta
     return logl, phi
 
 
@@ -31,35 +135,4 @@ def gaussian_mix(theta, n_derived=0, sep=4, weights=(0.4, 0.3, 0.2, 0.1)):
              for i in range(len(weights))]
     logl = scipy.special.logsumexp(logls)
     phi = [0.0] * n_derived
-    return logl, phi
-
-
-def gaussian_shell(theta, sigma=0.2, rshell=2, n_derived=0):
-    """Gaussian Shell likelihood."""
-    phi = [0.0] * n_derived
-    rad = np.sqrt(sum([t ** 2 for t in theta]))
-    logl = - ((rad - rshell) ** 2) / (2 * sigma ** 2)
-    return logl, phi
-
-
-def rastrigin(theta, n_derived=0, A=10):
-    """Rastrigin Likelihood as described in the PolyChord paper"""
-    phi = [0.0] * n_derived
-    dim = len(theta)
-    ftheta = A * dim
-    for th in theta:
-        ftheta += (th ** 2) - A * np.cos(2 * np.pi * th)
-    logl = -ftheta
-    return logl, phi
-
-
-def rosenbrock(theta, n_derived=0, a=1, b=100):
-    """Rosenbrock Likelihood as described in the PolyChord paper."""
-    phi = [0.0] * n_derived
-    dim = len(theta)
-    ftheta = 0
-    for i in range(dim - 1):
-        ftheta += (a - theta[i]) ** 2
-        ftheta += b * ((theta[i + 1] - (theta[i] ** 2)) ** 2)
-    logl = -ftheta
     return logl, phi
