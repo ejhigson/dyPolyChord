@@ -102,7 +102,7 @@ class TestRunDyPolyChord(unittest.TestCase):
         self.assertAlmostEqual(e.param_mean(run), 0.1054356767020377,
                                places=12)
         # test nlive allocation before tearDown removes the runs
-        dyn_info = dyPolyChord.run_dynamic_ns.nlive_allocation(
+        dyn_info = dyPolyChord.nlive_allocation.allocate(
             self.settings, self.ninit, self.settings.nlive, dynamic_goal,
             smoothing_filter=None)
         numpy.testing.assert_array_equal(
@@ -110,14 +110,14 @@ class TestRunDyPolyChord(unittest.TestCase):
             dyn_info['init_nlive_allocation_unsmoothed'])
         # Check turning off filter
         self.assertRaises(
-            TypeError, dyPolyChord.run_dynamic_ns.nlive_allocation,
+            TypeError, dyPolyChord.nlive_allocation.allocate,
             self.settings, self.ninit, self.settings.nlive, dynamic_goal,
             unexpected=1)
         # Check no points remaining message
         self.settings.max_ndead = 1
         # Check unexpected kwargs
         self.assertRaises(
-            AssertionError, dyPolyChord.run_dynamic_ns.nlive_allocation,
+            AssertionError, dyPolyChord.nlive_allocation.allocate,
             self.settings, self.ninit, self.settings.nlive, dynamic_goal)
 
     def test_run_dypolychord_unexpected_kwargs(self):
