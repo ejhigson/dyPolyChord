@@ -14,9 +14,5 @@ def run_dypolychord(pc_settings, likelihood, prior, ndims, **kwargs):
     assert dynamic_goal in [0, 1], (
         'dynamic_goal=' + str(dynamic_goal) + '! '
         'So far only set up for dynamic_goal = 0 or 1')
-    if dynamic_goal == 1:
-        dyPolyChord.run_dynamic_ns.run_dypolychord_param(
-            pc_settings, likelihood, prior, ndims, **kwargs)
-    elif dynamic_goal == 0:
-        dyPolyChord.run_dynamic_ns.run_dypolychord_evidence(
-            pc_settings, likelihood, prior, ndims, **kwargs)
+    dyPolyChord.run_dynamic_ns.run_dypolychord(
+        pc_settings, dynamic_goal, likelihood, prior, ndims, **kwargs)
