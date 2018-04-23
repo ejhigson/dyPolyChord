@@ -53,6 +53,8 @@ def run_dypolychord(run_func, settings_dict_in, dynamic_goal, **kwargs):
         assert not settings_dict_in['nlives']
     if 'read_resume' in settings_dict_in:
         assert not settings_dict_in['read_resume']
+    root = os.path.join(settings_dict_in['base_dir'],
+                        settings_dict_in['file_root'])
     # Step 1: do initial run
     # ----------------------
     settings_dict = copy.deepcopy(settings_dict_in)  # so we dont edit settings
@@ -65,7 +67,7 @@ def run_dypolychord(run_func, settings_dict_in, dynamic_goal, **kwargs):
         settings_dict['read_resume'] = False
         add_points = True
         step_ndead = []
-        run_outputs_at_resumes = {}
+        outputs_at_resumes = {}
         while add_points:
             if len(step_ndead) == 1:
                 settings_dict['read_resume'] = True
@@ -76,17 +78,14 @@ def run_dypolychord(run_func, settings_dict_in, dynamic_goal, **kwargs):
             run_output = nestcheck.data_processing.process_polychord_stats(
                 settings_dict['file_root'], settings_dict['base_dir'])
             # store run outputs for use getting nlike
-            run_outputs_at_resumes[run_output['ndead']] = run_output
+            outputs_at_resumes[run_output['ndead']] = run_output
             step_ndead.append(run_output['ndead'] - settings_dict['nlive'])
             if len(step_ndead) >= 2:
                 if step_ndead[-1] == step_ndead[-2]:
                     break
             # store resume file in new file path
-            shutil.copyfile(settings_dict['base_dir'] + '/' +
-                            settings_dict['file_root'] + '.resume',
-                            settings_dict['base_dir'] + '/' +
-                            settings_dict['file_root'] +
-                            '_' + str(step_ndead[-1]) + '.resume')
+            shutil.copyfile(root + '_init.resume',
+                            root + '_init_' + str(step_ndead[-1]) + '.resume')
     # Step 2: calculate an allocation of live points
     # ----------------------------------------------
     dyn_info = dyPolyChord.nlive_allocation.allocate(
@@ -98,17 +97,12 @@ def run_dypolychord(run_func, settings_dict_in, dynamic_goal, **kwargs):
         resume_ndead = step_ndead[np.where(
             resume_steps < dyn_info['peak_start_ind'])[0][-1]]
         # copy resume step to dynamic file root
-        shutil.copyfile(settings_dict_in['base_dir'] + '/'
-                        + settings_dict_in['file_root'] +
-                        '_init_' + str(resume_ndead) + '.resume',
-                        settings_dict_in['base_dir'] + '/' +
-                        settings_dict_in['file_root'] + '_dyn.resume')
+        shutil.copyfile(root + '_init_' + str(resume_ndead) + '.resume',
+                        root + '_dyn.resume')
         # Remove all the temporary resume files. Use set to avoid duplicates as
         # these cause OSErrors.
         for snd in set(step_ndead):
-            os.remove(settings_dict_in['base_dir'] + '/' +
-                      settings_dict_in['file_root'] +
-                      '_init_' + str(snd) + '.resume')
+            os.remove(root + '_init_' + str(snd) + '.resume')
     # Step 3: do dynamic run
     # ----------------------
     settings_dict = copy.deepcopy(settings_dict_in)  # remove edits from init
@@ -125,11 +119,16 @@ def run_dypolychord(run_func, settings_dict_in, dynamic_goal, **kwargs):
     if dynamic_goal != 0:
         # Save info about where the dynamic run was resumed from
         dyn_info['resume_ndead'] = resume_ndead
-        dyn_info['resume_nlike'] = run_outputs_at_resumes[resume_ndead]['nlike']
-    iou.pickle_save(dyn_info,
-                    (settings_dict_in['base_dir'] + '/' +
-                     settings_dict_in['file_root'] + '_dyn_info'),
-                    overwrite_existing=True)
+        dyn_info['resume_nlike'] = outputs_at_resumes[resume_ndead]['nlike']
+    iou.pickle_save(dyn_info, root + '_dyn_info', overwrite_existing=True)
+    # tidy up remaining .resume files (if the function has reach this point,
+    # both the initial and dynamic runs have finished so we shouldn't need to
+    # resume
+    for extra in ['init', 'dyn']:
+        try:
+            os.remove(root + '_{0}.resume'.format(extra))
+        except FileNotFoundError:
+            pass
     if print_time:
         end_time = time.time()
         print('##########################################')

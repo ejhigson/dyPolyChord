@@ -2,6 +2,7 @@
 """
 Functions for loading and processing dynamic runs.
 """
+import os
 import numpy as np
 import nestcheck.ns_run_utils
 import nestcheck.data_processing
@@ -50,7 +51,8 @@ def process_dypolychord_run(file_root, base_dir, **kwargs):
         str(init['thread_min_max']))
     dyn = nestcheck.data_processing.process_polychord_run(
         file_root + '_dyn', base_dir, logl_warn_only=logl_warn_only)
-    dyn_info = iou.pickle_load(base_dir + '/' + file_root + '_dyn_info')
+    dyn_info = iou.pickle_load(os.path.join(
+        base_dir, file_root + '_dyn_info'))
     if dynamic_goal == 0:
         # If dynamic_goal == 0 nlive only decreases, so check all threads
         # start by sampling
