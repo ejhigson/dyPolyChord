@@ -2,6 +2,7 @@
 """
 Test the dyPolyChord module.
 """
+import copy
 import os
 import shutil
 import unittest
@@ -9,7 +10,8 @@ import functools
 import scipy.special
 import numpy as np
 import numpy.testing
-from PyPolyChord.settings import PolyChordSettings
+import PyPolyChord
+import PyPolyChord.settings
 import nestcheck.estimators as e
 import dyPolyChord.likelihoods as likelihoods
 import dyPolyChord.priors as priors
@@ -39,9 +41,20 @@ SETTINGS_KWARGS = {
     # likelihood becomes approximately constant.
     'precision_criterion': 0.01,
     'seed': 1,
+    'max_ndead': -1,
     'base_dir': TEST_CACHE_DIR,
+    'file_root': 'test',
     'nlive': 50,  # used for nlive_const
     'nlives': {}}
+
+
+def python_run_func(settings_dict, likelihood=None, prior=None, ndims=None,
+                    nderived=0):
+    """python_run_func."""
+    settings = PyPolyChord.settings.PolyChordSettings(
+        ndims, nderived, **settings_dict)
+    return PyPolyChord.run_polychord(likelihood, ndims, nderived, settings,
+                                     prior)
 
 
 class TestRunDyPolyChord(unittest.TestCase):
@@ -49,11 +62,12 @@ class TestRunDyPolyChord(unittest.TestCase):
     def setUp(self):
         """Make a directory for saving test results."""
         assert not os.path.exists(TEST_CACHE_DIR), TEST_DIR_EXISTS_MSG
-        self.ndims = 2
         self.ninit = 20
-        self.likelihood = functools.partial(likelihoods.gaussian, sigma=1)
-        self.prior = functools.partial(priors.uniform, prior_scale=10)
-        self.settings = PolyChordSettings(self.ndims, 0, **SETTINGS_KWARGS)
+        ndims = 2
+        self.run_func = functools.partial(
+            python_run_func, ndims=ndims,
+            likelihood=functools.partial(likelihoods.gaussian, sigma=1),
+            prior=functools.partial(priors.uniform, prior_scale=10))
         self.random_seed_msg = (
             'This test is not affected by most of dyPolyChord, so if it fails '
             'your PolyChord install\'s random seed number generator is '
@@ -68,14 +82,11 @@ class TestRunDyPolyChord(unittest.TestCase):
 
     def test_dynamic_evidence(self):
         dynamic_goal = 0
-        self.settings.file_root = 'test_' + str(dynamic_goal)
-        self.settings.seed = 1
         dyPolyChord.run_dypolychord(
-            self.settings, self.likelihood, self.prior, self.ndims,
-            init_step=self.ninit,
-            dynamic_goal=dynamic_goal, ninit=self.ninit, print_time=True)
+            self.run_func, SETTINGS_KWARGS, dynamic_goal,
+            init_step=self.ninit, ninit=self.ninit, print_time=True)
         run = dyPolyChord.output_processing.process_dypolychord_run(
-            self.settings.file_root, self.settings.base_dir,
+            SETTINGS_KWARGS['file_root'], SETTINGS_KWARGS['base_dir'],
             dynamic_goal=dynamic_goal)
         self.assertEqual(run['logl'][0], -89.9267531982664,
                          msg=self.random_seed_msg)
@@ -86,13 +97,11 @@ class TestRunDyPolyChord(unittest.TestCase):
 
     def test_dynamic_param(self):
         dynamic_goal = 1
-        self.settings.file_root = 'test_dg' + str(dynamic_goal)
         dyPolyChord.run_dypolychord(
-            self.settings, self.likelihood, self.prior, self.ndims,
-            init_step=self.ninit,
-            dynamic_goal=dynamic_goal, ninit=self.ninit, print_time=True)
+            self.run_func, SETTINGS_KWARGS, dynamic_goal,
+            init_step=self.ninit, ninit=self.ninit, print_time=True)
         run = dyPolyChord.output_processing.process_dypolychord_run(
-            self.settings.file_root, self.settings.base_dir,
+            SETTINGS_KWARGS['file_root'], SETTINGS_KWARGS['base_dir'],
             dynamic_goal=dynamic_goal)
         self.assertEqual(run['logl'][0], -73.2283115991452,
                          msg=self.random_seed_msg)
@@ -103,32 +112,29 @@ class TestRunDyPolyChord(unittest.TestCase):
                                places=12)
         # test nlive allocation before tearDown removes the runs
         dyn_info = dyPolyChord.nlive_allocation.allocate(
-            self.settings, self.ninit, self.settings.nlive, dynamic_goal,
-            smoothing_filter=None)
+            SETTINGS_KWARGS, self.ninit, SETTINGS_KWARGS['nlive'],
+            dynamic_goal, smoothing_filter=None)
         numpy.testing.assert_array_equal(
             dyn_info['init_nlive_allocation'],
             dyn_info['init_nlive_allocation_unsmoothed'])
         # Check turning off filter
         self.assertRaises(
             TypeError, dyPolyChord.nlive_allocation.allocate,
-            self.settings, self.ninit, self.settings.nlive, dynamic_goal,
+            SETTINGS_KWARGS, self.ninit, 100, dynamic_goal,
             unexpected=1)
         # Check no points remaining message
-        self.settings.max_ndead = 1
+        settings = copy.deepcopy(SETTINGS_KWARGS)
+        settings['max_ndead'] = 1
         # Check unexpected kwargs
         self.assertRaises(
             AssertionError, dyPolyChord.nlive_allocation.allocate,
-            self.settings, self.ninit, self.settings.nlive, dynamic_goal)
+            settings, self.ninit, 100, dynamic_goal)
 
     def test_run_dypolychord_unexpected_kwargs(self):
         self.assertRaises(
             TypeError, dyPolyChord.run_dypolychord,
-            self.settings, self.likelihood, self.prior, self.ndims,
-            dynamic_goal=1, ninit=self.ninit, unexpected=1)
-        self.assertRaises(
-            TypeError, dyPolyChord.run_dypolychord,
-            self.settings, self.likelihood, self.prior, self.ndims,
-            dynamic_goal=0, ninit=self.ninit, unexpected=1)
+            self.run_func, SETTINGS_KWARGS, 1,
+            ninit=self.ninit, unexpected=1)
 
 
 class TestOutputProcessing(unittest.TestCase):

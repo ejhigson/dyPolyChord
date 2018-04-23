@@ -23,7 +23,7 @@ def allocate(pc_settings_in, ninit, nlive_const, dynamic_goal, **kwargs):
     if kwargs:
         raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
     init_run = nestcheck.data_processing.process_polychord_run(
-        pc_settings_in.file_root + '_init', pc_settings_in.base_dir)
+        pc_settings_in['file_root'] + '_init', pc_settings_in['base_dir'])
     logx_init = nestcheck.ns_run_utils.get_logx(init_run['nlive_array'])
     w_rel = nestcheck.plots.rel_posterior_mass(logx_init, init_run['logl'])
     # Calculate the importance of each point
@@ -36,8 +36,8 @@ def allocate(pc_settings_in, ninit, nlive_const, dynamic_goal, **kwargs):
     imp /= np.abs(np.trapz(imp, x=logx_init))
     assert imp.min() >= 0
     # Calculate number of samples and multiply it by imp to get nlive
-    if pc_settings_in.max_ndead > 0:
-        samp_remain = pc_settings_in.max_ndead - init_run['logl'].shape[0]
+    if pc_settings_in['max_ndead'] > 0:
+        samp_remain = pc_settings_in['max_ndead'] - init_run['logl'].shape[0]
         assert samp_remain > 0, (
             'all points used in initial run and none left for dynamic run!')
     else:
