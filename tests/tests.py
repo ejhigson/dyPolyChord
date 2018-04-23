@@ -10,13 +10,15 @@ import functools
 import scipy.special
 import numpy as np
 import numpy.testing
-import PyPolyChord
-import PyPolyChord.settings
 import nestcheck.estimators as e
+import dyPolyChord
 import dyPolyChord.likelihoods as likelihoods
 import dyPolyChord.priors as priors
 import dyPolyChord.output_processing
-import dyPolyChord
+try:
+    import dyPolyChord.pypolychord_utils
+except ImportError:
+    pass
 
 TEST_CACHE_DIR = 'chains_test'
 TEST_DIR_EXISTS_MSG = ('Directory ' + TEST_CACHE_DIR + ' exists! Tests use '
@@ -48,15 +50,6 @@ SETTINGS_KWARGS = {
     'nlives': {}}
 
 
-def python_run_func(settings_dict, likelihood=None, prior=None, ndims=None,
-                    nderived=0):
-    """python_run_func."""
-    settings = PyPolyChord.settings.PolyChordSettings(
-        ndims, nderived, **settings_dict)
-    return PyPolyChord.run_polychord(likelihood, ndims, nderived, settings,
-                                     prior)
-
-
 class TestRunDyPolyChord(unittest.TestCase):
 
     def setUp(self):
@@ -64,10 +57,9 @@ class TestRunDyPolyChord(unittest.TestCase):
         assert not os.path.exists(TEST_CACHE_DIR), TEST_DIR_EXISTS_MSG
         self.ninit = 20
         ndims = 2
-        self.run_func = functools.partial(
-            python_run_func, ndims=ndims,
-            likelihood=functools.partial(likelihoods.gaussian, sigma=1),
-            prior=functools.partial(priors.uniform, prior_scale=10))
+        self.run_func = dyPolyChord.pypolychord_utils.get_python_run_func(
+            functools.partial(likelihoods.gaussian, sigma=1),
+            functools.partial(priors.uniform, prior_scale=10), ndims=ndims)
         self.random_seed_msg = (
             'This test is not affected by most of dyPolyChord, so if it fails '
             'your PolyChord install\'s random seed number generator is '
