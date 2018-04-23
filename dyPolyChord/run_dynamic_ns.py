@@ -8,6 +8,7 @@ import time
 import shutil
 import copy
 import numpy as np
+import nestcheck.data_processing
 import nestcheck.io_utils as iou
 import dyPolyChord.nlive_allocation
 
@@ -25,6 +26,22 @@ def run_dypolychord(run_func, settings_dict_in, dynamic_goal, **kwargs):
     Both the initial and dynamic runs use settings.nlive = ninit to determine
     clustering and resume writing.
     """
+    default_settings = {'nlive': 100,
+                        'num_repeats': 20,
+                        'file_root': 'temp',
+                        'base_dir': 'chains',
+                        'seed': -1,
+                        'do_clustering': True,
+                        'max_ndead': -1,
+                        'write_dead': True,
+                        'write_stats': True,
+                        'write_live': False,
+                        'write_paramnames': False,
+                        'equals': False,
+                        'cluster_posteriors': False}
+    for key, value in default_settings.items():
+        if key not in settings_dict_in:
+            settings_dict_in[key] = value
     ninit = kwargs.pop('ninit', 10)
     init_step = kwargs.pop('init_step', ninit)
     nlive_const = kwargs.pop('nlive_const', settings_dict_in['nlive'])
@@ -32,8 +49,10 @@ def run_dypolychord(run_func, settings_dict_in, dynamic_goal, **kwargs):
     if kwargs:
         raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
     start_time = time.time()
-    assert not settings_dict_in['nlives']
-    assert not settings_dict_in['read_resume']
+    if 'nlives' in settings_dict_in:
+        assert not settings_dict_in['nlives']
+    if 'read_resume' in settings_dict_in:
+        assert not settings_dict_in['read_resume']
     # Step 1: do initial run
     # ----------------------
     settings_dict = copy.deepcopy(settings_dict_in)  # so we dont edit settings
@@ -51,11 +70,14 @@ def run_dypolychord(run_func, settings_dict_in, dynamic_goal, **kwargs):
             if len(step_ndead) == 1:
                 settings_dict['read_resume'] = True
             settings_dict['max_ndead'] = (len(step_ndead) + 1) * init_step
-            settings_dict['seed'] += 100
-            output = run_func(settings_dict)
+            if settings_dict['seed'] >= 0:
+                settings_dict['seed'] += 100
+            run_func(settings_dict)
+            run_output = nestcheck.data_processing.process_polychord_stats(
+                settings_dict['file_root'], settings_dict['base_dir'])
             # store run outputs for use getting nlike
-            run_outputs_at_resumes[output.ndead] = output
-            step_ndead.append(output.ndead - settings_dict['nlive'])
+            run_outputs_at_resumes[run_output['ndead']] = run_output
+            step_ndead.append(run_output['ndead'] - settings_dict['nlive'])
             if len(step_ndead) >= 2:
                 if step_ndead[-1] == step_ndead[-2]:
                     break
@@ -90,7 +112,8 @@ def run_dypolychord(run_func, settings_dict_in, dynamic_goal, **kwargs):
     # Step 3: do dynamic run
     # ----------------------
     settings_dict = copy.deepcopy(settings_dict_in)  # remove edits from init
-    settings_dict['seed'] += 100
+    if settings_dict['seed'] >= 0:
+        settings_dict['seed'] += 100
     if dynamic_goal == 0:
         settings_dict['nlive'] = max(dyn_info['nlives_dict'].values())
     else:
@@ -98,11 +121,11 @@ def run_dypolychord(run_func, settings_dict_in, dynamic_goal, **kwargs):
     settings_dict['nlives'] = dyn_info['nlives_dict']
     settings_dict['read_resume'] = True
     settings_dict['file_root'] = settings_dict_in['file_root'] + '_dyn'
-    output = run_func(settings_dict)
+    run_func(settings_dict)
     if dynamic_goal != 0:
         # Save info about where the dynamic run was resumed from
         dyn_info['resume_ndead'] = resume_ndead
-        dyn_info['resume_nlike'] = run_outputs_at_resumes[resume_ndead].nlike
+        dyn_info['resume_nlike'] = run_outputs_at_resumes[resume_ndead]['nlike']
     iou.pickle_save(dyn_info,
                     (settings_dict_in['base_dir'] + '/' +
                      settings_dict_in['file_root'] + '_dyn_info'),
