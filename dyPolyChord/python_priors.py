@@ -6,7 +6,8 @@ Input hypercube values are mapped to physical space using the inverse CDF
 (cumulative distribution function) of each parameter.
 See the PolyChord papers for more details.
 """
-import PyPolyChord.priors
+import numpy as np
+import scipy
 
 
 def uniform(hypercube, prior_scale=5):
@@ -26,12 +27,7 @@ def uniform(hypercube, prior_scale=5):
     theta: list of floats
         Physical parameter values corresponding to hypercube.
     """
-    ndims = len(hypercube)
-    theta = [0.0] * ndims
-    func = PyPolyChord.priors.UniformPrior(-prior_scale, prior_scale)
-    for i, x in enumerate(hypercube):
-        theta[i] = func(x)
-    return theta
+    return [(-prior_scale + 2 * prior_scale * x) for x in hypercube]
 
 
 def gaussian(hypercube, prior_scale=5):
@@ -51,9 +47,5 @@ def gaussian(hypercube, prior_scale=5):
     theta: list of floats
         Physical parameter values corresponding to hypercube.
     """
-    ndims = len(hypercube)
-    theta = [0.0] * ndims
-    func = PyPolyChord.priors.GaussianPrior(0., prior_scale)
-    for i, x in enumerate(hypercube):
-        theta[i] = func(x)
-    return theta
+    return [(prior_scale * np.sqrt(2) * scipy.special.erfinv(2 * x - 1))
+            for x in hypercube]

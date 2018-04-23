@@ -12,8 +12,8 @@ import numpy as np
 import numpy.testing
 import nestcheck.estimators as e
 import dyPolyChord
-import dyPolyChord.likelihoods as likelihoods
-import dyPolyChord.priors as priors
+import dyPolyChord.python_likelihoods as likelihoods
+import dyPolyChord.python_priors as priors
 import dyPolyChord.output_processing
 try:
     import dyPolyChord.pypolychord_utils
