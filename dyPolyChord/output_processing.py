@@ -75,7 +75,7 @@ def process_dypolychord_run(file_root, base_dir, **kwargs):
     run['output']['init_nlike'] = init['output']['nlike']
     run['output']['dyn_nlike'] = dyn['output']['nlike']
     # check the nested sampling run has the expected properties
-    nestcheck.data_processing.check_ns_run(run)
+    nestcheck.data_processing.check_ns_run(run, logl_warn_only=logl_warn_only)
     return run
 
 
@@ -88,8 +88,9 @@ def combine_resumed_dyn_run(init, dyn, resume_ndead):
     and init output files: these are the dead and live points present at the
     step at which dyn was resumed from init.
     """
-    assert np.array_equal(init['logl'][:resume_ndead],
-                          dyn['logl'][:resume_ndead])
+    assert np.array_equal(
+        init['logl'][:resume_ndead], dyn['logl'][:resume_ndead]), (
+            'The first {0} points should be the same'.format(resume_ndead))
     init['theta'] = init['theta'][resume_ndead:, :]
     for key in ['nlive_array', 'logl', 'thread_labels']:
         init[key] = init[key][resume_ndead:]
@@ -128,6 +129,7 @@ def combine_resumed_dyn_run(init, dyn, resume_ndead):
     # Add the init threads to dyn with new labels that continue on from the dyn
     # labels
     init['thread_labels'] += dyn['thread_min_max'].shape[0]
+    print(init)
     run = nestcheck.ns_run_utils.combine_threads(
         nestcheck.ns_run_utils.get_run_threads(dyn) +
         nestcheck.ns_run_utils.get_run_threads(init),

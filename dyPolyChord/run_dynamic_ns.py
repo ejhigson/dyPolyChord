@@ -38,7 +38,10 @@ def run_dypolychord(run_func, settings_dict_in, dynamic_goal, **kwargs):
                         'write_live': False,
                         'write_paramnames': False,
                         'equals': False,
-                        'cluster_posteriors': False}
+                        'cluster_posteriors': False,
+                        'nlives': {},
+                        'write_resume': False,
+                        'read_resume': False}
     for key, value in default_settings.items():
         if key not in settings_dict_in:
             settings_dict_in[key] = value
@@ -50,10 +53,8 @@ def run_dypolychord(run_func, settings_dict_in, dynamic_goal, **kwargs):
     if kwargs:
         raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
     start_time = time.time()
-    if 'nlives' in settings_dict_in:
-        assert not settings_dict_in['nlives']
-    if 'read_resume' in settings_dict_in:
-        assert not settings_dict_in['read_resume']
+    assert not settings_dict_in['nlives']
+    assert not settings_dict_in['read_resume']
     root = os.path.join(settings_dict_in['base_dir'],
                         settings_dict_in['file_root'])
     # Step 1: do initial run
@@ -87,6 +88,7 @@ def run_dypolychord(run_func, settings_dict_in, dynamic_goal, **kwargs):
             # store resume file in new file path
             shutil.copyfile(root + '_init.resume',
                             root + '_init_' + str(step_ndead[-1]) + '.resume')
+        print(outputs_at_resumes.keys())
     # Step 2: calculate an allocation of live points
     # ----------------------------------------------
     dyn_info = dyPolyChord.nlive_allocation.allocate(

@@ -48,7 +48,7 @@ def allocate(pc_settings_in, ninit, nlive_const, dynamic_goal, **kwargs):
             count_turning_points(nlives[inds_to_use]))
     if dynamic_goal == 0:
         assert nlives[0] > 0
-        assert nlives[0] == nlives.max()
+        assert nlives[0] == nlives.max(), str(nlives)
         assert np.all(np.diff(nlives) <= 0), (
             'When targeting evidence, nlive should monotincally decrease!'
             + ' nlives = ' + str(nlives))
@@ -65,9 +65,8 @@ def allocate(pc_settings_in, ninit, nlive_const, dynamic_goal, **kwargs):
             msg += ' Without smoothing_filter there would have been '
             msg += str(count_turning_points(nlives_unsmoothed))
         print(msg)
-    if dynamic_goal == 1:
-        if nlives[0] != 0:
-            warnings.warn('nlives[0]={0} != 0'.format(nlives[0]), UserWarning)
+    if dynamic_goal == 1 and nlives[0] != 0:
+        warnings.warn('nlives[0]={0} != 0'.format(nlives[0]), UserWarning)
     # ################################################
     # Check logl = approx -inf is mapped to the starting number of live points
     nlives_dict = {-1.e100: int(nlives[0])}
@@ -121,9 +120,24 @@ def dyn_nlive_array(init_run, samp_tot, dynamic_goal, smoothing_filter=None):
     norm = samp_tot / np.abs(np.trapz(importance, x=logx_init))
     importance_nlive = importance * norm
     # Account for the points already sampled
-    nlive_array = importance_nlive - init_run['nlive_array']
-    if smoothing_filter is not None:
-        nlive_array = smoothing_filter(nlive_array)
+    importance_nlive -= init_run['nlive_array'][0]
+    if smoothing_filter is None:
+        nlive_array = importance_nlive
+    else:
+        nlive_array = smoothing_filter(importance_nlive)
+        if dynamic_goal == 0:
+            try:
+                assert nlive_array[0] == nlive_array.max()
+            except AssertionError:
+                if importance_nlive[0] == importance_nlive.max():
+                    warnings.warn(('Smoothing has added turning points to '
+                                   'nlive allocation when dynamic_goal=0. '
+                                   'I am using the unsmoothed nlives '
+                                   'instead.'), UserWarning)
+                    nlive_array = importance_nlive
+                else:
+                    print('Turning point was present before smoothing')
+                    raise
     nlive_array = np.clip(nlive_array, 0, None)
     # Renormalise to account for nlives below zero (i.e. regions where we have
     # already taken too many samples) as we cannot take negative samples.

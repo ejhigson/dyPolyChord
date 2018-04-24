@@ -25,53 +25,60 @@ TEST_CACHE_DIR = 'chains_test'
 TEST_DIR_EXISTS_MSG = ('Directory ' + TEST_CACHE_DIR + ' exists! Tests use '
                        'this dir to check caching then delete it afterwards, '
                        'so the path should be left empty.')
+# SETTINGS_KWARGS = {
+#     'do_clustering': True,
+#     'posteriors': False,
+#     'equals': False,
+#     'write_dead': True,
+#     'read_resume': False,
+#     'write_resume': False,
+#     'write_stats': True,
+#     'write_prior': False,
+#     'write_live': False,
+#     'num_repeats': 1,
+#     'feedback': -1,
+#     'cluster_posteriors': False,
+#     # Set precision_criterion low to avoid non-deterministic likelihood errors.
+#     # These occur due in the low dimension and low and nlive cases we use for
+#     # fast testing as runs sometimes get very close to the peak where the
+#     # likelihood becomes approximately constant.
+#     'precision_criterion': 0.01,
+#     'seed': 1,
+#     'max_ndead': -1,
+#     'base_dir': TEST_CACHE_DIR,
+#     'file_root': 'test_run',
+#     'nlive': 2,  # 50,  # used for nlive_const
+#     'nlives': {}}
+
+
 SETTINGS_KWARGS = {
-    'do_clustering': True,
-    'posteriors': False,
-    'equals': False,
-    'write_dead': True,
-    'read_resume': False,
-    'write_resume': False,
-    'write_stats': True,
-    'write_prior': False,
-    'write_live': False,
-    'num_repeats': 1,
-    'feedback': -1,
-    'cluster_posteriors': False,
-    # Set precision_criterion low to avoid non-deterministic likelihood errors.
-    # These occur due in the low dimension and low and nlive cases we use for
-    # fast testing as runs sometimes get very close to the peak where the
-    # likelihood becomes approximately constant.
-    'precision_criterion': 0.01,
-    'seed': 1,
-    'max_ndead': -1,
     'base_dir': TEST_CACHE_DIR,
     'file_root': 'test_run',
-    'nlive': 2,  # 50,  # used for nlive_const
-    'nlives': {}}
+    'seed': 1}
 
 
-def dummy_run_func(settings, ndim=2, ndead_term=10):
+def dummy_run_func(settings, ndim=2, ndead_term=10, seed=1,
+                   logl_factor=10):
     nthread = settings['nlive']
     if settings['max_ndead'] <= 0:
         ndead = ndead_term
     else:
         ndead = min(ndead_term, settings['max_ndead'])
     if 'nlives' not in settings or not settings['nlives']:
-        assert ndead % settings['nlive'] == 0, (
-            'ndead={0}, nlive={1}'.format(ndead, settings['nlive']))
-    nsample = ndead // settings['nlive']
-    nsample += 1  # PolyChord includes remaining live points in each thread
-    run = nestcheck.dummy_data.get_dummy_run(nthread, nsample, ndim)
-    # if settings['read_resume']:
-    #     run['logl'] += 0.5
-    #     run['thread_min_max'][:, 1] += 0.5
+        assert ndead % nthread == 0, (
+            'ndead={0}, nthread={1}'.format(ndead, nthread))
+    nsample = ndead // nthread
+    nsample += 1  # mimic PolyChord, which includes live point at termination
+    # make dead points array
+    run = nestcheck.dummy_data.get_dummy_run(nthread, nsample, ndim, seed)
+    nestcheck.ns_run_utils.get_run_threads(run)
+    run['logl'] *= logl_factor
+    run['thread_min_max'][:, 1] *= logl_factor
     dead = nestcheck.dummy_data.run_dead_points_array(run)
     root = os.path.join(settings['base_dir'], settings['file_root'])
     np.savetxt(root + '_dead-birth.txt', dead)
-    if 'write_resume' in settings:
-        if 'write_resume':
-            np.savetxt(root + '.resume', np.zeros(10))
+    if settings['write_resume']:
+        np.savetxt(root + '.resume', np.zeros(10))
     nestcheck.dummy_data.write_dummy_polychord_stats(
         settings['file_root'], settings['base_dir'], ndead=dead.shape[0])
 
@@ -80,85 +87,101 @@ class TestRunDyPolyChord(unittest.TestCase):
 
     def setUp(self):
         """Make a directory for saving test results."""
-        # assert not os.path.exists(TEST_CACHE_DIR), TEST_DIR_EXISTS_MSG
-        if not os.path.exists(TEST_CACHE_DIR):
-            os.makedirs(TEST_CACHE_DIR)
+        assert not os.path.exists(TEST_CACHE_DIR), TEST_DIR_EXISTS_MSG
+        # if not os.path.exists(TEST_CACHE_DIR):
+        os.makedirs(TEST_CACHE_DIR)
         self.ninit = 2
         self.nlive_const = 4
-        self.run_func = dummy_run_func
+        self.run_func = functools.partial(
+            dummy_run_func, ndim=2, ndead_term=10, seed=1)
+        # init_run = nestcheck.dummy_data.get_dummy_run(
+        #     nthread, nsample, ndim, seed)
+        self.random_seed_msg = (
+            'This test is not affected by dyPolyChord, so if it fails '
+            'your numpy random seed number generator is '
+            'probably different to the one used to set the expected values.')
+        self.settings = {'base_dir': TEST_CACHE_DIR,
+                         'file_root': 'test_run',
+                         'seed': 1,
+                         'nlives': {},
+                         'write_resume': False,
+                         'max_ndead': -1}
 
-#    def tearDown(self):
-#        """Remove any caches saved by the tests."""
-#        try:
-#            shutil.rmtree(TEST_CACHE_DIR)
-#        except FileNotFoundError:
-#            pass
+    def tearDown(self):
+        """Remove any caches saved by the tests."""
+        try:
+            shutil.rmtree(TEST_CACHE_DIR)
+        except FileNotFoundError:
+            pass
 
     def test_run_dypolychord_unexpected_kwargs(self):
         self.assertRaises(
             TypeError, dyPolyChord.run_dypolychord,
-            lambda x: None, SETTINGS_KWARGS, 1,
+            lambda x: None, self.settings, 1,
             unexpected=1)
 
     def test_dynamic_evidence(self):
         dynamic_goal = 0
-        seed_increment = 100
         dyPolyChord.run_dypolychord(
-            self.run_func, SETTINGS_KWARGS, dynamic_goal,
+            self.run_func, self.settings, dynamic_goal,
             init_step=self.ninit, ninit=self.ninit, print_time=True,
-            seed_increment=seed_increment,
             nlive_const=self.nlive_const)
         run = dyPolyChord.output_processing.process_dypolychord_run(
-            SETTINGS_KWARGS['file_root'], SETTINGS_KWARGS['base_dir'],
-            dynamic_goal=dynamic_goal)
-        print(run)
-        # self.assertEqual(run['logl'][0], -86.7906522578895,
-        #                  msg=self.random_seed_msg)
-        # self.assertEqual(e.count_samples(run), 470)
-        # self.assertAlmostEqual(e.logz(run), -5.99813424487512, places=12)
-        # self.assertAlmostEqual(e.param_mean(run), -0.011725372420821929,
-        #                        places=12)
+            self.settings['file_root'], self.settings['base_dir'],
+            dynamic_goal=dynamic_goal, logl_warn_only=True)
+        self.assertAlmostEqual(run['logl'][0], 0.0011437481734488664,
+                               msg=self.random_seed_msg, places=12)
+        self.assertEqual(e.count_samples(run), 24)
+        self.assertAlmostEqual(e.logz(run), 5.130048204496198, places=12)
 
     def test_dynamic_param(self):
         dynamic_goal = 1
         dyPolyChord.run_dypolychord(
-            self.run_func, SETTINGS_KWARGS, dynamic_goal,
+            self.run_func, self.settings, dynamic_goal,
             init_step=self.ninit, ninit=self.ninit, print_time=True,
             nlive_const=self.nlive_const)
         run = dyPolyChord.output_processing.process_dypolychord_run(
-            SETTINGS_KWARGS['file_root'], SETTINGS_KWARGS['base_dir'],
-            dynamic_goal=dynamic_goal)
-        # self.assertEqual(run['logl'][0], -63.6696935969461,
-        #                  msg=self.random_seed_msg)
-        # self.assertEqual(run['output']['resume_ndead'], 40)
-        # self.assertEqual(run['output']['resume_nlike'], 85)
-        # self.assertAlmostEqual(e.logz(run), -6.150334026130597, places=12)
-        # self.assertAlmostEqual(e.param_mean(run), 0.1054356767020377,
-        #                        places=12)
+            self.settings['file_root'], self.settings['base_dir'],
+            dynamic_goal=dynamic_goal, logl_warn_only=True)
         # test nlive allocation before tearDown removes the runs
-
+        self.assertAlmostEqual(run['logl'][0], 0.0011437481734488664,
+                               msg=self.random_seed_msg, places=12)
+        self.assertEqual(e.count_samples(run), 16)
+        self.assertAlmostEqual(e.logz(run), 4.170019624479282, places=12)
+        self.assertEqual(run['output']['resume_ndead'], 6)
 
     def test_nlive_allocate(self):
         dynamic_goal = 0.5
-        self.run_func(SETTINGS_KWARGS)
+        settings = copy.deepcopy(self.settings)
+        settings['file_root'] = self.settings['file_root'] + '_init'
+        settings['nlive'] = self.ninit
+        self.run_func(settings, logl_factor=1)
+        print(self.settings['file_root'])
         dyn_info = dyPolyChord.nlive_allocation.allocate(
-            SETTINGS_KWARGS, self.ninit, self.nlive_const,
+            self.settings, self.ninit, self.nlive_const,
             dynamic_goal, smoothing_filter=None)
+        print(self.settings['file_root'])
         numpy.testing.assert_array_equal(
             dyn_info['init_nlive_allocation'],
             dyn_info['init_nlive_allocation_unsmoothed'])
         # Check turning off filter
         self.assertRaises(
             TypeError, dyPolyChord.nlive_allocation.allocate,
-            SETTINGS_KWARGS, self.ninit, 100, dynamic_goal,
+            self.settings, self.ninit, 100, dynamic_goal,
             unexpected=1)
+        # check dynamic_goal=1 and not resuming warning
+        with self.assertWarns(UserWarning):
+            dyPolyChord.nlive_allocation.allocate(
+                self.settings, self.ninit, 100, 1)
         # Check no points remaining message
-        settings = copy.deepcopy(SETTINGS_KWARGS)
+        settings = copy.deepcopy(self.settings)
         settings['max_ndead'] = 1
-        # Check unexpected kwargs
         self.assertRaises(
             AssertionError, dyPolyChord.nlive_allocation.allocate,
             settings, self.ninit, 100, dynamic_goal)
+
+#    def test_dyn_nlive_array(self):
+
 
 @unittest.skip("Seeding problems")
 class TestRunDyPolyChordOld(unittest.TestCase):
