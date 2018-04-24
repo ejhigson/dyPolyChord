@@ -46,6 +46,7 @@ def run_dypolychord(run_func, settings_dict_in, dynamic_goal, **kwargs):
     init_step = kwargs.pop('init_step', ninit)
     nlive_const = kwargs.pop('nlive_const', settings_dict_in['nlive'])
     print_time = kwargs.pop('print_time', False)
+    seed_increment = kwargs.pop('seed_increment', 100)
     if kwargs:
         raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
     start_time = time.time()
@@ -73,7 +74,7 @@ def run_dypolychord(run_func, settings_dict_in, dynamic_goal, **kwargs):
                 settings_dict['read_resume'] = True
             settings_dict['max_ndead'] = (len(step_ndead) + 1) * init_step
             if settings_dict['seed'] >= 0:
-                settings_dict['seed'] += 100
+                settings_dict['seed'] += seed_increment
             run_func(settings_dict)
             run_output = nestcheck.data_processing.process_polychord_stats(
                 settings_dict['file_root'], settings_dict['base_dir'])
@@ -105,9 +106,12 @@ def run_dypolychord(run_func, settings_dict_in, dynamic_goal, **kwargs):
             os.remove(root + '_init_' + str(snd) + '.resume')
     # Step 3: do dynamic run
     # ----------------------
+    final_init_seed = settings_dict['seed']
     settings_dict = copy.deepcopy(settings_dict_in)  # remove edits from init
-    if settings_dict['seed'] >= 0:
-        settings_dict['seed'] += 100
+    if final_init_seed >= 0:
+        assert settings_dict_in['seed'] >= 0, (
+            'if input seed was <0 it should not have been edited')
+        settings_dict['seed'] = final_init_seed + seed_increment
     if dynamic_goal == 0:
         settings_dict['nlive'] = max(dyn_info['nlives_dict'].values())
     else:
