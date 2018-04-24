@@ -1,8 +1,9 @@
 # Swap files
 *.sw*
 
-# PolyChord output files
+# dyPolyChord output files
 *.txt
+*.pkl
 *.resume
 *.stats
 

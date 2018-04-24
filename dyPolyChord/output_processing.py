@@ -58,12 +58,13 @@ def process_dypolychord_run(file_root, base_dir, **kwargs):
         # start by sampling
         assert np.all(dyn['thread_min_max'][:, 0] == -np.inf), (
             str(dyn['thread_min_max']))
+    if 'resume_ndead' not in dyn_info:
         # If dynamic_goal == 0, dyn was not resumed part way through init:
         # hence there are no samples repeated in both runs' files and we can
         # simply combine dyn and init using standard nestcheck functions.
         run = nestcheck.ns_run_utils.combine_ns_runs([init, dyn])
         dyn_info['nlike'] = init['output']['nlike'] + dyn['output']['nlike']
-    elif dynamic_goal == 1:
+    else:
         # If dynamic_goal == 1, dyn was resumed part way through init and we
         # need to remove duplicate points from the combined run
         run = combine_resumed_dyn_run(init, dyn, dyn_info['resume_ndead'])

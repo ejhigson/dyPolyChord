@@ -91,15 +91,18 @@ def run_dypolychord(run_func, settings_dict_in, dynamic_goal, **kwargs):
     # ----------------------------------------------
     dyn_info = dyPolyChord.nlive_allocation.allocate(
         settings_dict_in, ninit, nlive_const, dynamic_goal)
-    if dynamic_goal != 0:
+    if dyn_info['peak_start_ind'] != 0:
         # subtract 1 as ndead=1 corresponds to point 0
         resume_steps = np.asarray(step_ndead) - 1
+        print('resume_steps:', resume_steps, 'peak_start_ind:',
+              dyn_info['peak_start_ind'])
         # Load the last resume before we reach the peak
         resume_ndead = step_ndead[np.where(
             resume_steps < dyn_info['peak_start_ind'])[0][-1]]
         # copy resume step to dynamic file root
         shutil.copyfile(root + '_init_' + str(resume_ndead) + '.resume',
                         root + '_dyn.resume')
+    if dynamic_goal != 0:
         # Remove all the temporary resume files. Use set to avoid duplicates as
         # these cause OSErrors.
         for snd in set(step_ndead):
@@ -117,17 +120,17 @@ def run_dypolychord(run_func, settings_dict_in, dynamic_goal, **kwargs):
     else:
         settings_dict['nlive'] = ninit
     settings_dict['nlives'] = dyn_info['nlives_dict']
-    settings_dict['read_resume'] = True
+    settings_dict['read_resume'] = (dyn_info['peak_start_ind'] != 0)
     settings_dict['file_root'] = settings_dict_in['file_root'] + '_dyn'
     run_func(settings_dict)
-    if dynamic_goal != 0:
+    if dyn_info['peak_start_ind'] != 0:
         # Save info about where the dynamic run was resumed from
         dyn_info['resume_ndead'] = resume_ndead
         dyn_info['resume_nlike'] = outputs_at_resumes[resume_ndead]['nlike']
     iou.pickle_save(dyn_info, root + '_dyn_info', overwrite_existing=True)
     # tidy up remaining .resume files (if the function has reach this point,
     # both the initial and dynamic runs have finished so we shouldn't need to
-    # resume
+    # resume)
     for extra in ['init', 'dyn']:
         try:
             os.remove(root + '_{0}.resume'.format(extra))
