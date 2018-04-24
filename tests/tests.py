@@ -50,6 +50,7 @@ SETTINGS_KWARGS = {
     'nlive': 2,  # 50,  # used for nlive_const
     'nlives': {}}
 
+
 def dummy_run_func(settings, ndim=2, ndead_term=10):
     nthread = settings['nlive']
     if settings['max_ndead'] <= 0:
@@ -61,8 +62,7 @@ def dummy_run_func(settings, ndim=2, ndead_term=10):
             'ndead={0}, nlive={1}'.format(ndead, settings['nlive']))
     nsample = ndead // settings['nlive']
     nsample += 1  # PolyChord includes remaining live points in each thread
-    run = nestcheck.dummy_data.get_dummy_run(
-        nthread, nsample, ndim)
+    run = nestcheck.dummy_data.get_dummy_run(nthread, nsample, ndim)
     # if settings['read_resume']:
     #     run['logl'] += 0.5
     #     run['thread_min_max'][:, 1] += 0.5
@@ -139,7 +139,7 @@ class TestRunDyPolyChord(unittest.TestCase):
 
 
     def test_nlive_allocate(self):
-        dynamic_goal = 1
+        dynamic_goal = 0.5
         self.run_func(SETTINGS_KWARGS)
         dyn_info = dyPolyChord.nlive_allocation.allocate(
             SETTINGS_KWARGS, self.ninit, self.nlive_const,

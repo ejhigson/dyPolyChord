@@ -42,9 +42,6 @@ def process_dypolychord_run(file_root, base_dir, **kwargs):
     logl_warn_only = kwargs.pop('logl_warn_only', False)
     if kwargs:
         raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
-    assert dynamic_goal in [0, 1], (
-        'dynamic_goal=' + str(dynamic_goal) + '! '
-        'So far only set up for dynamic_goal = 0 or 1')
     init = nestcheck.data_processing.process_polychord_run(
         file_root + '_init', base_dir, logl_warn_only=logl_warn_only)
     assert np.all(init['thread_min_max'][:, 0] == -np.inf), (
