@@ -1,6 +1,11 @@
 # Swap files
 *.sw*
 
+# PolyChord output files
+*.txt
+*.resume
+*.stats
+
 # Github default python .gitignore
 # --------------------------------
 
