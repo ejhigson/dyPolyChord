@@ -16,10 +16,10 @@ import dyPolyChord
 import dyPolyChord.python_likelihoods as likelihoods
 import dyPolyChord.python_priors as priors
 import dyPolyChord.output_processing
-try:
-    import dyPolyChord.pypolychord_utils
-except ImportError:
-    pass
+# try:
+#     import dyPolyChord.pypolychord_utils
+# except ImportError:
+#     pass
 
 TEST_CACHE_DIR = 'chains_test'
 TEST_DIR_EXISTS_MSG = ('Directory ' + TEST_CACHE_DIR + ' exists! Tests use '
@@ -38,7 +38,7 @@ TEST_DIR_EXISTS_MSG = ('Directory ' + TEST_CACHE_DIR + ' exists! Tests use '
 #     'num_repeats': 1,
 #     'feedback': -1,
 #     'cluster_posteriors': False,
-#     # Set precision_criterion low to avoid non-deterministic likelihood errors.
+#     # Set precision_criterion low to avoid non-deterministic like errors.
 #     # These occur due in the low dimension and low and nlive cases we use for
 #     # fast testing as runs sometimes get very close to the peak where the
 #     # likelihood becomes approximately constant.
@@ -58,7 +58,7 @@ SETTINGS_KWARGS = {
 
 
 def dummy_run_func(settings, ndim=2, ndead_term=10, seed=1,
-                   logl_factor=10):
+                   logl_range=10):
     nthread = settings['nlive']
     if settings['max_ndead'] <= 0:
         ndead = ndead_term
@@ -70,10 +70,9 @@ def dummy_run_func(settings, ndim=2, ndead_term=10, seed=1,
     nsample = ndead // nthread
     nsample += 1  # mimic PolyChord, which includes live point at termination
     # make dead points array
-    run = nestcheck.dummy_data.get_dummy_run(nthread, nsample, ndim, seed)
+    run = nestcheck.dummy_data.get_dummy_run(
+        nthread, nsample, ndim, seed=seed, logl_range=logl_range)
     nestcheck.ns_run_utils.get_run_threads(run)
-    run['logl'] *= logl_factor
-    run['thread_min_max'][:, 1] *= logl_factor
     dead = nestcheck.dummy_data.run_dead_points_array(run)
     root = os.path.join(settings['base_dir'], settings['file_root'])
     np.savetxt(root + '_dead-birth.txt', dead)
@@ -86,20 +85,18 @@ def dummy_run_func(settings, ndim=2, ndead_term=10, seed=1,
 class TestRunDyPolyChord(unittest.TestCase):
 
     def setUp(self):
-        """Make a directory for saving test results."""
+        """Set up function for saving dummy ns runs, a directory for saving
+        test results and some settings."""
         assert not os.path.exists(TEST_CACHE_DIR), TEST_DIR_EXISTS_MSG
-        # if not os.path.exists(TEST_CACHE_DIR):
         os.makedirs(TEST_CACHE_DIR)
-        self.ninit = 2
-        self.nlive_const = 4
-        self.run_func = functools.partial(
-            dummy_run_func, ndim=2, ndead_term=10, seed=1)
-        # init_run = nestcheck.dummy_data.get_dummy_run(
-        #     nthread, nsample, ndim, seed)
         self.random_seed_msg = (
             'This test is not affected by dyPolyChord, so if it fails '
             'your numpy random seed number generator is '
             'probably different to the one used to set the expected values.')
+        self.ninit = 2
+        self.nlive_const = 4
+        self.run_func = functools.partial(
+            dummy_run_func, ndim=2, ndead_term=10, seed=1, logl_range=10)
         self.settings = {'base_dir': TEST_CACHE_DIR,
                          'file_root': 'test_run',
                          'seed': 1,
@@ -122,6 +119,7 @@ class TestRunDyPolyChord(unittest.TestCase):
 
     def test_dynamic_evidence(self):
         dynamic_goal = 0
+        self.settings['max_ndead'] = 24
         dyPolyChord.run_dypolychord(
             self.run_func, self.settings, dynamic_goal,
             init_step=self.ninit, ninit=self.ninit, print_time=True,
@@ -150,37 +148,41 @@ class TestRunDyPolyChord(unittest.TestCase):
         self.assertAlmostEqual(e.logz(run), 4.170019624479282, places=12)
         self.assertEqual(run['output']['resume_ndead'], 6)
 
-    def test_nlive_allocate(self):
-        dynamic_goal = 0.5
-        settings = copy.deepcopy(self.settings)
-        settings['file_root'] = self.settings['file_root'] + '_init'
-        settings['nlive'] = self.ninit
-        self.run_func(settings, logl_factor=1)
-        print(self.settings['file_root'])
+
+class TestNliveAllocation(unittest.TestCase):
+
+    def test_allocate(self):
+        dynamic_goal = 1
+        run = nestcheck.dummy_data.get_dummy_run(2, 10, 2, seed=0)
         dyn_info = dyPolyChord.nlive_allocation.allocate(
-            self.settings, self.ninit, self.nlive_const,
-            dynamic_goal, smoothing_filter=None)
-        print(self.settings['file_root'])
+            run, 40, dynamic_goal, smoothing_filter=None)
         numpy.testing.assert_array_equal(
             dyn_info['init_nlive_allocation'],
             dyn_info['init_nlive_allocation_unsmoothed'])
-        # Check turning off filter
-        self.assertRaises(
-            TypeError, dyPolyChord.nlive_allocation.allocate,
-            self.settings, self.ninit, 100, dynamic_goal,
-            unexpected=1)
-        # check dynamic_goal=1 and not resuming warning
-        with self.assertWarns(UserWarning):
-            dyPolyChord.nlive_allocation.allocate(
-                self.settings, self.ninit, 100, 1)
-        # Check no points remaining message
-        settings = copy.deepcopy(self.settings)
-        settings['max_ndead'] = 1
+        # Check no points remaining error
         self.assertRaises(
             AssertionError, dyPolyChord.nlive_allocation.allocate,
-            settings, self.ninit, 100, dynamic_goal)
+            run, 1, dynamic_goal)
 
-#    def test_dyn_nlive_array(self):
+    def test_dyn_nlive_array_warning(self):
+        dynamic_goal = 0
+        run = nestcheck.dummy_data.get_dummy_run(2, 10, 2, seed=0)
+        smoothing = (lambda x: (x + 100 * np.asarray(list(range(x.shape[0])))))
+        with self.assertWarns(UserWarning):
+            dyn_info = dyPolyChord.nlive_allocation.allocate(
+                run, 40, dynamic_goal, smoothing_filter=smoothing)
+        numpy.testing.assert_array_equal(
+            dyn_info['init_nlive_allocation'],
+            dyn_info['init_nlive_allocation_unsmoothed'])
+
+    def test_sample_importance(self):
+        """Check sample importance provides expected results."""
+        run = nestcheck.dummy_data.get_dummy_thread(
+            4, 2, seed=0, logl_range=1)
+        imp = dyPolyChord.nlive_allocation.sample_importance(run, 0.5)
+        numpy.testing.assert_allclose(
+            np.asarray([0.66121679, 0.23896365, 0.08104094, 0.01877862]),
+            imp)
 
 
 @unittest.skip("Seeding problems")

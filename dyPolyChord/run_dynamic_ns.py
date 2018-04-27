@@ -8,6 +8,7 @@ import time
 import shutil
 import copy
 import numpy as np
+import scipy.signal
 import nestcheck.data_processing
 import nestcheck.io_utils as iou
 import dyPolyChord.nlive_allocation
@@ -50,6 +51,9 @@ def run_dypolychord(run_func, settings_dict_in, dynamic_goal, **kwargs):
     nlive_const = kwargs.pop('nlive_const', settings_dict_in['nlive'])
     print_time = kwargs.pop('print_time', False)
     seed_increment = kwargs.pop('seed_increment', 100)
+    default_smoothing = (lambda x: scipy.signal.savgol_filter(
+        x, 1 + (2 * ninit), 3, mode='nearest'))
+    smoothing_filter = kwargs.pop('smoothing_filter', default_smoothing)
     if kwargs:
         raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
     start_time = time.time()
@@ -91,8 +95,18 @@ def run_dypolychord(run_func, settings_dict_in, dynamic_goal, **kwargs):
         print(outputs_at_resumes.keys())
     # Step 2: calculate an allocation of live points
     # ----------------------------------------------
+    init_run = nestcheck.data_processing.process_polychord_run(
+        settings_dict_in['file_root'] + '_init', settings_dict_in['base_dir'])
+    # Calculate max number of samples
+    if settings_dict_in['max_ndead'] > 0:
+        samp_tot = settings_dict_in['max_ndead']
+        assert settings_dict_in['max_ndead'] > init_run['logl'].shape[0], (
+            'all points used in initial run and none left for dynamic run!')
+    else:
+        samp_tot = init_run['logl'].shape[0] * (nlive_const / ninit)
+        assert nlive_const > ninit
     dyn_info = dyPolyChord.nlive_allocation.allocate(
-        settings_dict_in, ninit, nlive_const, dynamic_goal)
+        init_run, samp_tot, dynamic_goal, smoothing_filter=smoothing_filter)
     if dyn_info['peak_start_ind'] != 0:
         # subtract 1 as ndead=1 corresponds to point 0
         resume_steps = np.asarray(step_ndead) - 1

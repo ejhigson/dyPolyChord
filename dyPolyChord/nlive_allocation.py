@@ -6,68 +6,46 @@ sampling.
 import warnings
 import itertools
 import numpy as np
-import scipy.signal
 import nestcheck.ns_run_utils
 import nestcheck.data_processing
 
 
-def allocate(pc_settings_in, ninit, nlive_const, dynamic_goal, **kwargs):
+def allocate(init_run, samp_tot, dynamic_goal, smoothing_filter=None):
     """
     Loads initial run and calculates an allocation of life points for dynamic
     run.
     """
-    default_smoothing = (lambda x: scipy.signal.savgol_filter(
-        x, 1 + (2 * ninit), 3, mode='nearest'))
-    smoothing_filter = kwargs.pop('smoothing_filter', default_smoothing)
-    if kwargs:
-        raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
-    init_run = nestcheck.data_processing.process_polychord_run(
-        pc_settings_in['file_root'] + '_init', pc_settings_in['base_dir'])
-    # Calculate max number of samples
-    if pc_settings_in['max_ndead'] > 0:
-        samp_tot = pc_settings_in['max_ndead']
-        assert pc_settings_in['max_ndead'] > init_run['logl'].shape[0], (
-            'all points used in initial run and none left for dynamic run!')
-    else:
-        samp_tot = init_run['logl'].shape[0] * (nlive_const / ninit)
-        assert nlive_const > ninit
-    # Adjust for samples already taken and perform rounding and smoothing
-    # operations.
+    assert np.all(np.diff(init_run['logl']) > 0)
+    # Calculate nlive allocation with and without smoothing
     nlives = dyn_nlive_array(init_run, samp_tot, dynamic_goal,
                              smoothing_filter=smoothing_filter)
     nlives_unsmoothed = dyn_nlive_array(init_run, samp_tot, dynamic_goal,
                                         smoothing_filter=None)
-    # Get the indexes of nlives points which are different to the previous
-    # points (i.e. remove consecutive duplicates, keeping first occurance)
-    inds_to_use = np.concatenate(
-        (np.asarray([0]), np.where(np.diff(nlives) != 0)[0] + 1))
-    # ################################################
     # Perform some checks
-    assert np.all(np.diff(init_run['logl']) > 0)
-    assert (count_turning_points(nlives) ==
-            count_turning_points(nlives[inds_to_use]))
     if dynamic_goal == 0:
-        assert nlives[0] > 0
+        if not np.all(np.diff(nlives) <= 0):
+            assert np.all(np.diff(nlives_unsmoothed) <= 0)
+            warnings.warn((
+                'Smoothing has added turning points to nlive allocation when '
+                'dynamic_goal=0. I am using the unsmoothed nlives '
+                'instead.'), UserWarning)
+            nlives = nlives_unsmoothed
         assert nlives[0] == nlives.max(), str(nlives)
         assert np.all(np.diff(nlives) <= 0), (
             'When targeting evidence, nlive should monotincally decrease!'
             + ' nlives = ' + str(nlives))
-        assert np.all(np.diff(nlives[inds_to_use]) < 0), (
-            'When targeting evidence, nlive should monotincally decrease!'
-            + ' nlives = ' + str(nlives))
-    else:
-        # assert nlives[0] == ninit, (
-        #     'nlives[0]={0} != ninit={1}'.format(nlives[0], ninit))
-        msg = str(count_turning_points(nlives)) + ' turning points in nlive.'
-        if smoothing_filter is None:
-            msg += ' Smoothing_filter is None.'
-        else:
-            msg += ' Without smoothing_filter there would have been '
-            msg += str(count_turning_points(nlives_unsmoothed))
-        print(msg)
     if dynamic_goal == 1 and nlives[0] != 0:
-        warnings.warn('nlives[0]={0} != 0'.format(nlives[0]), UserWarning)
-    # ################################################
+        warnings.warn(
+            'dynamic_goal=1 but the first allocated nlive point is {0}. '
+            'For most likelihoods we expect this to equal zero (although '
+            'it may be nonzero if there is significant posterior mass '
+            'at the edge of the prior).'.format(nlives[0]), UserWarning)
+    # Get the indexes of nlives points which are different to the previous
+    # points (i.e. remove consecutive duplicates, keeping first occurance)
+    inds_to_use = np.concatenate(
+        (np.asarray([0]), np.where(np.diff(nlives) != 0)[0] + 1))
+    assert (count_turning_points(nlives) ==
+            count_turning_points(nlives[inds_to_use]))
     # Check logl = approx -inf is mapped to the starting number of live points
     nlives_dict = {-1.e100: int(nlives[0])}
     for ind in inds_to_use:
@@ -112,6 +90,7 @@ def dyn_nlive_array(init_run, samp_tot, dynamic_goal, smoothing_filter=None):
     smoothing_filter: function or None, optional
         Smoothing for nlive array. Set to None for no smoothing.
     """
+    assert samp_tot > init_run['logl'].shape[0]
     # Calculate the importance of each point
     importance = sample_importance(init_run, dynamic_goal)
     # Calculate theoretical nlive allocation, which is proportional to
@@ -125,19 +104,6 @@ def dyn_nlive_array(init_run, samp_tot, dynamic_goal, smoothing_filter=None):
         nlive_array = importance_nlive
     else:
         nlive_array = smoothing_filter(importance_nlive)
-        if dynamic_goal == 0:
-            try:
-                assert nlive_array[0] == nlive_array.max()
-            except AssertionError:
-                if importance_nlive[0] == importance_nlive.max():
-                    warnings.warn(('Smoothing has added turning points to '
-                                   'nlive allocation when dynamic_goal=0. '
-                                   'I am using the unsmoothed nlives '
-                                   'instead.'), UserWarning)
-                    nlive_array = importance_nlive
-                else:
-                    print('Turning point was present before smoothing')
-                    raise
     nlive_array = np.clip(nlive_array, 0, None)
     # Renormalise to account for nlives below zero (i.e. regions where we have
     # already taken too many samples) as we cannot take negative samples.
