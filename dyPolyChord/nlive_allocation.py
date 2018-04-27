@@ -40,6 +40,13 @@ def allocate(init_run, samp_tot, dynamic_goal, smoothing_filter=None):
             'For most likelihoods we expect this to equal zero (although '
             'it may be nonzero if there is significant posterior mass '
             'at the edge of the prior).'.format(nlives[0]), UserWarning)
+    assert nlives.min() == 0
+    # Find number of blocks where nlive is nonzero
+    nonzero_blocks = np.asarray(
+        [k for k, g in itertools.groupby(nlives != 0)])
+    assert nonzero_blocks.sum() == 1, (
+        'nlive becomes zero then becomes nonzero! nonzero_blocks='
+        + str(nonzero_blocks))
     # Get the indexes of nlives points which are different to the previous
     # points (i.e. remove consecutive duplicates, keeping first occurance)
     inds_to_use = np.concatenate(
