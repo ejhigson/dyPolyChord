@@ -124,9 +124,10 @@ class TestRunDyPolyChord(unittest.TestCase):
             self.run_func, self.settings, dynamic_goal,
             init_step=self.ninit, ninit=self.ninit, print_time=True,
             nlive_const=self.nlive_const)
-        run = dyPolyChord.output_processing.process_dypolychord_run(
-            self.settings['file_root'], self.settings['base_dir'],
-            dynamic_goal=dynamic_goal, logl_warn_only=True)
+        with self.assertWarns(UserWarning):
+            run = dyPolyChord.output_processing.process_dypolychord_run(
+                self.settings['file_root'], self.settings['base_dir'],
+                dynamic_goal=dynamic_goal, logl_warn_only=True)
         self.assertAlmostEqual(run['logl'][0], 0.0011437481734488664,
                                msg=self.random_seed_msg, places=12)
         self.assertEqual(e.count_samples(run), 24)
@@ -138,9 +139,10 @@ class TestRunDyPolyChord(unittest.TestCase):
             self.run_func, self.settings, dynamic_goal,
             init_step=self.ninit, ninit=self.ninit, print_time=True,
             nlive_const=self.nlive_const)
-        run = dyPolyChord.output_processing.process_dypolychord_run(
-            self.settings['file_root'], self.settings['base_dir'],
-            dynamic_goal=dynamic_goal, logl_warn_only=True)
+        with self.assertWarns(UserWarning):
+            run = dyPolyChord.output_processing.process_dypolychord_run(
+                self.settings['file_root'], self.settings['base_dir'],
+                dynamic_goal=dynamic_goal, logl_warn_only=True)
         # test nlive allocation before tearDown removes the runs
         self.assertAlmostEqual(run['logl'][0], 0.0011437481734488664,
                                msg=self.random_seed_msg, places=12)
@@ -154,8 +156,9 @@ class TestNliveAllocation(unittest.TestCase):
     def test_allocate(self):
         dynamic_goal = 1
         run = nestcheck.dummy_data.get_dummy_run(2, 10, 2, seed=0)
-        dyn_info = dyPolyChord.nlive_allocation.allocate(
-            run, 40, dynamic_goal, smoothing_filter=None)
+        with self.assertWarns(UserWarning):
+            dyn_info = dyPolyChord.nlive_allocation.allocate(
+                run, 40, dynamic_goal, smoothing_filter=None)
         numpy.testing.assert_array_equal(
             dyn_info['init_nlive_allocation'],
             dyn_info['init_nlive_allocation_unsmoothed'])
