@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
-Functions for using PyPolyChord, including using it to perform dynamic nested
-sampling.
+Functions for selecting the number of live points in order to maximise
+calculation accuracy.
 """
 import warnings
 import itertools
@@ -96,6 +96,12 @@ def dyn_nlive_array(init_run, samp_tot, dynamic_goal, smoothing_filter=None):
     dynamic_goal: float
     smoothing_filter: function or None, optional
         Smoothing for nlive array. Set to None for no smoothing.
+
+    Returns
+    -------
+    nlive_array: 1d numpy array
+        Number of live points corresponding to each likelihood in
+        init_run['logl'].
     """
     assert samp_tot > init_run['logl'].shape[0]
     # Calculate the importance of each point
