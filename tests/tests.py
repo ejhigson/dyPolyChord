@@ -6,80 +6,128 @@ import copy
 import os
 import shutil
 import unittest
+import importlib
 import functools
 import scipy.special
 import numpy as np
 import numpy.testing
 import nestcheck.estimators as e
 import nestcheck.dummy_data
-import dyPolyChord
 import dyPolyChord.python_likelihoods as likelihoods
 import dyPolyChord.python_priors as priors
 import dyPolyChord.output_processing
-# try:
-#     import dyPolyChord.pypolychord_utils
-# except ImportError:
-#     pass
+import dyPolyChord.polychord_utils
+import dyPolyChord
 
 TEST_CACHE_DIR = 'chains_test'
 TEST_DIR_EXISTS_MSG = ('Directory ' + TEST_CACHE_DIR + ' exists! Tests use '
                        'this dir to check caching then delete it afterwards, '
                        'so the path should be left empty.')
-# SETTINGS_KWARGS = {
-#     'do_clustering': True,
-#     'posteriors': False,
-#     'equals': False,
-#     'write_dead': True,
-#     'read_resume': False,
-#     'write_resume': False,
-#     'write_stats': True,
-#     'write_prior': False,
-#     'write_live': False,
-#     'num_repeats': 1,
-#     'feedback': -1,
-#     'cluster_posteriors': False,
-#     # Set precision_criterion low to avoid non-deterministic like errors.
-#     # These occur due in the low dimension and low and nlive cases we use for
-#     # fast testing as runs sometimes get very close to the peak where the
-#     # likelihood becomes approximately constant.
-#     'precision_criterion': 0.01,
-#     'seed': 1,
-#     'max_ndead': -1,
-#     'base_dir': TEST_CACHE_DIR,
-#     'file_root': 'test_run',
-#     'nlive': 2,  # 50,  # used for nlive_const
-#     'nlives': {}}
-
-
 SETTINGS_KWARGS = {
+    'do_clustering': True,
+    'posteriors': False,
+    'equals': False,
+    'write_dead': True,
+    'read_resume': False,
+    'write_resume': False,
+    'write_stats': True,
+    'write_prior': False,
+    'write_live': False,
+    'num_repeats': 1,
+    'feedback': -1,
+    'cluster_posteriors': False,
+    # Set precision_criterion low to avoid non-deterministic like errors.
+    # These occur due in the low dimension and low and nlive cases we use for
+    # fast testing as runs sometimes get very close to the peak where the
+    # likelihood becomes approximately constant.
+    'precision_criterion': 0.01,
+    'seed': 1,
+    'max_ndead': -1,
     'base_dir': TEST_CACHE_DIR,
     'file_root': 'test_run',
-    'seed': 1}
+    'nlive': 2,  # 50,  # used for nlive_const
+    'nlives': {}}
 
 
-def dummy_run_func(settings, ndim=2, ndead_term=10, seed=1,
-                   logl_range=10):
-    nthread = settings['nlive']
-    if settings['max_ndead'] <= 0:
-        ndead = ndead_term
-    else:
-        ndead = min(ndead_term, settings['max_ndead'])
-    if 'nlives' not in settings or not settings['nlives']:
-        assert ndead % nthread == 0, (
-            'ndead={0}, nthread={1}'.format(ndead, nthread))
-    nsample = ndead // nthread
-    nsample += 1  # mimic PolyChord, which includes live point at termination
-    # make dead points array
-    run = nestcheck.dummy_data.get_dummy_run(
-        nthread, nsample, ndim, seed=seed, logl_range=logl_range)
-    nestcheck.ns_run_utils.get_run_threads(run)
-    dead = nestcheck.dummy_data.run_dead_points_array(run)
-    root = os.path.join(settings['base_dir'], settings['file_root'])
-    np.savetxt(root + '_dead-birth.txt', dead)
-    if settings['write_resume']:
-        np.savetxt(root + '.resume', np.zeros(10))
-    nestcheck.dummy_data.write_dummy_polychord_stats(
-        settings['file_root'], settings['base_dir'], ndead=dead.shape[0])
+@unittest.skipIf(importlib.util.find_spec("PyPolyChord") is None,
+                 'PyPolyChord not installed.')
+class TestPyPolyChordUtils(unittest.TestCase):
+
+    def test_python_run_func(self):
+        import dyPolyChord.pypolychord_utils as pypolychord_utils
+        assert not os.path.exists(TEST_CACHE_DIR), TEST_DIR_EXISTS_MSG
+        os.makedirs(TEST_CACHE_DIR)
+        func = pypolychord_utils.get_python_run_func(
+            likelihoods.gaussian, priors.uniform, 2)
+        self.assertIsInstance(func, functools.partial)
+        self.assertEqual(set(func.keywords.keys()),
+                         {'nderived', 'ndims', 'likelihood', 'prior'})
+        func({'base_dir': TEST_CACHE_DIR, 'file_root': 'temp', 'nlive': 5,
+              'max_ndead': 5, 'feedback': -1})
+        shutil.rmtree(TEST_CACHE_DIR)
+
+
+class TestPolyChordUtils(unittest.TestCase):
+
+    def setUp(self):
+        assert not os.path.exists(TEST_CACHE_DIR), TEST_DIR_EXISTS_MSG
+        os.makedirs(TEST_CACHE_DIR)
+
+    def tearDown(self):
+        """Remove any caches saved by the tests."""
+        try:
+            shutil.rmtree(TEST_CACHE_DIR)
+        except FileNotFoundError:
+            pass
+
+    def test_format_settings(self):
+        self.assertEqual(
+            'T', dyPolyChord.polychord_utils.format_setting(True))
+        self.assertEqual(
+            'F', dyPolyChord.polychord_utils.format_setting(False))
+        self.assertEqual(
+            '1', dyPolyChord.polychord_utils.format_setting(1))
+        self.assertEqual(
+            '1 2', dyPolyChord.polychord_utils.format_setting([1, 2]))
+
+    def test_get_prior_block_str(self):
+        name = 'uniform'
+        prior_params = [1, 2]
+        expected = ('P : p{0} | \\theta_{{{0}}} | {1} | {2} | {3} |'
+                    .format(1, 1, name, 1))
+        expected += dyPolyChord.polychord_utils.format_setting(prior_params)
+        expected += '\n'
+        self.assertEqual(dyPolyChord.polychord_utils.get_prior_block_str(
+            name, prior_params, 1, speed=1, block=1), expected)
+
+    def test_write_ini(self):
+        settings = {'nlive': 50, 'nlives': {-20.0: 100, -10.0: 200}}
+        prior_block_str = 'prior_block\n'
+        derived_str = 'derived'
+        file_path = os.path.join(TEST_CACHE_DIR, 'temp.ini')
+        dyPolyChord.polychord_utils.write_ini(
+            settings, prior_block_str, file_path, derived_str=derived_str)
+        with open(file_path, 'r') as ini_file:
+            lines = ini_file.readlines()
+        self.assertEqual(lines[-2], prior_block_str)
+        self.assertEqual(lines[-1], derived_str)
+        # Use sorted as ini lines written from dict.items() so order not
+        # guarenteed.
+        self.assertEqual(sorted(lines[:3]),
+                         ['loglikes = -20.0 -10.0\n',
+                          'nlive = 50\n',
+                          'nlives = 100 200\n'])
+
+    def test_compiled_run_func(self):
+        ndim = 2
+        prior_name = 'uniform'
+        prior_params = [1, 2]
+        func = dyPolyChord.polychord_utils.get_compiled_run_func(
+            'echo', ndim, prior_name, prior_params)
+        self.assertIsInstance(func, functools.partial)
+        self.assertEqual(set(func.keywords.keys()),
+                         {'derived_str', 'ex_path', 'prior_block_str'})
+        func({'base_dir': TEST_CACHE_DIR, 'file_root': 'temp'})
 
 
 class TestRunDyPolyChord(unittest.TestCase):
@@ -114,8 +162,7 @@ class TestRunDyPolyChord(unittest.TestCase):
     def test_run_dypolychord_unexpected_kwargs(self):
         self.assertRaises(
             TypeError, dyPolyChord.run_dypolychord,
-            lambda x: None, self.settings, 1,
-            unexpected=1)
+            lambda x: None, self.settings, 1, unexpected=1)
 
     def test_dynamic_evidence(self):
         dynamic_goal = 0
@@ -155,7 +202,7 @@ class TestNliveAllocation(unittest.TestCase):
 
     def test_allocate(self):
         dynamic_goal = 1
-        run = nestcheck.dummy_data.get_dummy_run(2, 10, 2, seed=0)
+        run = nestcheck.dummy_data.get_dummy_run(2, 10, ndim=2, seed=0)
         with self.assertWarns(UserWarning):
             dyn_info = dyPolyChord.nlive_allocation.allocate(
                 run, 40, dynamic_goal, smoothing_filter=None)
@@ -169,7 +216,7 @@ class TestNliveAllocation(unittest.TestCase):
 
     def test_dyn_nlive_array_warning(self):
         dynamic_goal = 0
-        run = nestcheck.dummy_data.get_dummy_run(2, 10, 2, seed=0)
+        run = nestcheck.dummy_data.get_dummy_run(2, 10, ndim=2, seed=0)
         smoothing = (lambda x: (x + 100 * np.asarray(list(range(x.shape[0])))))
         with self.assertWarns(UserWarning):
             dyn_info = dyPolyChord.nlive_allocation.allocate(
@@ -181,7 +228,7 @@ class TestNliveAllocation(unittest.TestCase):
     def test_sample_importance(self):
         """Check sample importance provides expected results."""
         run = nestcheck.dummy_data.get_dummy_thread(
-            4, 2, seed=0, logl_range=1)
+            4, ndim=2, seed=0, logl_range=1)
         imp = dyPolyChord.nlive_allocation.sample_importance(run, 0.5)
         numpy.testing.assert_allclose(
             np.asarray([0.66121679, 0.23896365, 0.08104094, 0.01877862]),
@@ -377,6 +424,38 @@ class TestLikelihoods(unittest.TestCase):
         self.assertAlmostEqual(logl, -1, places=12)
         self.assertIsInstance(phi, list)
         self.assertEqual(len(phi), 0)
+
+
+# Helper functions
+# ----------------
+
+
+def dummy_run_func(settings, ndim=2, ndead_term=10, seed=1,
+                   logl_range=10):
+    """
+    Produces dummy PolyChord output files for use in testing.
+    """
+    nthread = settings['nlive']
+    if settings['max_ndead'] <= 0:
+        ndead = ndead_term
+    else:
+        ndead = min(ndead_term, settings['max_ndead'])
+    if 'nlives' not in settings or not settings['nlives']:
+        assert ndead % nthread == 0, (
+            'ndead={0}, nthread={1}'.format(ndead, nthread))
+    nsample = ndead // nthread
+    nsample += 1  # mimic PolyChord, which includes live point at termination
+    # make dead points array
+    run = nestcheck.dummy_data.get_dummy_run(
+        nthread, nsample, seed=seed, logl_range=logl_range)
+    nestcheck.ns_run_utils.get_run_threads(run)
+    dead = nestcheck.dummy_data.run_dead_points_array(run)
+    root = os.path.join(settings['base_dir'], settings['file_root'])
+    np.savetxt(root + '_dead-birth.txt', dead)
+    if settings['write_resume']:
+        np.savetxt(root + '.resume', np.zeros(10))
+    nestcheck.dummy_data.write_dummy_polychord_stats(
+        settings['file_root'], settings['base_dir'], ndead=dead.shape[0])
 
 
 if __name__ == '__main__':
