@@ -55,7 +55,7 @@ def get_prior_block_str(name, prior_params, ndim, speed=1, block=1):
 
 
 def format_setting(setting):
-    """Return settings as strings using 'T' for True and 'F' for False."""
+    """Return setting as string using 'T' for True and 'F' for False."""
     if isinstance(setting, bool):
         return str(setting)[0]
     elif isinstance(setting, list):
