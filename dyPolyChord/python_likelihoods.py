@@ -16,7 +16,7 @@ def gaussian(theta, sigma=0.5, n_derived=0):
         Parameters.
     sigma: float, optional
         Standard deviation of Gaussian (the same for each parameter).
-    phi: int, optional
+    nderived: int, optional
         Number of derived parameters.
 
     Returns
@@ -46,7 +46,7 @@ def gaussian_shell(theta, sigma=0.2, rshell=2, n_derived=0):
         Standard deviation of shell.
     rshell: float, optional
         Distance of shell peak from origin.
-    phi: int, optional
+    nderived: int, optional
         Number of derived parameters.
 
     Returns
@@ -71,7 +71,7 @@ def rastrigin(theta, A=10, n_derived=0):
     theta: list of floats
         Parameters.
     A: float, optional
-    phi: int, optional
+    nderived: int, optional
         Number of derived parameters.
 
     Returns
@@ -100,7 +100,7 @@ def rosenbrock(theta, a=1, b=100, n_derived=0):
         Parameters.
     a: float, optional
     b: float, optional
-    phi: int, optional
+    nderived: int, optional
         Number of derived parameters.
 
     Returns
@@ -120,8 +120,29 @@ def rosenbrock(theta, a=1, b=100, n_derived=0):
     return logl, phi
 
 
-def gaussian_mix(theta, n_derived=0, sep=4, weights=(0.4, 0.3, 0.2, 0.1)):
-    """Gaussian mixture model."""
+def gaussian_mix(theta, sep=4, weights=(0.4, 0.3, 0.2, 0.1), n_derived=0):
+    """
+    Gaussian mixture likelihood containing up to 4 compoents, each with
+    :math:`\\sigma=1`, at positions (0, sep), (0, -sep), (sep, 0), (-sep, 0).
+
+    Parameters
+    ----------
+    theta: list of floats
+        Parameters.
+    sep: float
+        Distance from each Gaussian to the origin.
+    weights: iterable of floats
+        weights of each Gaussian component.
+    nderived: int, optional
+        Number of derived parameters.
+
+    Returns
+    -------
+    logl: float
+        Log-likelihood.
+    phi: list of floats
+        Values of any derived parameters.
+    """
     assert len(weights) in [2, 3, 4], (
         'So far only set up for 2, 3 or 4 components. Weights=' + str(weights))
     assert np.isclose(sum(weights), 1), (

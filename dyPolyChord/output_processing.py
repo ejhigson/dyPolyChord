@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Functions for loading and processing dynamic runs.
+Functions for loading and processing dyPolyChord dynamic nested sampling runs.
 """
 import os
 import numpy as np
@@ -10,7 +10,25 @@ import nestcheck.io_utils as iou
 
 
 def settings_root(likelihood_name, prior_name, ndims, **kwargs):
-    """Get a standard string containing information about settings."""
+    """
+    Returns a standard string containing information about settings.
+
+    Parameters
+    ----------
+    likelihood_name: str
+    prior_name: str
+    ndims: int
+    prior_scale: float or int
+    dynamic_goal: float, int or None
+    nlive_const: int
+    nrepeats: int
+    nint: int, optional
+    init_step: int, optional
+
+    Returns
+    -------
+    root: str
+    """
     prior_scale = kwargs.pop('prior_scale')
     dynamic_goal = kwargs.pop('dynamic_goal')
     nlive_const = kwargs.pop('nlive_const')
@@ -37,6 +55,22 @@ def process_dypolychord_run(file_root, base_dir, **kwargs):
     """
     Load the output files of a dynamic run and process them to the nestcheck
     format.
+
+    Parameters
+    ----------
+    file_root: str
+    base_dir: str
+    dynamic_goal: float
+    logl_warn_only: bool, optional
+        Whether to throw error or warning if there are duplicate point
+        likelihoods. See the nestcheck documentation for more details.
+
+    Returns
+    -------
+    run: dict
+        Nested sampling run in nestcheck format (see
+        http://nestcheck.readthedocs.io/en/latest/api.html for more
+        information).
     """
     dynamic_goal = kwargs.pop('dynamic_goal')
     logl_warn_only = kwargs.pop('logl_warn_only', False)
@@ -81,12 +115,24 @@ def process_dypolychord_run(file_root, base_dir, **kwargs):
 
 def combine_resumed_dyn_run(init, dyn, resume_ndead):
     """
-    Process dynamic nested sampling run including both initial exploratory run
-    and second dynamic run.
+    Merge initial run and dynamic run which was resumed from it, including
+    removing duplicate points present in both runs.
 
-    This function is used to remove duplicate points which are in both the dyn
-    and init output files: these are the dead and live points present at the
-    step at which dyn was resumed from init.
+    Parameters
+    ----------
+    init: dict
+        Initial exploratory run in nestcheck format (see
+        http://nestcheck.readthedocs.io/en/latest/api.html for more
+        information).
+    dyn: dict
+        Dynamic run in nestcheck format.
+    resume_ndead: int
+        The number of dead points present when dyn was resumed from init.
+
+    Returns
+    -------
+    run: dict
+        Combined run in nestcheck format.
     """
     assert np.array_equal(
         init['logl'][:resume_ndead], dyn['logl'][:resume_ndead]), (

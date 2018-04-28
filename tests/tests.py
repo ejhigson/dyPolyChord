@@ -61,7 +61,7 @@ class TestPyPolyChordUtils(unittest.TestCase):
             likelihoods.gaussian, priors.uniform, 2)
         self.assertIsInstance(func, functools.partial)
         self.assertEqual(set(func.keywords.keys()),
-                         {'nderived', 'ndims', 'likelihood', 'prior'})
+                         {'nderived', 'ndim', 'likelihood', 'prior'})
         func({'base_dir': TEST_CACHE_DIR, 'file_root': 'temp', 'nlive': 5,
               'max_ndead': 5, 'feedback': -1})
         shutil.rmtree(TEST_CACHE_DIR)
@@ -100,6 +100,11 @@ class TestPolyChordUtils(unittest.TestCase):
         self.assertEqual(dyPolyChord.polychord_utils.get_prior_block_str(
             name, prior_params, 1, speed=1, block=1), expected)
 
+    def test_get_prior_block_unexpected_kwargs(self):
+        self.assertRaises(
+            TypeError, dyPolyChord.polychord_utils.get_prior_block_str,
+            'param_name', (1, 2), 2, unexpected=1)
+
     def test_write_ini(self):
         settings = {'nlive': 50, 'nlives': {-20.0: 100, -10.0: 200}}
         prior_block_str = 'prior_block\n'
@@ -119,11 +124,8 @@ class TestPolyChordUtils(unittest.TestCase):
                           'nlives = 100 200\n'])
 
     def test_compiled_run_func(self):
-        ndim = 2
-        prior_name = 'uniform'
-        prior_params = [1, 2]
         func = dyPolyChord.polychord_utils.get_compiled_run_func(
-            'echo', ndim, prior_name, prior_params)
+            'echo', 'this is a dummy prior block string')
         self.assertIsInstance(func, functools.partial)
         self.assertEqual(set(func.keywords.keys()),
                          {'derived_str', 'ex_path', 'prior_block_str'})
@@ -162,14 +164,14 @@ class TestRunDyPolyChord(unittest.TestCase):
     def test_run_dypolychord_unexpected_kwargs(self):
         self.assertRaises(
             TypeError, dyPolyChord.run_dypolychord,
-            lambda x: None, self.settings, 1, unexpected=1)
+            lambda x: None, 1, unexpected=1)
 
     def test_dynamic_evidence(self):
         dynamic_goal = 0
         self.settings['max_ndead'] = 24
         dyPolyChord.run_dypolychord(
-            self.run_func, self.settings, dynamic_goal,
-            init_step=self.ninit, ninit=self.ninit, print_time=True,
+            self.run_func, dynamic_goal, settings_dict=self.settings,
+            init_step=self.ninit, ninit=self.ninit,
             nlive_const=self.nlive_const)
         with self.assertWarns(UserWarning):
             run = dyPolyChord.output_processing.process_dypolychord_run(
@@ -183,8 +185,8 @@ class TestRunDyPolyChord(unittest.TestCase):
     def test_dynamic_param(self):
         dynamic_goal = 1
         dyPolyChord.run_dypolychord(
-            self.run_func, self.settings, dynamic_goal,
-            init_step=self.ninit, ninit=self.ninit, print_time=True,
+            self.run_func, dynamic_goal, settings_dict=self.settings,
+            init_step=self.ninit, ninit=self.ninit,
             nlive_const=self.nlive_const)
         with self.assertWarns(UserWarning):
             run = dyPolyChord.output_processing.process_dypolychord_run(
@@ -242,10 +244,10 @@ class TestRunDyPolyChordOld(unittest.TestCase):
         """Make a directory for saving test results."""
         assert not os.path.exists(TEST_CACHE_DIR), TEST_DIR_EXISTS_MSG
         self.ninit = 20
-        ndims = 2
+        ndim = 2
         self.run_func = dyPolyChord.pypolychord_utils.get_python_run_func(
             functools.partial(likelihoods.gaussian, sigma=1),
-            functools.partial(priors.uniform, prior_scale=10), ndims=ndims)
+            functools.partial(priors.uniform, prior_scale=10), ndim=ndim)
         self.random_seed_msg = (
             'This test is not affected by most of dyPolyChord, so if it fails '
             'your PolyChord install\'s random seed number generator is '
@@ -261,8 +263,8 @@ class TestRunDyPolyChordOld(unittest.TestCase):
     def test_dynamic_evidence(self):
         dynamic_goal = 0
         dyPolyChord.run_dypolychord(
-            self.run_func, SETTINGS_KWARGS, dynamic_goal,
-            init_step=self.ninit, ninit=self.ninit, print_time=True)
+            self.run_func, dynamic_goal, settings_dict=SETTINGS_KWARGS,
+            init_step=self.ninit, ninit=self.ninit)
         run = dyPolyChord.output_processing.process_dypolychord_run(
             SETTINGS_KWARGS['file_root'], SETTINGS_KWARGS['base_dir'],
             dynamic_goal=dynamic_goal)
@@ -276,8 +278,8 @@ class TestRunDyPolyChordOld(unittest.TestCase):
     def test_dynamic_param(self):
         dynamic_goal = 1
         dyPolyChord.run_dypolychord(
-            self.run_func, SETTINGS_KWARGS, dynamic_goal,
-            init_step=self.ninit, ninit=self.ninit, print_time=True)
+            self.run_func, dynamic_goal, settings_dict=SETTINGS_KWARGS,
+            init_step=self.ninit, ninit=self.ninit)
         run = dyPolyChord.output_processing.process_dypolychord_run(
             SETTINGS_KWARGS['file_root'], SETTINGS_KWARGS['base_dir'],
             dynamic_goal=dynamic_goal)

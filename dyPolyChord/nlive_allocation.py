@@ -12,8 +12,26 @@ import nestcheck.data_processing
 
 def allocate(init_run, samp_tot, dynamic_goal, smoothing_filter=None):
     """
-    Loads initial run and calculates an allocation of life points for dynamic
-    run.
+    Calculates an allocation of life points for dynamic run, checks the output
+    allocation and the smoothing applied, and returns the information needed
+    for the dynamic run in a dictionary.
+
+    Parameters
+    ----------
+    init_run: dict
+        Initial exploratory run in nestcheck format (see
+        http://nestcheck.readthedocs.io/en/latest/api.html for more
+        information).
+    samp_tot: int
+        Total number of samples (including both the initial exploratory run and
+        the second dynamic run).
+    dynamic_goal: float
+    smoothing_filter: function or None, optional
+        Smoothing for nlive array. Set to None for no smoothing.
+
+    Returns
+    -------
+    dyn_info: dict
     """
     assert np.all(np.diff(init_run['logl']) > 0)
     # Calculate nlive allocation with and without smoothing
