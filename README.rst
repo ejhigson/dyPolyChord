@@ -6,7 +6,10 @@ dyPolyChord
 .. image:: https://coveralls.io/repos/github/ejhigson/dyPolyChord/badge.svg?branch=master
 	:target: https://coveralls.io/github/ejhigson/dyPolyChord?branch=master
 .. image:: https://readthedocs.org/projects/dyPolyChord/badge/?version=latest
-	:target: http://dyPolyChord.readthedocs.io/en/latest/?badge=latest
+	:target: http://dyPolyChord.readthedocs.io/en/latest/?badge=lates
+.. Remember to update badge url when working on codeclimate!
+
+..
 .. image:: https://api.codeclimate.com/v1/badges/a99a88d28ad37a79dbf6/maintainability
    :target: https://codeclimate.com/github/codeclimate/codeclimate/maintainability
    :alt: Maintainability
