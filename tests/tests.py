@@ -174,13 +174,13 @@ class TestRunDyPolyChord(unittest.TestCase):
     def test_run_dypolychord_unexpected_kwargs(self):
         self.assertRaises(
             TypeError, dyPolyChord.run_dypolychord,
-            lambda x: None, 1, unexpected=1)
+            lambda x: None, 1, {}, unexpected=1)
 
     def test_dynamic_evidence(self):
         dynamic_goal = 0
         self.settings['max_ndead'] = 24
         dyPolyChord.run_dypolychord(
-            self.run_func, dynamic_goal, settings_dict=self.settings,
+            self.run_func, dynamic_goal, self.settings,
             init_step=self.ninit, ninit=self.ninit,
             nlive_const=self.nlive_const)
         with self.assertWarns(UserWarning):
@@ -195,7 +195,7 @@ class TestRunDyPolyChord(unittest.TestCase):
     def test_dynamic_param(self):
         dynamic_goal = 1
         dyPolyChord.run_dypolychord(
-            self.run_func, dynamic_goal, settings_dict=self.settings,
+            self.run_func, dynamic_goal, self.settings,
             init_step=self.ninit, ninit=self.ninit,
             nlive_const=self.nlive_const)
         with self.assertWarns(UserWarning):
@@ -214,7 +214,7 @@ class TestRunDyPolyChord(unittest.TestCase):
         dynamic_goal = 1
         self.assertRaises(
             AssertionError, dyPolyChord.run_dypolychord,
-            self.run_func, dynamic_goal, settings_dict=self.settings,
+            self.run_func, dynamic_goal, self.settings,
             init_step=self.ninit, ninit=self.ninit,
             nlive_const=self.nlive_const, comm=DummyMPIComm(0))
 

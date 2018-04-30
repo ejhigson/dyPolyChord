@@ -13,7 +13,7 @@ import dyPolyChord.nlive_allocation
 
 
 @nestcheck.io_utils.timing_decorator
-def run_dypolychord(run_func, dynamic_goal, **kwargs):
+def run_dypolychord(run_func, dynamic_goal, settings_dict_in, **kwargs):
     """
     Performs dynamic nested sampling using the algorithm described in
     Appendix E of "Dynamic nested sampling: an improved algorithm for
@@ -78,7 +78,6 @@ def run_dypolychord(run_func, dynamic_goal, **kwargs):
                         'nlives': {},
                         'write_resume': False,
                         'read_resume': False}
-    settings_dict_in = kwargs.pop('settings_dict', {})
     for key, value in default_settings.items():
         if key not in settings_dict_in:
             settings_dict_in[key] = value
