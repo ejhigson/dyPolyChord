@@ -9,7 +9,7 @@ import PyPolyChord.settings
 
 
 def python_run_func(settings_dict, likelihood=None, prior=None, ndim=None,
-                    nderived=0):
+                    nderived=0, comm=None):
     """
     Runs PyPolyChord with specified inputs and writes output files. See the
     PyPolyChord documentation for more details.
@@ -23,8 +23,17 @@ def python_run_func(settings_dict, likelihood=None, prior=None, ndim=None,
     ndim: int
     nderived: int
     """
-    settings = PyPolyChord.settings.PolyChordSettings(
-        ndim, nderived, **settings_dict)
+    if comm is None:
+        settings = PyPolyChord.settings.PolyChordSettings(
+            ndim, nderived, **settings_dict)
+    else:
+        rank = comm.Get_rank()
+        if rank == 0:
+            settings = PyPolyChord.settings.PolyChordSettings(
+                ndim, nderived, **settings_dict)
+        else:
+            settings = None
+        comm.bcast(settings, root=0)
     PyPolyChord.run_polychord(likelihood, ndim, nderived, settings, prior)
 
 
