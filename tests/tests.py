@@ -66,6 +66,16 @@ class TestPyPolyChordUtils(unittest.TestCase):
               'max_ndead': 5, 'feedback': -1})
         shutil.rmtree(TEST_CACHE_DIR)
 
+    def test_comm(self):
+        """Test MPI comm."""
+        import dyPolyChord.pypolychord_utils as pypolychord_utils
+        self.assertRaises(
+            AssertionError, pypolychord_utils.python_run_func,
+            {}, likelihood=1, prior=2, ndim=3, comm=DummyMPIComm(0))
+        self.assertRaises(
+            AssertionError, pypolychord_utils.python_run_func,
+            {}, likelihood=1, prior=2, ndim=3, comm=DummyMPIComm(1))
+
 
 class TestPolyChordUtils(unittest.TestCase):
 
@@ -198,6 +208,15 @@ class TestRunDyPolyChord(unittest.TestCase):
         self.assertEqual(e.count_samples(run), 16)
         self.assertAlmostEqual(e.logz(run), 4.170019624479282, places=12)
         self.assertEqual(run['output']['resume_ndead'], 6)
+
+    def test_comm(self):
+        """Test MPI comm."""
+        dynamic_goal = 1
+        self.assertRaises(
+            AssertionError, dyPolyChord.run_dypolychord,
+            self.run_func, dynamic_goal, settings_dict=self.settings,
+            init_step=self.ninit, ninit=self.ninit,
+            nlive_const=self.nlive_const, comm=DummyMPIComm(0))
 
 
 class TestNliveAllocation(unittest.TestCase):
@@ -464,6 +483,19 @@ def dummy_run_func(settings, **kwargs):
         np.savetxt(root + '.resume', np.zeros(10))
     nestcheck.dummy_data.write_dummy_polychord_stats(
         settings['file_root'], settings['base_dir'], ndead=dead.shape[0])
+
+
+class DummyMPIComm(object):
+    """A dummy MPI.COMM object."""
+
+    def __init__(self, rank):
+        self.rank = rank
+
+    def Get_rank(self):
+        return self.rank
+
+    def bcast(self, obj, root=0):
+        raise AssertionError
 
 
 if __name__ == '__main__':

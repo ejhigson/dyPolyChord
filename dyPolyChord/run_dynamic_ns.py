@@ -103,51 +103,64 @@ def run_dypolychord(run_func, dynamic_goal, **kwargs):
                         settings_dict_in['file_root'])
     # Step 1: do initial run
     # ----------------------
-    settings_dict = copy.deepcopy(settings_dict_in)  # so we dont edit settings
-    settings_dict['file_root'] = settings_dict_in['file_root'] + '_init'
-    settings_dict['nlive'] = ninit
+    settings_dict = None  # define for rank != 1
+    if rank == 0:
+        # so we dont edit settings
+        settings_dict = copy.deepcopy(settings_dict_in)
+        settings_dict['file_root'] = settings_dict_in['file_root'] + '_init'
+        settings_dict['nlive'] = ninit
     if dynamic_goal == 0:
-        run_func(settings_dict)
+        run_func(settings_dict, comm=comm)
     else:
-        settings_dict['write_resume'] = True
-        settings_dict['read_resume'] = False
+        if rank == 0:
+            try:
+                os.remove(root + '_init.resume')
+            except FileNotFoundError:
+                pass
+            settings_dict['write_resume'] = True
+            settings_dict['read_resume'] = True
+            step_ndead = []
+            resume_outputs = {}
         add_points = True
-        step_ndead = []
-        outputs_at_resumes = {}
         while add_points:
-            if len(step_ndead) == 1:
-                settings_dict['read_resume'] = True
-            settings_dict['max_ndead'] = (len(step_ndead) + 1) * init_step
-            if settings_dict['seed'] >= 0:
-                settings_dict['seed'] += seed_increment
-            run_func(settings_dict)
-            run_output = nestcheck.data_processing.process_polychord_stats(
-                settings_dict['file_root'], settings_dict['base_dir'])
-            # Store run outputs for getting number of likelihood calls while
-            # accounding for resuming a run.
-            outputs_at_resumes[run_output['ndead']] = run_output
-            step_ndead.append(run_output['ndead'] - settings_dict['nlive'])
-            if len(step_ndead) >= 2:
-                if step_ndead[-1] == step_ndead[-2]:
-                    break
-            # store resume file in new file path
-            shutil.copyfile(root + '_init.resume',
-                            root + '_init_' + str(step_ndead[-1]) + '.resume')
+            if rank == 0:
+                settings_dict['max_ndead'] = (len(step_ndead) + 1) * init_step
+                if settings_dict['seed'] >= 0:
+                    settings_dict['seed'] += seed_increment
+            run_func(settings_dict, comm=comm)
+            if rank == 0:
+                run_output = nestcheck.data_processing.process_polychord_stats(
+                    settings_dict['file_root'], settings_dict['base_dir'])
+                # Store run outputs for getting number of likelihood calls
+                # while accounding for resuming a run.
+                resume_outputs[run_output['ndead']] = run_output
+                step_ndead.append(run_output['ndead'] - settings_dict['nlive'])
+                if len(step_ndead) >= 2:
+                    if step_ndead[-1] == step_ndead[-2]:
+                        add_points = False
+                # store resume file in new file path
+                shutil.copyfile(
+                    root + '_init.resume',
+                    root + '_init_' + str(step_ndead[-1]) + '.resume')
+            if comm is not None:
+                add_points = comm.bcast(add_points, root=0)
     # Step 2: calculate an allocation of live points
     # ----------------------------------------------
     if rank == 0:
         init_run = nestcheck.data_processing.process_polychord_run(
-            settings_dict_in['file_root'] + '_init', settings_dict_in['base_dir'])
+            settings_dict_in['file_root'] + '_init',
+            settings_dict_in['base_dir'])
         # Calculate max number of samples
         if settings_dict_in['max_ndead'] > 0:
             samp_tot = settings_dict_in['max_ndead']
             assert settings_dict_in['max_ndead'] > init_run['logl'].shape[0], (
-                'all points used in initial run and none left for dynamic run!')
+                'all points used in init run - None left for dynamic run')
         else:
             samp_tot = init_run['logl'].shape[0] * (nlive_const / ninit)
             assert nlive_const > ninit
         dyn_info = dyPolyChord.nlive_allocation.allocate(
-            init_run, samp_tot, dynamic_goal, smoothing_filter=smoothing_filter)
+            init_run, samp_tot, dynamic_goal,
+            smoothing_filter=smoothing_filter)
         if dyn_info['peak_start_ind'] != 0:
             # subtract 1 as ndead=1 corresponds to point 0
             resume_steps = np.asarray(step_ndead) - 1
@@ -161,12 +174,12 @@ def run_dypolychord(run_func, dynamic_goal, **kwargs):
                             root + '_dyn.resume')
             # Save resume info
             dyn_info['resume_ndead'] = resume_ndead
-            dyn_info['resume_nlike'] = outputs_at_resumes[resume_ndead]['nlike']
+            dyn_info['resume_nlike'] = resume_outputs[resume_ndead]['nlike']
         nestcheck.io_utils.pickle_save(
             dyn_info, root + '_dyn_info', overwrite_existing=True)
         try:
-            # Remove all the temporary resume files. Use set to avoid duplicates as
-            # these cause OSErrors.
+            # Remove all the temporary resume files. Use set to avoid
+            # duplicates as these cause OSErrors.
             for snd in set(step_ndead):
                 os.remove(root + '_init_' + str(snd) + '.resume')
         except NameError:  # occurs when not saving resumes so step_ndead list
@@ -174,7 +187,8 @@ def run_dypolychord(run_func, dynamic_goal, **kwargs):
         # Step 3: do dynamic run
         # ----------------------
         final_init_seed = settings_dict['seed']
-        settings_dict = copy.deepcopy(settings_dict_in)  # remove edits from init
+        # remove edits from init
+        settings_dict = copy.deepcopy(settings_dict_in)
         if final_init_seed >= 0:
             assert settings_dict_in['seed'] >= 0, (
                 'if input seed was <0 it should not have been edited')
@@ -187,15 +201,11 @@ def run_dypolychord(run_func, dynamic_goal, **kwargs):
         settings_dict['nlives'] = dyn_info['nlives_dict']
         settings_dict['read_resume'] = (dyn_info['peak_start_ind'] != 0)
         settings_dict['file_root'] = settings_dict_in['file_root'] + '_dyn'
-    if comm is not None:
-        print("comm is not None! bcasting.")
-        comm.bcast(settings_dict, root=0)
-        comm.barrier()
-    run_func(settings_dict)
+    run_func(settings_dict, comm=comm)
     if rank == 0:
-        # tidy up remaining .resume files (if the function has reach this point,
-        # both the initial and dynamic runs have finished so we shouldn't need to
-        # resume)
+        # tidy up remaining .resume files (if the function has reach this
+        # point, both the initial and dynamic runs have finished so we
+        # shouldn't need to resume)
         for extra in ['init', 'dyn']:
             try:
                 os.remove(root + '_{0}.resume'.format(extra))
