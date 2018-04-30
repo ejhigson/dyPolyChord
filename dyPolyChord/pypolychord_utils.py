@@ -8,8 +8,7 @@ import PyPolyChord
 import PyPolyChord.settings
 
 
-def python_run_func(settings_dict, likelihood=None, prior=None, ndim=None,
-                    nderived=0, comm=None):
+def python_run_func(settings_dict, **kwargs):
     """
     Runs PyPolyChord with specified inputs and writes output files. See the
     PyPolyChord documentation for more details.
@@ -19,10 +18,23 @@ def python_run_func(settings_dict, likelihood=None, prior=None, ndim=None,
     settings_dict: dict
         Input PolyChord settings.
     likelihood: func
+        Loglikelihood function (see the PolyChord documentation for more
+        details).
     prior: func
+        Prior function mapping from hypercube to physical space (see the
+        PolyChord documentation for more details).
     ndim: int
-    nderived: int
+        Number of parameters.
+    nderived: int, optional
+        Number of derived parameters
+    comm: None or mpi4py MPI.COMM object, optional
+        For MPI parallelisation.
     """
+    likelihood = kwargs.pop('likelihood')
+    prior = kwargs.pop('prior')
+    ndim = kwargs.pop('ndim')
+    nderived = kwargs.pop('nderived', 0)
+    comm = kwargs.pop('comm', None)
     if comm is None:
         settings = PyPolyChord.settings.PolyChordSettings(
             ndim, nderived, **settings_dict)
@@ -33,7 +45,7 @@ def python_run_func(settings_dict, likelihood=None, prior=None, ndim=None,
                 ndim, nderived, **settings_dict)
         else:
             settings = None
-        comm.bcast(settings, root=0)
+        settings = comm.bcast(settings, root=0)
     PyPolyChord.run_polychord(likelihood, ndim, nderived, settings, prior)
 
 

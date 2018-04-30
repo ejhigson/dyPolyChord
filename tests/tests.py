@@ -432,11 +432,17 @@ class TestLikelihoods(unittest.TestCase):
 # ----------------
 
 
-def dummy_run_func(settings, ndim=2, ndead_term=10, seed=1,
-                   logl_range=10):
+def dummy_run_func(settings, **kwargs):
     """
     Produces dummy PolyChord output files for use in testing.
     """
+    ndim = kwargs.pop('ndim', 2)
+    ndead_term = kwargs.pop('ndead_term', 10)
+    seed = kwargs.pop('seed', 1)
+    logl_range = kwargs.pop('logl_range', 10)
+    kwargs.pop('comm', None)
+    if kwargs:
+        raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
     nthread = settings['nlive']
     if settings['max_ndead'] <= 0:
         ndead = ndead_term
