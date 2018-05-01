@@ -175,7 +175,6 @@ def combine_resumed_dyn_run(init, dyn, resume_ndead):
     # Add the init threads to dyn with new labels that continue on from the dyn
     # labels
     init['thread_labels'] += dyn['thread_min_max'].shape[0]
-    print(init)
     run = nestcheck.ns_run_utils.combine_threads(
         nestcheck.ns_run_utils.get_run_threads(dyn) +
         nestcheck.ns_run_utils.get_run_threads(init),

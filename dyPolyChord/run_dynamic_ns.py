@@ -93,7 +93,6 @@ def run_dypolychord(run_func, dynamic_goal, settings_dict_in, **kwargs):
         rank = comm.Get_rank()
     else:
         rank = 0
-    print("comm =", comm, 'rank =', rank)
     if kwargs:
         raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
     assert not settings_dict_in['nlives']
@@ -163,8 +162,6 @@ def run_dypolychord(run_func, dynamic_goal, settings_dict_in, **kwargs):
         if dyn_info['peak_start_ind'] != 0:
             # subtract 1 as ndead=1 corresponds to point 0
             resume_steps = np.asarray(step_ndead) - 1
-            print('resume_steps:', resume_steps, 'peak_start_ind:',
-                  dyn_info['peak_start_ind'])
             # Work out which resume file to load
             resume_ndead = step_ndead[np.where(
                 resume_steps < dyn_info['peak_start_ind'])[0][-1]]
