@@ -6,6 +6,7 @@ import os
 import shutil
 import unittest
 import functools
+import warnings
 import scipy.special
 import numpy as np
 import numpy.testing
@@ -65,7 +66,7 @@ class TestRunDynamicNS(unittest.TestCase):
         """Remove any caches saved by the tests."""
         try:
             shutil.rmtree(TEST_CACHE_DIR)
-        except FileNotFoundError:
+        except IOError:
             pass
 
     def test_run_dypolychord_unexpected_kwargs(self):
@@ -84,10 +85,12 @@ class TestRunDynamicNS(unittest.TestCase):
             self.run_func, dynamic_goal, self.settings,
             init_step=self.ninit, ninit=self.ninit,
             nlive_const=self.nlive_const)
-        with self.assertWarns(UserWarning):
+        with warnings.catch_warnings(record=True) as war:
+            warnings.simplefilter("always")
             run = dyPolyChord.output_processing.process_dypolychord_run(
                 self.settings['file_root'], self.settings['base_dir'],
                 dynamic_goal=dynamic_goal, logl_warn_only=True)
+            self.assertEqual(len(war), 2)
         self.assertAlmostEqual(run['logl'][0], 0.0011437481734488664,
                                msg=self.random_seed_msg, places=12)
         self.assertEqual(e.count_samples(run), 24)
@@ -101,10 +104,12 @@ class TestRunDynamicNS(unittest.TestCase):
             self.run_func, dynamic_goal, self.settings,
             init_step=self.ninit, ninit=self.ninit,
             nlive_const=self.nlive_const)
-        with self.assertWarns(UserWarning):
+        with warnings.catch_warnings(record=True) as war:
+            warnings.simplefilter("always")
             run = dyPolyChord.output_processing.process_dypolychord_run(
                 self.settings['file_root'], self.settings['base_dir'],
                 dynamic_goal=dynamic_goal, logl_warn_only=True)
+            self.assertEqual(len(war), 1)
         # test nlive allocation before tearDown removes the runs
         self.assertAlmostEqual(run['logl'][0], 0.0011437481734488664,
                                msg=self.random_seed_msg, places=12)
@@ -132,9 +137,11 @@ class TestNliveAllocation(unittest.TestCase):
         samples."""
         dynamic_goal = 1
         run = nestcheck.dummy_data.get_dummy_run(2, 10, ndim=2, seed=0)
-        with self.assertWarns(UserWarning):
+        with warnings.catch_warnings(record=True) as war:
+            warnings.simplefilter("always")
             dyn_info = dyPolyChord.nlive_allocation.allocate(
                 run, 40, dynamic_goal, smoothing_filter=None)
+            self.assertEqual(len(war), 1)
         numpy.testing.assert_array_equal(
             dyn_info['init_nlive_allocation'],
             dyn_info['init_nlive_allocation_unsmoothed'])
@@ -149,9 +156,11 @@ class TestNliveAllocation(unittest.TestCase):
         dynamic_goal = 0
         run = nestcheck.dummy_data.get_dummy_run(2, 10, ndim=2, seed=0)
         smoothing = (lambda x: (x + 100 * np.asarray(list(range(x.shape[0])))))
-        with self.assertWarns(UserWarning):
+        with warnings.catch_warnings(record=True) as war:
+            warnings.simplefilter("always")
             dyn_info = dyPolyChord.nlive_allocation.allocate(
                 run, 40, dynamic_goal, smoothing_filter=smoothing)
+            self.assertEqual(len(war), 1)
         numpy.testing.assert_array_equal(
             dyn_info['init_nlive_allocation'],
             dyn_info['init_nlive_allocation_unsmoothed'])
@@ -236,7 +245,7 @@ class TestPolyChordUtils(unittest.TestCase):
         """Remove any caches saved by the tests."""
         try:
             shutil.rmtree(TEST_CACHE_DIR)
-        except FileNotFoundError:
+        except IOError:
             pass
 
     def test_format_settings(self):
@@ -380,9 +389,9 @@ class TestPythonLikelihoods(unittest.TestCase):
         dim = 5
         theta = list(np.random.random(dim))
         logl, phi = likelihoods.gaussian(theta, sigma=sigma)
-        self.assertAlmostEqual(
-            logl, -(sum([th ** 2 for th in theta]) / (2 * sigma ** 2) +
-                    np.log(2 * np.pi * sigma ** 2) * (dim / 2)), places=12)
+        logl_expected = -sum([th ** 2 for th in theta]) / (2 * sigma ** 2)
+        logl_expected -= np.log(2 * np.pi * sigma ** 2) * (dim / 2.0)
+        self.assertAlmostEqual(logl, logl_expected, places=12)
         self.assertIsInstance(phi, list)
         self.assertEqual(len(phi), 0)
 
@@ -485,3 +494,6 @@ class DummyMPIComm(object):
         embedded."""
         if root == 0:
             raise AssertionError
+
+if __name__ == '__main__':
+    unittest.main()

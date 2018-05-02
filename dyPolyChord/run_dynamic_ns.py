@@ -113,7 +113,7 @@ def run_dypolychord(run_func, dynamic_goal, settings_dict_in, **kwargs):
         if rank == 0:
             try:
                 os.remove(root + '_init.resume')
-            except FileNotFoundError:
+            except OSError:
                 pass
             settings_dict['write_resume'] = True
             settings_dict['read_resume'] = True
@@ -205,5 +205,5 @@ def run_dypolychord(run_func, dynamic_goal, settings_dict_in, **kwargs):
         for extra in ['init', 'dyn']:
             try:
                 os.remove(root + '_{0}.resume'.format(extra))
-            except FileNotFoundError:
+            except OSError:
                 pass
