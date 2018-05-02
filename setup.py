@@ -19,7 +19,7 @@ def get_long_description():
 setuptools.setup(name='dyPolyChord',
                  version='0.0.0',
                  description=(
-                     'Blazingly fast dynamic nested sampling with '
+                     'Super fast dynamic nested sampling with '
                      'PolyChord (python, C++ and Fortran likelihoods).'),
                  long_description=get_long_description(),
                  long_description_content_type='text/x-rst',
