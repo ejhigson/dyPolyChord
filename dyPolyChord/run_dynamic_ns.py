@@ -133,9 +133,8 @@ def run_dypolychord(run_func, dynamic_goal, settings_dict_in, **kwargs):
                 # while accounding for resuming a run.
                 resume_outputs[run_output['ndead']] = run_output
                 step_ndead.append(run_output['ndead'] - settings_dict['nlive'])
-                if len(step_ndead) >= 2:
-                    if step_ndead[-1] == step_ndead[-2]:
-                        add_points = False
+                if len(step_ndead) >= 2 and step_ndead[-1] == step_ndead[-2]:
+                    add_points = False
                 # store resume file in new file path
                 shutil.copyfile(
                     root + '_init.resume',
