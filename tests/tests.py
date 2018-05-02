@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 """
-Test the dyPolyChord module.
+Test suite for the dyPolyChord package.
 """
-import copy
 import os
 import shutil
 import unittest
@@ -23,37 +22,23 @@ TEST_CACHE_DIR = 'chains_test'
 TEST_DIR_EXISTS_MSG = ('Directory ' + TEST_CACHE_DIR + ' exists! Tests use '
                        'this dir to check caching then delete it afterwards, '
                        'so the path should be left empty.')
-SETTINGS_KWARGS = {
-    'do_clustering': True,
-    'posteriors': False,
-    'equals': False,
-    'write_dead': True,
-    'read_resume': False,
-    'write_resume': False,
-    'write_stats': True,
-    'write_prior': False,
-    'write_live': False,
-    'num_repeats': 1,
-    'feedback': -1,
-    'cluster_posteriors': False,
-    # Set precision_criterion low to avoid non-deterministic like errors.
-    # These occur due in the low dimension and low and nlive cases we use for
-    # fast testing as runs sometimes get very close to the peak where the
-    # likelihood becomes approximately constant.
-    'precision_criterion': 0.01,
-    'seed': 1,
-    'max_ndead': -1,
-    'base_dir': TEST_CACHE_DIR,
-    'file_root': 'test_run',
-    'nlive': 2,  # 50,  # used for nlive_const
-    'nlives': {}}
 
 
 @unittest.skipIf(importlib.util.find_spec("PyPolyChord") is None,
                  'PyPolyChord not installed.')
 class TestPyPolyChordUtils(unittest.TestCase):
 
+    """
+    Tests for the pypolychord_utils.py module.
+
+    These are skipped if PyPolyChord is not installed as it is not needed for
+    compiled likelihoods.
+    """
+
     def test_python_run_func(self):
+        """Check functions for running PolyChord via the PyPolyChord wrapper
+        (as oposed to with a compiled likelihood) in the form needed for
+        dynamic nested sampling."""
         import dyPolyChord.pypolychord_utils as pypolychord_utils
         assert not os.path.exists(TEST_CACHE_DIR), TEST_DIR_EXISTS_MSG
         os.makedirs(TEST_CACHE_DIR)
@@ -67,7 +52,10 @@ class TestPyPolyChordUtils(unittest.TestCase):
         shutil.rmtree(TEST_CACHE_DIR)
 
     def test_comm(self):
-        """Test MPI comm."""
+        """
+        Test python_run_func's comm argument (used for MPI) has the expected
+        behavior.
+        """
         import dyPolyChord.pypolychord_utils as pypolychord_utils
         self.assertRaises(
             AssertionError, pypolychord_utils.python_run_func,
@@ -78,6 +66,8 @@ class TestPyPolyChordUtils(unittest.TestCase):
 
 
 class TestPolyChordUtils(unittest.TestCase):
+
+    """Tests for the polychord_utils.py module."""
 
     def setUp(self):
         assert not os.path.exists(TEST_CACHE_DIR), TEST_DIR_EXISTS_MSG
@@ -91,6 +81,8 @@ class TestPolyChordUtils(unittest.TestCase):
             pass
 
     def test_format_settings(self):
+        """Check putting settings dictionary values into the format needed for
+        PolyChord .ini files."""
         self.assertEqual(
             'T', dyPolyChord.polychord_utils.format_setting(True))
         self.assertEqual(
@@ -101,6 +93,8 @@ class TestPolyChordUtils(unittest.TestCase):
             '1 2', dyPolyChord.polychord_utils.format_setting([1, 2]))
 
     def test_get_prior_block_str(self):
+        """Check generating prior blocks in the format needed for PolyChord
+        .ini files."""
         name = 'uniform'
         prior_params = [1, 2]
         expected = ('P : p{0} | \\theta_{{{0}}} | {1} | {2} | {3} |'
@@ -116,6 +110,8 @@ class TestPolyChordUtils(unittest.TestCase):
             'param_name', (1, 2), 2, unexpected=1)
 
     def test_write_ini(self):
+        """Check writing a PolyChord .ini file from a dictionary of
+        settings."""
         settings = {'nlive': 50, 'nlives': {-20.0: 100, -10.0: 200}}
         prior_block_str = 'prior_block\n'
         derived_str = 'derived'
@@ -134,6 +130,9 @@ class TestPolyChordUtils(unittest.TestCase):
                           'nlives = 100 200\n'])
 
     def test_compiled_run_func(self):
+        """Check function for running a compiled PolyChord likelihood from
+        within python (via os.system). In place of an executable we just use a
+        simple echo command."""
         func = dyPolyChord.polychord_utils.get_compiled_run_func(
             'echo', 'this is a dummy prior block string')
         self.assertIsInstance(func, functools.partial)
@@ -142,11 +141,13 @@ class TestPolyChordUtils(unittest.TestCase):
         func({'base_dir': TEST_CACHE_DIR, 'file_root': 'temp'})
 
 
-class TestRunDyPolyChord(unittest.TestCase):
+class TestRunDynamicNS(unittest.TestCase):
+
+    """Tests for the run_dynamic_ns.py module."""
 
     def setUp(self):
-        """Set up function for saving dummy ns runs, a directory for saving
-        test results and some settings."""
+        """Set up function for make dummy PolyChord data, a directory for
+        saving test results and some settings."""
         assert not os.path.exists(TEST_CACHE_DIR), TEST_DIR_EXISTS_MSG
         os.makedirs(TEST_CACHE_DIR)
         self.random_seed_msg = (
@@ -172,11 +173,15 @@ class TestRunDyPolyChord(unittest.TestCase):
             pass
 
     def test_run_dypolychord_unexpected_kwargs(self):
+        """Check appropriate error is raised when an unexpect keyword argument
+        is given."""
         self.assertRaises(
             TypeError, dyPolyChord.run_dypolychord,
             lambda x: None, 1, {}, unexpected=1)
 
     def test_dynamic_evidence(self):
+        """Check run_dypolychord targeting evidence. This uses dummy
+        PolyChord-format data."""
         dynamic_goal = 0
         self.settings['max_ndead'] = 24
         dyPolyChord.run_dypolychord(
@@ -193,6 +198,8 @@ class TestRunDyPolyChord(unittest.TestCase):
         self.assertAlmostEqual(e.logz(run), 5.130048204496198, places=12)
 
     def test_dynamic_param(self):
+        """Check run_dypolychord targeting evidence. This uses dummy
+        PolyChord-format data."""
         dynamic_goal = 1
         dyPolyChord.run_dypolychord(
             self.run_func, dynamic_goal, self.settings,
@@ -210,7 +217,8 @@ class TestRunDyPolyChord(unittest.TestCase):
         self.assertEqual(run['output']['resume_ndead'], 6)
 
     def test_comm(self):
-        """Test MPI comm."""
+        """Test run_dyPolyChord's comm argument, which is used for running
+        python likelihoods using MPI parallelisation with mpi4py."""
         dynamic_goal = 1
         self.assertRaises(
             AssertionError, dyPolyChord.run_dypolychord,
@@ -220,6 +228,8 @@ class TestRunDyPolyChord(unittest.TestCase):
 
 
 class TestNliveAllocation(unittest.TestCase):
+
+    """Tests for the nlive_allocation.py module."""
 
     def test_allocate(self):
         dynamic_goal = 1
@@ -254,80 +264,6 @@ class TestNliveAllocation(unittest.TestCase):
         numpy.testing.assert_allclose(
             np.asarray([0.66121679, 0.23896365, 0.08104094, 0.01877862]),
             imp)
-
-
-@unittest.skip("Seeding problems")
-class TestRunDyPolyChordOld(unittest.TestCase):
-
-    def setUp(self):
-        """Make a directory for saving test results."""
-        assert not os.path.exists(TEST_CACHE_DIR), TEST_DIR_EXISTS_MSG
-        self.ninit = 20
-        ndim = 2
-        self.run_func = dyPolyChord.pypolychord_utils.get_python_run_func(
-            functools.partial(likelihoods.gaussian, sigma=1),
-            functools.partial(priors.uniform, prior_scale=10), ndim=ndim)
-        self.random_seed_msg = (
-            'This test is not affected by most of dyPolyChord, so if it fails '
-            'your PolyChord install\'s random seed number generator is '
-            'probably different to the one used to set the expected values.')
-
-    def tearDown(self):
-        """Remove any caches saved by the tests."""
-        try:
-            shutil.rmtree(TEST_CACHE_DIR)
-        except FileNotFoundError:
-            pass
-
-    def test_dynamic_evidence(self):
-        dynamic_goal = 0
-        dyPolyChord.run_dypolychord(
-            self.run_func, dynamic_goal, settings_dict=SETTINGS_KWARGS,
-            init_step=self.ninit, ninit=self.ninit)
-        run = dyPolyChord.output_processing.process_dypolychord_run(
-            SETTINGS_KWARGS['file_root'], SETTINGS_KWARGS['base_dir'],
-            dynamic_goal=dynamic_goal)
-        self.assertEqual(run['logl'][0], -86.7906522578895,
-                         msg=self.random_seed_msg)
-        self.assertEqual(e.count_samples(run), 470)
-        self.assertAlmostEqual(e.logz(run), -5.99813424487512, places=12)
-        self.assertAlmostEqual(e.param_mean(run), -0.011725372420821929,
-                               places=12)
-
-    def test_dynamic_param(self):
-        dynamic_goal = 1
-        dyPolyChord.run_dypolychord(
-            self.run_func, dynamic_goal, settings_dict=SETTINGS_KWARGS,
-            init_step=self.ninit, ninit=self.ninit)
-        run = dyPolyChord.output_processing.process_dypolychord_run(
-            SETTINGS_KWARGS['file_root'], SETTINGS_KWARGS['base_dir'],
-            dynamic_goal=dynamic_goal)
-        self.assertEqual(run['logl'][0], -63.6696935969461,
-                         msg=self.random_seed_msg)
-        self.assertEqual(run['output']['resume_ndead'], 40)
-        self.assertEqual(run['output']['resume_nlike'], 85)
-        self.assertAlmostEqual(e.logz(run), -6.150334026130597, places=12)
-        self.assertAlmostEqual(e.param_mean(run), 0.1054356767020377,
-                               places=12)
-        # test nlive allocation before tearDown removes the runs
-        dyn_info = dyPolyChord.nlive_allocation.allocate(
-            SETTINGS_KWARGS, self.ninit, SETTINGS_KWARGS['nlive'],
-            dynamic_goal, smoothing_filter=None)
-        numpy.testing.assert_array_equal(
-            dyn_info['init_nlive_allocation'],
-            dyn_info['init_nlive_allocation_unsmoothed'])
-        # Check turning off filter
-        self.assertRaises(
-            TypeError, dyPolyChord.nlive_allocation.allocate,
-            SETTINGS_KWARGS, self.ninit, 100, dynamic_goal,
-            unexpected=1)
-        # Check no points remaining message
-        settings = copy.deepcopy(SETTINGS_KWARGS)
-        settings['max_ndead'] = 1
-        # Check unexpected kwargs
-        self.assertRaises(
-            AssertionError, dyPolyChord.nlive_allocation.allocate,
-            settings, self.ninit, 100, dynamic_goal)
 
 
 class TestOutputProcessing(unittest.TestCase):
@@ -474,7 +410,7 @@ def dummy_run_func(settings, **kwargs):
     nsample += 1  # mimic PolyChord, which includes live point at termination
     # make dead points array
     run = nestcheck.dummy_data.get_dummy_run(
-        nthread, nsample, seed=seed, logl_range=logl_range)
+        nthread, nsample, seed=seed, ndim=ndim, logl_range=logl_range)
     nestcheck.ns_run_utils.get_run_threads(run)
     dead = nestcheck.dummy_data.run_dead_points_array(run)
     root = os.path.join(settings['base_dir'], settings['file_root'])
@@ -486,6 +422,7 @@ def dummy_run_func(settings, **kwargs):
 
 
 class DummyMPIComm(object):
+
     """A dummy MPI.COMM object."""
 
     def __init__(self, rank):
