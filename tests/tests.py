@@ -5,7 +5,6 @@ Test suite for the dyPolyChord package.
 import os
 import shutil
 import unittest
-import importlib
 import functools
 import scipy.special
 import numpy as np
@@ -17,13 +16,23 @@ import dyPolyChord.python_priors as priors
 import dyPolyChord.output_processing
 import dyPolyChord.polychord_utils
 import dyPolyChord
+try:
+    import pypolychord_utils
+    PYPOLYCHORD_AVAIL = True
+except ImportError:
+    PYPOLYCHORD_AVAIL = False
 
-TEST_CACHE_DIR = 'chains_test'
-TEST_DIR_EXISTS_MSG = (
-    'Directory ' + TEST_CACHE_DIR + ' exists! Tests use this directory to '
-    'check caching then delete it afterwards, so the path should be left '
-    'empty. If you see this message after the tests have just failed, you '
-    'need to manually delete ' + TEST_CACHE_DIR + '.')
+TEST_CACHE_DIR = 'temp_test_data_to_delete'
+
+
+def setUpModule():
+    """Before running tests, check that TEST_CACHE_DIR does not already exist
+    as the tests will delete it."""
+    assert not os.path.exists(TEST_CACHE_DIR), (
+        'Directory ' + TEST_CACHE_DIR + ' exists! Tests use this directory to '
+        'check caching then delete it afterwards, so its path should be left '
+        'empty. You should manually delete or move ' + TEST_CACHE_DIR
+        + ' before running tests.')
 
 
 class TestRunDynamicNS(unittest.TestCase):
@@ -33,12 +42,14 @@ class TestRunDynamicNS(unittest.TestCase):
     def setUp(self):
         """Set up function for make dummy PolyChord data, a directory for
         saving test results and some settings."""
-        assert not os.path.exists(TEST_CACHE_DIR), TEST_DIR_EXISTS_MSG
-        os.makedirs(TEST_CACHE_DIR)
+        try:
+            os.makedirs(TEST_CACHE_DIR)
+        except FileExistsError:
+            pass
         self.random_seed_msg = (
             'This test is not affected by dyPolyChord, so if it fails '
-            'your numpy random seed number generator is '
-            'probably different to the one used to set the expected values.')
+            'your numpy random seed number generator is probably different '
+            'to the one used to set the expected values.')
         self.ninit = 2
         self.nlive_const = 4
         self.run_func = functools.partial(
@@ -216,8 +227,10 @@ class TestPolyChordUtils(unittest.TestCase):
     """Tests for the polychord_utils.py module."""
 
     def setUp(self):
-        assert not os.path.exists(TEST_CACHE_DIR), TEST_DIR_EXISTS_MSG
-        os.makedirs(TEST_CACHE_DIR)
+        try:
+            os.makedirs(TEST_CACHE_DIR)
+        except FileExistsError:
+            pass
 
     def tearDown(self):
         """Remove any caches saved by the tests."""
@@ -278,19 +291,22 @@ class TestPolyChordUtils(unittest.TestCase):
                           'nlives = 100 200\n'])
 
     def test_compiled_run_func(self):
-        """Check function for running a compiled PolyChord likelihood from
-        within python (via os.system). In place of an executable we just use a
-        simple echo command."""
+        """
+        Check function for running a compiled PolyChord likelihood from
+        within python (via os.system).
+
+        In place of an executable we just use the bash 'do nothing' command
+            $ :
+        """
         func = dyPolyChord.polychord_utils.get_compiled_run_func(
-            'echo', 'this is a dummy prior block string')
+            ':', 'this is a dummy prior block string')
         self.assertIsInstance(func, functools.partial)
         self.assertEqual(set(func.keywords.keys()),
                          {'derived_str', 'ex_path', 'prior_block_str'})
         func({'base_dir': TEST_CACHE_DIR, 'file_root': 'temp'})
 
 
-@unittest.skipIf(importlib.util.find_spec("PyPolyChord") is None,
-                 'PyPolyChord not installed.')
+@unittest.skipIf(not PYPOLYCHORD_AVAIL, 'PyPolyChord not installed.')
 class TestPyPolyChordUtils(unittest.TestCase):
 
     """
@@ -304,9 +320,10 @@ class TestPyPolyChordUtils(unittest.TestCase):
         """Check functions for running PolyChord via the PyPolyChord wrapper
         (as opposed to with a compiled likelihood) in the form needed for
         dynamic nested sampling."""
-        import dyPolyChord.pypolychord_utils as pypolychord_utils
-        assert not os.path.exists(TEST_CACHE_DIR), TEST_DIR_EXISTS_MSG
-        os.makedirs(TEST_CACHE_DIR)
+        try:
+            os.makedirs(TEST_CACHE_DIR)
+        except FileExistsError:
+            pass
         func = pypolychord_utils.get_python_run_func(
             likelihoods.gaussian, priors.uniform, 2)
         self.assertIsInstance(func, functools.partial)
@@ -321,7 +338,6 @@ class TestPyPolyChordUtils(unittest.TestCase):
         Test python_run_func's comm argument (used for MPI) has the expected
         behavior.
         """
-        import dyPolyChord.pypolychord_utils as pypolychord_utils
         self.assertRaises(
             AssertionError, pypolychord_utils.python_run_func,
             {}, likelihood=1, prior=2, ndim=3, comm=DummyMPIComm(0))
@@ -469,7 +485,3 @@ class DummyMPIComm(object):
         embedded."""
         if root == 0:
             raise AssertionError
-
-
-if __name__ == '__main__':
-    unittest.main()
