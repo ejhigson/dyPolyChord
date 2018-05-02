@@ -388,9 +388,9 @@ class TestPythonLikelihoods(unittest.TestCase):
         sigma = 1
         dim = 5
         theta = list(np.random.random(dim))
-        logl, phi = likelihoods.gaussian(theta, sigma=sigma)
         logl_expected = -sum([th ** 2 for th in theta]) / (2 * sigma ** 2)
         logl_expected -= np.log(2 * np.pi * sigma ** 2) * (dim / 2.0)
+        logl, phi = likelihoods.gaussian(theta, sigma=sigma)
         self.assertAlmostEqual(logl, logl_expected, places=12)
         self.assertIsInstance(phi, list)
         self.assertEqual(len(phi), 0)
@@ -402,8 +402,8 @@ class TestPythonLikelihoods(unittest.TestCase):
         rshell = 2
         theta = list(np.random.random(dim))
         r = sum([th ** 2 for th in theta]) ** 0.5
-        logl, phi = likelihoods.gaussian_shell(theta, sigma=sigma,
-                                               rshell=rshell)
+        logl, phi = likelihoods.gaussian_shell(
+            theta, sigma=sigma, rshell=rshell)
         self.assertAlmostEqual(
             logl, -((r - rshell) ** 2) / (2 * (sigma ** 2)), places=12)
         self.assertIsInstance(phi, list)
