@@ -1,0 +1,49 @@
+version: "2"         # required to adjust maintainability checks
+checks:
+  argument-count:
+    config:
+      threshold: 5  # default 4
+  complex-logic:
+    config:
+      threshold: 4
+  file-lines:
+    config:
+      threshold: 750  # default 250
+  method-complexity:
+    enabled: false
+    config:
+      threshold: 5
+  method-count:
+    config:
+      threshold: 20
+  method-lines:
+    config:
+      threshold: 100  # default 25
+  nested-control-flow:
+    config:
+      threshold: 4
+  return-statements:
+    config:
+      threshold: 4
+  identical-code:
+    config:
+      # code 'mass' required for warning - see https://github.com/codeclimate/codeclimate-duplication
+      threshold: 50  # default is 25
+  similar-code:
+    config:
+      # code 'mass' required for warning - see https://github.com/codeclimate/codeclimate-duplication
+      threshold: 50  # default is 50
+plugins:
+  pep8:
+    enabled: true
+    # The pep8 style guide has been changed to prefer line breaks before binary operator, so remove old style warning.
+    # Enforcing new style with W504=True not yet on climate's pep8 version.
+    checks:
+      W503:
+        enabled: false
+  sonar-python:
+    enabled: true
+    checks:
+      # disable complexity tests
+      python:S3776:
+        enabled: false
