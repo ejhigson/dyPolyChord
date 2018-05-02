@@ -7,11 +7,8 @@ dyPolyChord
 	:target: https://coveralls.io/github/ejhigson/dyPolyChord?branch=master
 .. image:: https://readthedocs.org/projects/dyPolyChord/badge/?version=latest
 	:target: http://dyPolyChord.readthedocs.io/en/latest/?badge=lates
-.. Remember to update badge url when working on codeclimate!
-
-..
-.. image:: https://api.codeclimate.com/v1/badges/a99a88d28ad37a79dbf6/maintainability
-   :target: https://codeclimate.com/github/codeclimate/codeclimate/maintainability
+.. image:: https://api.codeclimate.com/v1/badges/b04cc235c8f73870029c/maintainability
+   :target: https://codeclimate.com/github/ejhigson/dyPolyChord/maintainability
    :alt: Maintainability
 .. image:: https://img.shields.io/badge/license-MIT-blue.svg
     :target: https://github.com/ejhigson/dyPolyChord/LICENSE
