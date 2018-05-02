@@ -23,17 +23,20 @@ try:
 except ImportError:
     PYPOLYCHORD_AVAIL = False
 
+
+# Define a directory to output files produced by tests (this will be deleted
+# when the tests finish).
 TEST_CACHE_DIR = 'temp_test_data_to_delete'
 
 
 def setUpModule():
-    """Before running tests, check that TEST_CACHE_DIR does not already exist
-    as the tests will delete it."""
+    """Before running the test suite, check that TEST_CACHE_DIR does not
+    already exist - as the tests will delete it."""
     assert not os.path.exists(TEST_CACHE_DIR), (
         'Directory ' + TEST_CACHE_DIR + ' exists! Tests use this directory to '
         'check caching then delete it afterwards, so its path should be left '
         'empty. You should manually delete or move ' + TEST_CACHE_DIR
-        + ' before running tests.')
+        + ' before running the tests.')
 
 
 class TestRunDynamicNS(unittest.TestCase):
