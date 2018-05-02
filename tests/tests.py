@@ -19,126 +19,11 @@ import dyPolyChord.polychord_utils
 import dyPolyChord
 
 TEST_CACHE_DIR = 'chains_test'
-TEST_DIR_EXISTS_MSG = ('Directory ' + TEST_CACHE_DIR + ' exists! Tests use '
-                       'this dir to check caching then delete it afterwards, '
-                       'so the path should be left empty.')
-
-
-@unittest.skipIf(importlib.util.find_spec("PyPolyChord") is None,
-                 'PyPolyChord not installed.')
-class TestPyPolyChordUtils(unittest.TestCase):
-
-    """
-    Tests for the pypolychord_utils.py module.
-
-    These are skipped if PyPolyChord is not installed as it is not needed for
-    compiled likelihoods.
-    """
-
-    def test_python_run_func(self):
-        """Check functions for running PolyChord via the PyPolyChord wrapper
-        (as oposed to with a compiled likelihood) in the form needed for
-        dynamic nested sampling."""
-        import dyPolyChord.pypolychord_utils as pypolychord_utils
-        assert not os.path.exists(TEST_CACHE_DIR), TEST_DIR_EXISTS_MSG
-        os.makedirs(TEST_CACHE_DIR)
-        func = pypolychord_utils.get_python_run_func(
-            likelihoods.gaussian, priors.uniform, 2)
-        self.assertIsInstance(func, functools.partial)
-        self.assertEqual(set(func.keywords.keys()),
-                         {'nderived', 'ndim', 'likelihood', 'prior'})
-        func({'base_dir': TEST_CACHE_DIR, 'file_root': 'temp', 'nlive': 5,
-              'max_ndead': 5, 'feedback': -1})
-        shutil.rmtree(TEST_CACHE_DIR)
-
-    def test_comm(self):
-        """
-        Test python_run_func's comm argument (used for MPI) has the expected
-        behavior.
-        """
-        import dyPolyChord.pypolychord_utils as pypolychord_utils
-        self.assertRaises(
-            AssertionError, pypolychord_utils.python_run_func,
-            {}, likelihood=1, prior=2, ndim=3, comm=DummyMPIComm(0))
-        self.assertRaises(
-            AssertionError, pypolychord_utils.python_run_func,
-            {}, likelihood=1, prior=2, ndim=3, comm=DummyMPIComm(1))
-
-
-class TestPolyChordUtils(unittest.TestCase):
-
-    """Tests for the polychord_utils.py module."""
-
-    def setUp(self):
-        assert not os.path.exists(TEST_CACHE_DIR), TEST_DIR_EXISTS_MSG
-        os.makedirs(TEST_CACHE_DIR)
-
-    def tearDown(self):
-        """Remove any caches saved by the tests."""
-        try:
-            shutil.rmtree(TEST_CACHE_DIR)
-        except FileNotFoundError:
-            pass
-
-    def test_format_settings(self):
-        """Check putting settings dictionary values into the format needed for
-        PolyChord .ini files."""
-        self.assertEqual(
-            'T', dyPolyChord.polychord_utils.format_setting(True))
-        self.assertEqual(
-            'F', dyPolyChord.polychord_utils.format_setting(False))
-        self.assertEqual(
-            '1', dyPolyChord.polychord_utils.format_setting(1))
-        self.assertEqual(
-            '1 2', dyPolyChord.polychord_utils.format_setting([1, 2]))
-
-    def test_get_prior_block_str(self):
-        """Check generating prior blocks in the format needed for PolyChord
-        .ini files."""
-        name = 'uniform'
-        prior_params = [1, 2]
-        expected = ('P : p{0} | \\theta_{{{0}}} | {1} | {2} | {3} |'
-                    .format(1, 1, name, 1))
-        expected += dyPolyChord.polychord_utils.format_setting(prior_params)
-        expected += '\n'
-        self.assertEqual(dyPolyChord.polychord_utils.get_prior_block_str(
-            name, prior_params, 1, speed=1, block=1), expected)
-
-    def test_get_prior_block_unexpected_kwargs(self):
-        self.assertRaises(
-            TypeError, dyPolyChord.polychord_utils.get_prior_block_str,
-            'param_name', (1, 2), 2, unexpected=1)
-
-    def test_write_ini(self):
-        """Check writing a PolyChord .ini file from a dictionary of
-        settings."""
-        settings = {'nlive': 50, 'nlives': {-20.0: 100, -10.0: 200}}
-        prior_block_str = 'prior_block\n'
-        derived_str = 'derived'
-        file_path = os.path.join(TEST_CACHE_DIR, 'temp.ini')
-        dyPolyChord.polychord_utils.write_ini(
-            settings, prior_block_str, file_path, derived_str=derived_str)
-        with open(file_path, 'r') as ini_file:
-            lines = ini_file.readlines()
-        self.assertEqual(lines[-2], prior_block_str)
-        self.assertEqual(lines[-1], derived_str)
-        # Use sorted as ini lines written from dict.items() so order not
-        # guarenteed.
-        self.assertEqual(sorted(lines[:3]),
-                         ['loglikes = -20.0 -10.0\n',
-                          'nlive = 50\n',
-                          'nlives = 100 200\n'])
-
-    def test_compiled_run_func(self):
-        """Check function for running a compiled PolyChord likelihood from
-        within python (via os.system). In place of an executable we just use a
-        simple echo command."""
-        func = dyPolyChord.polychord_utils.get_compiled_run_func(
-            'echo', 'this is a dummy prior block string')
-        self.assertIsInstance(func, functools.partial)
-        self.assertEqual(set(func.keywords.keys()),
-                         {'derived_str', 'ex_path', 'prior_block_str'})
-        func({'base_dir': TEST_CACHE_DIR, 'file_root': 'temp'})
+TEST_DIR_EXISTS_MSG = (
+    'Directory ' + TEST_CACHE_DIR + ' exists! Tests use this directory to '
+    'check caching then delete it afterwards, so the path should be left '
+    'empty. If you see this message after the tests have just failed, you '
+    'need to manually delete ' + TEST_CACHE_DIR + '.')
 
 
 class TestRunDynamicNS(unittest.TestCase):
@@ -173,8 +58,8 @@ class TestRunDynamicNS(unittest.TestCase):
             pass
 
     def test_run_dypolychord_unexpected_kwargs(self):
-        """Check appropriate error is raised when an unexpect keyword argument
-        is given."""
+        """Check appropriate error is raised when an unexpected keyword
+        argument is given."""
         self.assertRaises(
             TypeError, dyPolyChord.run_dypolychord,
             lambda x: None, 1, {}, unexpected=1)
@@ -232,6 +117,8 @@ class TestNliveAllocation(unittest.TestCase):
     """Tests for the nlive_allocation.py module."""
 
     def test_allocate(self):
+        """Check the allocate function for computing where to put additional
+        samples."""
         dynamic_goal = 1
         run = nestcheck.dummy_data.get_dummy_run(2, 10, ndim=2, seed=0)
         with self.assertWarns(UserWarning):
@@ -246,6 +133,8 @@ class TestNliveAllocation(unittest.TestCase):
             run, 1, dynamic_goal)
 
     def test_dyn_nlive_array_warning(self):
+        """Check handling of case where nlive smoothing introduces unwanted
+        convexity for dynamic_goal=0."""
         dynamic_goal = 0
         run = nestcheck.dummy_data.get_dummy_run(2, 10, ndim=2, seed=0)
         smoothing = (lambda x: (x + 100 * np.asarray(list(range(x.shape[0])))))
@@ -261,6 +150,7 @@ class TestNliveAllocation(unittest.TestCase):
         run = nestcheck.dummy_data.get_dummy_thread(
             4, ndim=2, seed=0, logl_range=1)
         imp = dyPolyChord.nlive_allocation.sample_importance(run, 0.5)
+        self.assertEqual(run['logl'].shape, imp.shape)
         numpy.testing.assert_allclose(
             np.asarray([0.66121679, 0.23896365, 0.08104094, 0.01877862]),
             imp)
@@ -268,13 +158,19 @@ class TestNliveAllocation(unittest.TestCase):
 
 class TestOutputProcessing(unittest.TestCase):
 
+    """Tests for the output_processing.py module."""
+
     def test_settings_root(self):
+        """Check standard settings root string."""
         root = dyPolyChord.output_processing.settings_root(
             'gaussian', 'uniform', 2, prior_scale=1, dynamic_goal=1,
             nlive_const=1, ninit=1, nrepeats=1, init_step=1)
-        self.assertIsInstance(root, str)
+        self.assertEqual(
+            'gaussian_uniform_1_dg1_1init_1is_2d_1nlive_1nrepeats', root)
 
     def test_settings_root_unexpected_kwarg(self):
+        """Check appropriate error is raised when an unexpected keyword
+        argument is given."""
         self.assertRaises(
             TypeError, dyPolyChord.output_processing.settings_root,
             'gaussian', 'uniform', 2, prior_scale=1, dynamic_goal=1,
@@ -282,13 +178,14 @@ class TestOutputProcessing(unittest.TestCase):
             unexpected=1)
 
     def test_process_dypolychord_run_unexpected_kwarg(self):
+        """Check appropriate error is raised when an unexpected keyword
+        argument is given."""
         self.assertRaises(
             TypeError, dyPolyChord.output_processing.process_dypolychord_run,
             'file_root', 'base_dir', dynamic_goal=1, unexpected=1)
 
     def test_combine_resumed_dyn_run(self):
-        """
-        Test combining resumed dynamic and initial runs and removing
+        """Test combining resumed dynamic and initial runs and removing
         duplicate points using dummy ns runs.
         """
         init = {'logl': np.asarray([0, 1, 2, 3]),
@@ -303,6 +200,9 @@ class TestOutputProcessing(unittest.TestCase):
                 [[-np.inf, run['logl'][-2]], [-np.inf, run['logl'][-1]]])
         comb = dyPolyChord.output_processing.combine_resumed_dyn_run(
             init, dyn, 1)
+        self.assertEqual(set(comb.keys()),
+                         {'nlive_array', 'theta', 'logl', 'thread_labels',
+                          'thread_min_max'})
         numpy.testing.assert_array_equal(
             comb['thread_labels'], np.asarray([0, 1, 0, 2, 1, 0, 1]))
         numpy.testing.assert_array_equal(
@@ -311,7 +211,128 @@ class TestOutputProcessing(unittest.TestCase):
             comb['nlive_array'], np.asarray([2., 2., 3., 3., 2., 2., 1.]))
 
 
-class TestPriors(unittest.TestCase):
+class TestPolyChordUtils(unittest.TestCase):
+
+    """Tests for the polychord_utils.py module."""
+
+    def setUp(self):
+        assert not os.path.exists(TEST_CACHE_DIR), TEST_DIR_EXISTS_MSG
+        os.makedirs(TEST_CACHE_DIR)
+
+    def tearDown(self):
+        """Remove any caches saved by the tests."""
+        try:
+            shutil.rmtree(TEST_CACHE_DIR)
+        except FileNotFoundError:
+            pass
+
+    def test_format_settings(self):
+        """Check putting settings dictionary values into the format needed for
+        PolyChord .ini files."""
+        self.assertEqual(
+            'T', dyPolyChord.polychord_utils.format_setting(True))
+        self.assertEqual(
+            'F', dyPolyChord.polychord_utils.format_setting(False))
+        self.assertEqual(
+            '1', dyPolyChord.polychord_utils.format_setting(1))
+        self.assertEqual(
+            '1 2', dyPolyChord.polychord_utils.format_setting([1, 2]))
+
+    def test_get_prior_block_str(self):
+        """Check generating prior blocks in the format needed for PolyChord
+        .ini files."""
+        name = 'uniform'
+        prior_params = [1, 2]
+        expected = ('P : p{0} | \\theta_{{{0}}} | {1} | {2} | {3} |'
+                    .format(1, 1, name, 1))
+        expected += dyPolyChord.polychord_utils.format_setting(prior_params)
+        expected += '\n'
+        self.assertEqual(dyPolyChord.polychord_utils.get_prior_block_str(
+            name, prior_params, 1, speed=1, block=1), expected)
+
+    def test_get_prior_block_unexpected_kwargs(self):
+        """Check appropriate error is raised when an unexpected keyword
+        argument is given."""
+        self.assertRaises(
+            TypeError, dyPolyChord.polychord_utils.get_prior_block_str,
+            'param_name', (1, 2), 2, unexpected=1)
+
+    def test_write_ini(self):
+        """Check writing a PolyChord .ini file from a dictionary of
+        settings."""
+        settings = {'nlive': 50, 'nlives': {-20.0: 100, -10.0: 200}}
+        prior_block_str = 'prior_block\n'
+        derived_str = 'derived'
+        file_path = os.path.join(TEST_CACHE_DIR, 'temp.ini')
+        dyPolyChord.polychord_utils.write_ini(
+            settings, prior_block_str, file_path, derived_str=derived_str)
+        with open(file_path, 'r') as ini_file:
+            lines = ini_file.readlines()
+        self.assertEqual(lines[-2], prior_block_str)
+        self.assertEqual(lines[-1], derived_str)
+        # Use sorted as ini lines written from dict.items() so order not
+        # guarenteed.
+        self.assertEqual(sorted(lines[:3]),
+                         ['loglikes = -20.0 -10.0\n',
+                          'nlive = 50\n',
+                          'nlives = 100 200\n'])
+
+    def test_compiled_run_func(self):
+        """Check function for running a compiled PolyChord likelihood from
+        within python (via os.system). In place of an executable we just use a
+        simple echo command."""
+        func = dyPolyChord.polychord_utils.get_compiled_run_func(
+            'echo', 'this is a dummy prior block string')
+        self.assertIsInstance(func, functools.partial)
+        self.assertEqual(set(func.keywords.keys()),
+                         {'derived_str', 'ex_path', 'prior_block_str'})
+        func({'base_dir': TEST_CACHE_DIR, 'file_root': 'temp'})
+
+
+@unittest.skipIf(importlib.util.find_spec("PyPolyChord") is None,
+                 'PyPolyChord not installed.')
+class TestPyPolyChordUtils(unittest.TestCase):
+
+    """
+    Tests for the pypolychord_utils.py module.
+
+    These are skipped if PyPolyChord is not installed as it is not needed for
+    compiled likelihoods.
+    """
+
+    def test_python_run_func(self):
+        """Check functions for running PolyChord via the PyPolyChord wrapper
+        (as opposed to with a compiled likelihood) in the form needed for
+        dynamic nested sampling."""
+        import dyPolyChord.pypolychord_utils as pypolychord_utils
+        assert not os.path.exists(TEST_CACHE_DIR), TEST_DIR_EXISTS_MSG
+        os.makedirs(TEST_CACHE_DIR)
+        func = pypolychord_utils.get_python_run_func(
+            likelihoods.gaussian, priors.uniform, 2)
+        self.assertIsInstance(func, functools.partial)
+        self.assertEqual(set(func.keywords.keys()),
+                         {'nderived', 'ndim', 'likelihood', 'prior'})
+        func({'base_dir': TEST_CACHE_DIR, 'file_root': 'temp', 'nlive': 5,
+              'max_ndead': 5, 'feedback': -1})
+        shutil.rmtree(TEST_CACHE_DIR)
+
+    def test_comm(self):
+        """
+        Test python_run_func's comm argument (used for MPI) has the expected
+        behavior.
+        """
+        import dyPolyChord.pypolychord_utils as pypolychord_utils
+        self.assertRaises(
+            AssertionError, pypolychord_utils.python_run_func,
+            {}, likelihood=1, prior=2, ndim=3, comm=DummyMPIComm(0))
+        self.assertRaises(
+            AssertionError, pypolychord_utils.python_run_func,
+            {}, likelihood=1, prior=2, ndim=3, comm=DummyMPIComm(1))
+
+
+class TestPythonPriors(unittest.TestCase):
+
+    """Tests for the python_priors.py module."""
 
     def test_uniform(self):
         """Check uniform prior."""
@@ -333,9 +354,12 @@ class TestPriors(unittest.TestCase):
                      prior_scale * np.sqrt(2)), places=12)
 
 
-class TestLikelihoods(unittest.TestCase):
+class TestPythonLikelihoods(unittest.TestCase):
+
+    """Tests for the python_likelihoods.py module."""
 
     def test_gaussian(self):
+        """Check the Gaussian likelihood."""
         sigma = 1
         dim = 5
         theta = list(np.random.random(dim))
@@ -347,6 +371,7 @@ class TestLikelihoods(unittest.TestCase):
         self.assertEqual(len(phi), 0)
 
     def test_gaussian_shell(self):
+        """Check the Gaussian shell likelihood."""
         dim = 5
         sigma = 1
         rshell = 2
@@ -360,6 +385,7 @@ class TestLikelihoods(unittest.TestCase):
         self.assertEqual(len(phi), 0)
 
     def test_gaussian_mix(self):
+        """Check the Gaussian mixture model likelihood."""
         dim = 5
         theta = list(np.random.random(dim))
         _, phi = likelihoods.gaussian_mix(theta)
@@ -367,6 +393,7 @@ class TestLikelihoods(unittest.TestCase):
         self.assertEqual(len(phi), 0)
 
     def test_rastrigin(self):
+        """Check the Rastrigin ("bunch of grapes") likelihood."""
         dim = 2
         theta = [0.] * dim
         logl, phi = likelihoods.rastrigin(theta)
@@ -375,6 +402,7 @@ class TestLikelihoods(unittest.TestCase):
         self.assertEqual(len(phi), 0)
 
     def test_rosenbrock(self):
+        """Check the Rosenbrock ("banana") likelihood."""
         dim = 2
         theta = [0.] * dim
         logl, phi = likelihoods.rosenbrock(theta)
@@ -423,16 +451,24 @@ def dummy_run_func(settings, **kwargs):
 
 class DummyMPIComm(object):
 
-    """A dummy MPI.COMM object."""
+    """A dummy mpi4py MPI.COMM object for testing."""
 
     def __init__(self, rank):
         self.rank = rank
 
     def Get_rank(self):
+        """Dummy version of mpi4py MPI.COMM's Get_rank()."""
         return self.rank
 
-    def bcast(self, obj, root=0):
-        raise AssertionError
+    @staticmethod
+    def bcast(_, root=0):
+        """Dummy version of mpi4py MPI.COMM's bcast(data, root=0)
+        method.
+        AssertionError raising is used to allow behavior testing without
+        running the whole of the run_dypolychord function in which the call is
+        embedded."""
+        if root == 0:
+            raise AssertionError
 
 
 if __name__ == '__main__':
