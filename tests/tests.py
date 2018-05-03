@@ -40,9 +40,10 @@ def setUpModule():
 
 
 # @unittest.skip("Seeding problems")
+@unittest.skipIf(not PYPOLYCHORD_AVAIL, 'PyPolyChord not installed.')
 class TestRunDyPolyChordNumers(unittest.TestCase):
 
-    """Tests for run_dypolychord which use PyPolyChord and check numberical
+    """Tests for run_dypolychord which use PyPolyChord and check numerical
     outputs by setting random seed."""
 
     def setUp(self):
@@ -74,10 +75,10 @@ class TestRunDyPolyChordNumers(unittest.TestCase):
             'num_repeats': 1,
             'feedback': -1,
             'cluster_posteriors': False,
-            # Set precision_criterion low to avoid non-deterministic like errors.
-            # These occur due in the low dimension and low and nlive cases we use for
-            # fast testing as runs sometimes get very close to the peak where the
-            # likelihood becomes approximately constant.
+            # Set precision_criterion low to avoid non-deterministic like
+            # errors. These occur due in the low dimension and low and nlive
+            # cases we use for fast testing as runs sometimes get very close
+            # to the peak where the likelihood becomes approximately constant.
             'precision_criterion': 0.01,
             'seed': 1,
             'max_ndead': -1,
@@ -108,13 +109,14 @@ class TestRunDyPolyChordNumers(unittest.TestCase):
                 self.random_seed_msg.format(run['logl'][0], first_logl),
                 UserWarning)
         else:
-            self.assertEqual(e.count_samples(run), 526)
-            self.assertAlmostEqual(e.logz(run), -6.652239509333465, places=12)
-            self.assertAlmostEqual(e.param_mean(run), 0.10571096196936654,
+            self.assertEqual(e.count_samples(run), 910)
+            self.assertAlmostEqual(e.logz(run), -5.936453959351473, places=12)
+            self.assertAlmostEqual(e.param_mean(run), 0.009777308532134496,
                                    places=12)
 
     def test_dynamic_both_evidence_and_param(self):
-        """Test numerical results for nested sampling with dynamic_goal=0.25."""
+        """Test numerical results for nested sampling with
+        dynamic_goal=0.25."""
         dynamic_goal = 0.25
         dyPolyChord.run_dypolychord(
             self.run_func, dynamic_goal, self.settings,
@@ -128,9 +130,9 @@ class TestRunDyPolyChordNumers(unittest.TestCase):
                 self.random_seed_msg.format(run['logl'][0], first_logl),
                 UserWarning)
         else:
-            self.assertEqual(e.count_samples(run), 510)
-            self.assertAlmostEqual(e.logz(run), -5.802684132113869, places=12)
-            self.assertAlmostEqual(e.param_mean(run), 0.2130565030360435,
+            self.assertEqual(e.count_samples(run), 694)
+            self.assertAlmostEqual(e.logz(run), -5.675476014203231, places=12)
+            self.assertAlmostEqual(e.param_mean(run), 0.0986638107065872,
                                    places=12)
 
     def test_dynamic_param(self):
@@ -149,9 +151,9 @@ class TestRunDyPolyChordNumers(unittest.TestCase):
                 UserWarning)
         else:
             self.assertEqual(run['output']['resume_ndead'], 40)
-            self.assertEqual(run['output']['resume_nlike'], 85)
-            self.assertAlmostEqual(e.logz(run), -5.893652129732729, places=12)
-            self.assertAlmostEqual(e.param_mean(run), 0.16094614807592716,
+            self.assertEqual(run['output']['resume_nlike'], 56)
+            self.assertAlmostEqual(e.logz(run), -5.449496432328616, places=12)
+            self.assertAlmostEqual(e.param_mean(run), -0.04773763785996765,
                                    places=12)
 
 
