@@ -4,8 +4,13 @@ Functions for running dyPolyChord using PyPolyChord (PolyChord's built-in
 python wrapper) using with python likelihoods and priors.
 """
 import functools
-import PyPolyChord
-import PyPolyChord.settings
+# Exception handling needed to allow readthedocs to work without installing
+# PyPolyChord.
+try:
+    import PyPolyChord
+    import PyPolyChord.settings
+except ImportError:
+    pass
 
 
 def python_run_func(settings_dict, **kwargs):
