@@ -18,7 +18,7 @@ import dyPolyChord.output_processing
 import dyPolyChord.polychord_utils
 import dyPolyChord
 try:
-    import pypolychord_utils
+    import dyPolyChord.pypolychord_utils
     PYPOLYCHORD_AVAIL = True
 except ImportError:
     PYPOLYCHORD_AVAIL = False
@@ -37,6 +37,95 @@ def setUpModule():
         'check caching then delete it afterwards, so its path should be left '
         'empty. You should manually delete or move ' + TEST_CACHE_DIR
         + ' before running the tests.')
+
+
+# @unittest.skip("Seeding problems")
+class TestRunDyPolyChordNumers(unittest.TestCase):
+
+    """Tests for run_dypolychord which use PyPolyChord and check numberical
+    outputs by setting random seed."""
+
+    def setUp(self):
+        """Make a directory for saving test results."""
+        try:
+            os.makedirs(TEST_CACHE_DIR)
+        except FileExistsError:
+            pass
+        self.ninit = 20
+        ndim = 2
+        self.run_func = dyPolyChord.pypolychord_utils.get_python_run_func(
+            functools.partial(likelihoods.gaussian, sigma=1),
+            functools.partial(priors.uniform, prior_scale=10), ndim=ndim)
+        self.random_seed_msg = (
+            'This test is not affected by most of dyPolyChord, so if it fails '
+            'your PolyChord install\'s random seed number generator is '
+            'probably different to the one used to set the expected values.')
+        self.settings = {
+            'do_clustering': True,
+            'posteriors': False,
+            'equals': False,
+            'write_dead': True,
+            'read_resume': False,
+            'write_resume': False,
+            'write_stats': True,
+            'write_prior': False,
+            'write_live': False,
+            'num_repeats': 1,
+            'feedback': -1,
+            'cluster_posteriors': False,
+            # Set precision_criterion low to avoid non-deterministic like errors.
+            # These occur due in the low dimension and low and nlive cases we use for
+            # fast testing as runs sometimes get very close to the peak where the
+            # likelihood becomes approximately constant.
+            'precision_criterion': 0.01,
+            'seed': 1,
+            'max_ndead': -1,
+            'base_dir': TEST_CACHE_DIR,
+            'file_root': 'test_run',
+            'nlive': 50,  # used for nlive_const
+            'nlives': {}}
+
+    def tearDown(self):
+        """Remove any caches saved by the tests."""
+        try:
+            shutil.rmtree(TEST_CACHE_DIR)
+        except FileNotFoundError:
+            pass
+
+    def test_dynamic_evidence(self):
+        """Test numerical results for nested sampling with dynamic_goal=0."""
+        dynamic_goal = 0
+        dyPolyChord.run_dypolychord(
+            self.run_func, dynamic_goal, self.settings,
+            init_step=self.ninit, ninit=self.ninit)
+        run = dyPolyChord.output_processing.process_dypolychord_run(
+            self.settings['file_root'], self.settings['base_dir'],
+            dynamic_goal=dynamic_goal)
+        if not np.isclose(run['logl'][0], -89.9267531982664):
+            warnings.warn(self.random_seed_msg, UserWarning)
+        else:
+            self.assertEqual(e.count_samples(run), 526)
+            self.assertAlmostEqual(e.logz(run), -6.652239509333465, places=12)
+            self.assertAlmostEqual(e.param_mean(run), 0.10571096196936654,
+                                   places=12)
+
+    def test_dynamic_param(self):
+        """Test numerical results for nested sampling with dynamic_goal=1."""
+        dynamic_goal = 1
+        dyPolyChord.run_dypolychord(
+            self.run_func, dynamic_goal, self.settings,
+            init_step=self.ninit, ninit=self.ninit)
+        run = dyPolyChord.output_processing.process_dypolychord_run(
+            self.settings['file_root'], self.settings['base_dir'],
+            dynamic_goal=dynamic_goal)
+        if not np.isclose(run['logl'][0], -73.2283115991452):
+            warnings.warn(self.random_seed_msg, UserWarning)
+        else:
+            self.assertEqual(run['output']['resume_ndead'], 40)
+            self.assertEqual(run['output']['resume_nlike'], 85)
+            self.assertAlmostEqual(e.logz(run), -5.893652129732729, places=12)
+            self.assertAlmostEqual(e.param_mean(run), 0.16094614807592716,
+                                   places=12)
 
 
 class TestRunDynamicNS(unittest.TestCase):
@@ -336,7 +425,7 @@ class TestPyPolyChordUtils(unittest.TestCase):
             os.makedirs(TEST_CACHE_DIR)
         except FileExistsError:
             pass
-        func = pypolychord_utils.get_python_run_func(
+        func = dyPolyChord.pypolychord_utils.get_python_run_func(
             likelihoods.gaussian, priors.uniform, 2)
         self.assertIsInstance(func, functools.partial)
         self.assertEqual(set(func.keywords.keys()),
@@ -351,10 +440,10 @@ class TestPyPolyChordUtils(unittest.TestCase):
         behavior.
         """
         self.assertRaises(
-            AssertionError, pypolychord_utils.python_run_func,
+            AssertionError, dyPolyChord.pypolychord_utils.python_run_func,
             {}, likelihood=1, prior=2, ndim=3, comm=DummyMPIComm(0))
         self.assertRaises(
-            AssertionError, pypolychord_utils.python_run_func,
+            AssertionError, dyPolyChord.pypolychord_utils.python_run_func,
             {}, likelihood=1, prior=2, ndim=3, comm=DummyMPIComm(1))
 
 
