@@ -57,6 +57,7 @@ class TestRunDyPolyChordNumers(unittest.TestCase):
             functools.partial(likelihoods.gaussian, sigma=1),
             functools.partial(priors.uniform, prior_scale=10), ndim=ndim)
         self.random_seed_msg = (
+            'First dead point logl is {0} != {1}. '
             'This test is not affected by most of dyPolyChord, so if it fails '
             'your PolyChord install\'s random seed number generator is '
             'probably different to the one used to set the expected values.')
@@ -101,12 +102,35 @@ class TestRunDyPolyChordNumers(unittest.TestCase):
         run = dyPolyChord.output_processing.process_dypolychord_run(
             self.settings['file_root'], self.settings['base_dir'],
             dynamic_goal=dynamic_goal)
-        if not np.isclose(run['logl'][0], -89.9267531982664):
-            warnings.warn(self.random_seed_msg, UserWarning)
+        first_logl = -89.9267531982664
+        if not np.isclose(run['logl'][0], first_logl):
+            warnings.warn(
+                self.random_seed_msg.format(run['logl'][0], first_logl),
+                UserWarning)
         else:
             self.assertEqual(e.count_samples(run), 526)
             self.assertAlmostEqual(e.logz(run), -6.652239509333465, places=12)
             self.assertAlmostEqual(e.param_mean(run), 0.10571096196936654,
+                                   places=12)
+
+    def test_dynamic_both_evidence_and_param(self):
+        """Test numerical results for nested sampling with dynamic_goal=0.25."""
+        dynamic_goal = 0.25
+        dyPolyChord.run_dypolychord(
+            self.run_func, dynamic_goal, self.settings,
+            init_step=self.ninit, ninit=self.ninit)
+        run = dyPolyChord.output_processing.process_dypolychord_run(
+            self.settings['file_root'], self.settings['base_dir'],
+            dynamic_goal=dynamic_goal)
+        first_logl = -82.3731123424932
+        if not np.isclose(run['logl'][0], first_logl):
+            warnings.warn(
+                self.random_seed_msg.format(run['logl'][0], first_logl),
+                UserWarning)
+        else:
+            self.assertEqual(e.count_samples(run), 510)
+            self.assertAlmostEqual(e.logz(run), -5.802684132113869, places=12)
+            self.assertAlmostEqual(e.param_mean(run), 0.2130565030360435,
                                    places=12)
 
     def test_dynamic_param(self):
@@ -118,8 +142,11 @@ class TestRunDyPolyChordNumers(unittest.TestCase):
         run = dyPolyChord.output_processing.process_dypolychord_run(
             self.settings['file_root'], self.settings['base_dir'],
             dynamic_goal=dynamic_goal)
-        if not np.isclose(run['logl'][0], -73.2283115991452):
-            warnings.warn(self.random_seed_msg, UserWarning)
+        first_logl = -73.2283115991452
+        if not np.isclose(run['logl'][0], first_logl):
+            warnings.warn(
+                self.random_seed_msg.format(run['logl'][0], first_logl),
+                UserWarning)
         else:
             self.assertEqual(run['output']['resume_ndead'], 40)
             self.assertEqual(run['output']['resume_nlike'], 85)
