@@ -18,6 +18,8 @@ import dyPolyChord.output_processing
 import dyPolyChord.polychord_utils
 import dyPolyChord
 try:
+    # Only pypolychord_utils tests if PyPolyChord is installed
+    import PyPolyChord
     import dyPolyChord.pypolychord_utils
     PYPOLYCHORD_AVAIL = True
 except ImportError:
