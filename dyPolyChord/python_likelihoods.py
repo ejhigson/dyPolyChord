@@ -17,8 +17,9 @@ phi: list of length nderived
 
 We use classes with the loglikelihood defined in the __call__ property, as
 this provides convenient way of storing other information such as
-hyperparameter values and can be used in the same way as functions due to
-python's "duck typing". Alternatively, functions can also be used.
+hyperparameter values. These objects can be used in the same way as functions
+due to python's "duck typing" (alternatively you can define likelihoods
+using functions).
 """
 import copy
 import numpy as np
@@ -31,7 +32,7 @@ class Gaussian(object):
 
     def __init__(self, sigma=1.0, nderived=0):
         """
-        Set up likelihood object's parameter values.
+        Set up likelihood object's hyperparameter values.
 
         Parameters
         ----------
@@ -69,7 +70,7 @@ class GaussianShell(object):
 
     def __init__(self, sigma=0.2, rshell=2, nderived=0):
         """
-        Set up likelihood object's parameter values.
+        Set up likelihood object's hyperparameter values.
 
         Parameters
         ----------
@@ -112,7 +113,7 @@ class Rastrigin(object):
 
     def __init__(self, a=10, nderived=0):
         """
-        Set up likelihood object's parameter values.
+        Set up likelihood object's hyperparameter values.
 
         Parameters
         ----------

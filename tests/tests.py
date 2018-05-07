@@ -485,8 +485,8 @@ class TestPythonPriors(unittest.TestCase):
     def test_uniform(self):
         """Check uniform prior."""
         prior_scale = 5
-        hypercube = list(np.random.random(5))
-        theta = priors.uniform(hypercube, prior_scale=prior_scale)
+        hypercube = np.random.random(5)
+        theta = priors.Uniform(-prior_scale, prior_scale)(hypercube)
         for i, th in enumerate(theta):
             self.assertEqual(
                 th, (hypercube[i] * 2 * prior_scale) - prior_scale)
@@ -494,8 +494,8 @@ class TestPythonPriors(unittest.TestCase):
     def test_gaussian(self):
         """Check spherically symmetric Gaussian prior centred on the origin."""
         prior_scale = 5
-        hypercube = list(np.random.random(5))
-        theta = priors.gaussian(hypercube, prior_scale=prior_scale)
+        hypercube = np.random.random(5)
+        theta = priors.Gaussian(prior_scale)(hypercube)
         for i, th in enumerate(theta):
             self.assertAlmostEqual(
                 th, (scipy.special.erfinv(hypercube[i] * 2 - 1) *
