@@ -510,10 +510,10 @@ class TestPythonLikelihoods(unittest.TestCase):
         """Check the Gaussian likelihood."""
         sigma = 1
         dim = 5
-        theta = list(np.random.random(dim))
-        logl_expected = -sum([th ** 2 for th in theta]) / (2 * sigma ** 2)
+        theta = np.random.random(dim)
+        logl_expected = -(np.sum(theta ** 2) / (2 * sigma ** 2))
         logl_expected -= np.log(2 * np.pi * sigma ** 2) * (dim / 2.0)
-        logl, phi = likelihoods.gaussian(theta, sigma=sigma)
+        logl, phi = likelihoods.Gaussian(sigma=sigma)(theta)
         self.assertAlmostEqual(logl, logl_expected, places=12)
         self.assertIsInstance(phi, list)
         self.assertEqual(len(phi), 0)
@@ -523,10 +523,10 @@ class TestPythonLikelihoods(unittest.TestCase):
         dim = 5
         sigma = 1
         rshell = 2
-        theta = list(np.random.random(dim))
-        r = sum([th ** 2 for th in theta]) ** 0.5
-        logl, phi = likelihoods.gaussian_shell(
-            theta, sigma=sigma, rshell=rshell)
+        theta = np.random.random(dim)
+        r = np.sum(theta ** 2) ** 0.5
+        logl, phi = likelihoods.GaussianShell(
+            sigma=sigma, rshell=rshell)(theta)
         self.assertAlmostEqual(
             logl, -((r - rshell) ** 2) / (2 * (sigma ** 2)), places=12)
         self.assertIsInstance(phi, list)
@@ -535,16 +535,16 @@ class TestPythonLikelihoods(unittest.TestCase):
     def test_gaussian_mix(self):
         """Check the Gaussian mixture model likelihood."""
         dim = 5
-        theta = list(np.random.random(dim))
-        _, phi = likelihoods.gaussian_mix(theta)
+        theta = np.random.random(dim)
+        _, phi = likelihoods.GaussianMix()(theta)
         self.assertIsInstance(phi, list)
         self.assertEqual(len(phi), 0)
 
     def test_rastrigin(self):
         """Check the Rastrigin ("bunch of grapes") likelihood."""
         dim = 2
-        theta = [0.] * dim
-        logl, phi = likelihoods.rastrigin(theta)
+        theta = np.zeros(dim)
+        logl, phi = likelihoods.Rastrigin()(theta)
         self.assertEqual(logl, 0)
         self.assertIsInstance(phi, list)
         self.assertEqual(len(phi), 0)
@@ -552,8 +552,8 @@ class TestPythonLikelihoods(unittest.TestCase):
     def test_rosenbrock(self):
         """Check the Rosenbrock ("banana") likelihood."""
         dim = 2
-        theta = [0.] * dim
-        logl, phi = likelihoods.rosenbrock(theta)
+        theta = np.zeros(dim)
+        logl, phi = likelihoods.Rosenbrock()(theta)
         self.assertAlmostEqual(logl, -1, places=12)
         self.assertIsInstance(phi, list)
         self.assertEqual(len(phi), 0)
