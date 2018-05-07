@@ -3,86 +3,7 @@
 Functions for running dyPolyChord using compiled PolyChord C++ or Fortran
 likelihoods.
 """
-import functools
 import os
-
-
-def get_compiled_run_func(ex_path, prior_block_str, derived_str=None):
-    """
-    Helper function for freezing python_run_func args.
-
-    Parameters
-    ----------
-    ex_path: str
-    prior_block_str: str
-    derived_str: str or None, optional
-
-    Returns
-    -------
-    functools partial object
-        compiled_run_func with input parameters frozen.
-    """
-    return functools.partial(compiled_run_func, ex_path=ex_path,
-                             prior_block_str=prior_block_str,
-                             derived_str=derived_str)
-
-
-def compiled_run_func(settings_dict, prior_block_str=None, ex_path=None,
-                      derived_str=None):
-    """
-    Runs a PolyChord executable with the specified inputs by writing a .ini
-    file containing the input settings.
-    See the PolyChord documentation for more details.
-
-    Parameters
-    ----------
-    settings_dict: dict
-        Input PolyChord settings.
-    prior_block_str: str
-        String specifying prior parameters (see get_prior_block_str for more
-        details).
-    exp_path: str
-        String containing path to compiled PolyChord likelihood.
-    derived_str: str or None, optional
-    """
-    ini_path = os.path.join(settings_dict['base_dir'],
-                            settings_dict['file_root'] + '.ini')
-    write_ini(settings_dict, prior_block_str, ini_path,
-              derived_str=derived_str)
-    os.system(ex_path + ' ' + ini_path)
-
-
-def write_ini(settings, prior_block_str, file_path, derived_str=None):
-    """
-    Writes a PolyChord format .ini file based on the input settings.
-
-    Parameters
-    ----------
-    settings_dict: dict
-        Input PolyChord settings.
-    prior_block_str: str
-        String specifying prior parameters (see get_prior_block_str for more
-        details).
-    file_path: str
-        Path to write ini file to.
-    derived_str: str or None, optional
-    """
-    with open(file_path, 'w') as ini_file:
-        # Write the settings
-        for key, value in settings.items():
-            if key == 'nlives':
-                if value:
-                    loglikes = sorted(settings['nlives'])
-                    ini_file.write(('loglikes = ' + format_setting(loglikes)
-                                    + '\n'))
-                    nlives = [settings['nlives'][logl] for logl in loglikes]
-                    ini_file.write('nlives = ' + format_setting(nlives) + '\n')
-            else:
-                ini_file.write(key + ' = ' + format_setting(value) + '\n')
-        # write the prior
-        ini_file.write(prior_block_str)
-        if derived_str is not None:
-            ini_file.write(derived_str)
 
 
 def get_prior_block_str(prior_name, prior_params, nparam, **kwargs):
@@ -95,7 +16,7 @@ def get_prior_block_str(prior_name, prior_params, nparam, **kwargs):
     Parameters
     ----------
     prior_name: str
-        Name of prior. See the PolyChord documnetation for a list of currently
+        Name of prior. See the PolyChord documentation for a list of currently
         available priors and details of how to add your own.
     prior_params: str, float or list of strs and floats
         Parameters for the prior function.
@@ -108,7 +29,7 @@ def get_prior_block_str(prior_name, prior_params, nparam, **kwargs):
         Number of block (only needed when using multiple prior blocks).
     speed: int, optional
         Use to specify fast and slow parameters if required. See the PolyChord
-        documnetation for more details.
+        documentation for more details.
 
     Returns
     -------
@@ -128,6 +49,78 @@ def get_prior_block_str(prior_name, prior_params, nparam, **kwargs):
     return block_str
 
 
+class RunCompiledPolyChord(object):
+
+    """Object for running a compiled PolyChord executable with specified
+    inputs."""
+
+    def __init__(self, ex_path, prior_str, derived_str=None):
+        """
+        Specify path to executable, priors and derived parameters.
+
+        Parameters
+        ----------
+        ex_path: str
+        prior_str: str
+            String specifying prior in the format required for PolyChord .ini
+            files (see prior_str for more details).
+        derived_str: str or None, optional
+        """
+        self.ex_path = ex_path
+        self.prior_str = prior_str
+        self.derived_str = derived_str
+
+    def __call__(self, settings_dict):
+        """
+        by writing a .ini
+        See the PolyChord documentation for more details.
+
+        Parameters
+        ----------
+        settings_dict: dict
+            Input PolyChord settings.
+        prior_block_str: str
+            String specifying prior parameters (see get_prior_block_str for
+            more details).
+        exp_path: str
+            String containing path to compiled PolyChord likelihood.
+        derived_str: str or None, optional
+        """
+        ini_path = os.path.join(settings_dict['base_dir'],
+                                settings_dict['file_root'] + '.ini')
+        self.write_ini(settings_dict, ini_path)
+        os.system(self.ex_path + ' ' + ini_path)
+
+    def write_ini(self, settings, file_path):
+        """
+        Writes a PolyChord format .ini file based on the input settings.
+
+        Parameters
+        ----------
+        settings: dict
+            Input PolyChord settings.
+        file_path: str
+            Path to write ini file to.
+        """
+        with open(file_path, 'w') as ini_file:
+            # Write the settings
+            for key, value in settings.items():
+                if key == 'nlives':
+                    if value:
+                        loglikes = sorted(settings['nlives'])
+                        ini_file.write(
+                            'loglikes = ' + format_setting(loglikes) + '\n')
+                        nlives = [settings['nlives'][ll] for ll in loglikes]
+                        ini_file.write(
+                            'nlives = ' + format_setting(nlives) + '\n')
+                else:
+                    ini_file.write(key + ' = ' + format_setting(value) + '\n')
+            # write the prior
+            ini_file.write(self.prior_str)
+            if self.derived_str is not None:
+                ini_file.write(self.derived_str)
+
+
 def format_setting(setting):
     """
     Return setting as string in the format needed for PolyChord's .ini files.
@@ -136,21 +129,7 @@ def format_setting(setting):
 
     Parameters
     ----------
-    prior_name: str
-        Name of prior. See the PolyChord documnetation for a list of currently
-        available priors and details of how to add your own.
-    prior_params: str, float or list of strs and floats
-        Parameters for the prior block.
-    nparam: int
-        Number of parameters.
-    start_param: int, optional
-        Where to start param numbering. For when multiple prior blocks are
-        being used.
-    block: int, optional
-        Number of block (only needed when using multiple prior blocks).
-    speed: int, optional
-        Use to specify fast and slow parameters if required. See the PolyChord
-        documnetation for more details.
+    setting: (can be any type for which str(settings) works)
 
     Returns
     -------

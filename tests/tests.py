@@ -41,7 +41,6 @@ def setUpModule():
         + ' before running the tests.')
 
 
-# @unittest.skip("Seeding problems")
 @unittest.skipIf(not PYPOLYCHORD_AVAIL, 'PyPolyChord not installed.')
 class TestRunDyPolyChordNumers(unittest.TestCase):
 
@@ -57,8 +56,7 @@ class TestRunDyPolyChordNumers(unittest.TestCase):
         self.ninit = 20
         ndim = 2
         self.run_func = dyPolyChord.pypolychord_utils.get_python_run_func(
-            functools.partial(likelihoods.gaussian, sigma=1),
-            functools.partial(priors.uniform, prior_scale=10), ndim=ndim)
+            likelihoods.Gaussian(sigma=1), priors.Uniform(-10, 10), ndim=ndim)
         self.random_seed_msg = (
             'First dead point logl is {0} != {1}. '
             'This test is not affected by most of dyPolyChord, so if it fails '
@@ -406,14 +404,15 @@ class TestPolyChordUtils(unittest.TestCase):
         """Check writing a PolyChord .ini file from a dictionary of
         settings."""
         settings = {'nlive': 50, 'nlives': {-20.0: 100, -10.0: 200}}
-        prior_block_str = 'prior_block\n'
+        prior_str = 'prior_block\n'
         derived_str = 'derived'
+        run_obj = dyPolyChord.polychord_utils.RunCompiledPolyChord(
+            ':', prior_str, derived_str=derived_str)
         file_path = os.path.join(TEST_CACHE_DIR, 'temp.ini')
-        dyPolyChord.polychord_utils.write_ini(
-            settings, prior_block_str, file_path, derived_str=derived_str)
+        run_obj.write_ini(settings, file_path)
         with open(file_path, 'r') as ini_file:
             lines = ini_file.readlines()
-        self.assertEqual(lines[-2], prior_block_str)
+        self.assertEqual(lines[-2], prior_str)
         self.assertEqual(lines[-1], derived_str)
         # Use sorted as ini lines written from dict.items() so order not
         # guarenteed.
@@ -428,13 +427,12 @@ class TestPolyChordUtils(unittest.TestCase):
         within python (via os.system).
 
         In place of an executable we just use the bash 'do nothing' command
-            $ :
+        ':'.
         """
-        func = dyPolyChord.polychord_utils.get_compiled_run_func(
+        func = dyPolyChord.polychord_utils.RunCompiledPolyChord(
             ':', 'this is a dummy prior block string')
-        self.assertIsInstance(func, functools.partial)
-        self.assertEqual(set(func.keywords.keys()),
-                         {'derived_str', 'ex_path', 'prior_block_str'})
+        self.assertEqual(set(func.__dict__.keys()),
+                         {'derived_str', 'ex_path', 'prior_str'})
         func({'base_dir': TEST_CACHE_DIR, 'file_root': 'temp'})
 
 
@@ -457,7 +455,7 @@ class TestPyPolyChordUtils(unittest.TestCase):
         except FileExistsError:
             pass
         func = dyPolyChord.pypolychord_utils.get_python_run_func(
-            likelihoods.gaussian, priors.uniform, 2)
+            likelihoods.Gaussian(), priors.Uniform(), 2)
         self.assertIsInstance(func, functools.partial)
         self.assertEqual(set(func.keywords.keys()),
                          {'nderived', 'ndim', 'likelihood', 'prior'})
