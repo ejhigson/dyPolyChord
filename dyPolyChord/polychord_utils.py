@@ -70,22 +70,23 @@ class RunCompiledPolyChord(object):
         self.prior_str = prior_str
         self.derived_str = derived_str
 
-    def __call__(self, settings_dict):
+    def __call__(self, settings_dict, comm=None):
         """
-        by writing a .ini
+        Run PolyChord with the input settings by writing a .ini file then using
+        the compiled likelihood specified in ex_path.
+
         See the PolyChord documentation for more details.
 
         Parameters
         ----------
         settings_dict: dict
             Input PolyChord settings.
-        prior_block_str: str
-            String specifying prior parameters (see get_prior_block_str for
-            more details).
-        exp_path: str
-            String containing path to compiled PolyChord likelihood.
-        derived_str: str or None, optional
+        comm: None, optional
+            Not used. Included only so __call__ has the same arguments as the
+            equivalent python function (which uses the comm argument for
+            runnign with MPI).
         """
+        assert comm is None
         ini_path = os.path.join(settings_dict['base_dir'],
                                 settings_dict['file_root'] + '.ini')
         self.write_ini(settings_dict, ini_path)

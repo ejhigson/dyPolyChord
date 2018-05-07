@@ -55,7 +55,7 @@ class TestRunDyPolyChordNumers(unittest.TestCase):
             pass
         self.ninit = 20
         ndim = 2
-        self.run_func = dyPolyChord.pypolychord_utils.get_python_run_func(
+        self.run_func = dyPolyChord.pypolychord_utils.RunPyPolyChord(
             likelihoods.Gaussian(sigma=1), priors.Uniform(-10, 10), ndim=ndim)
         self.random_seed_msg = (
             'First dead point logl is {0} != {1}. '
@@ -110,7 +110,6 @@ class TestRunDyPolyChordNumers(unittest.TestCase):
                 UserWarning)
         else:
             self.assertEqual(e.count_samples(run), 548)
-            # self.assertAlmostEqual(e.logz(run), -5.936453959351473, places=12)
             self.assertAlmostEqual(e.param_mean(run), 0.0952046545193311,
                                    places=12)
 
@@ -452,10 +451,9 @@ class TestPyPolyChordUtils(unittest.TestCase):
             os.makedirs(TEST_CACHE_DIR)
         except FileExistsError:
             pass
-        func = dyPolyChord.pypolychord_utils.get_python_run_func(
+        func = dyPolyChord.pypolychord_utils.RunPyPolyChord(
             likelihoods.Gaussian(), priors.Uniform(), 2)
-        self.assertIsInstance(func, functools.partial)
-        self.assertEqual(set(func.keywords.keys()),
+        self.assertEqual(set(func.__dict__.keys()),
                          {'nderived', 'ndim', 'likelihood', 'prior'})
         func({'base_dir': TEST_CACHE_DIR, 'file_root': 'temp', 'nlive': 5,
               'max_ndead': 5, 'feedback': -1})
@@ -466,12 +464,11 @@ class TestPyPolyChordUtils(unittest.TestCase):
         Test python_run_func's comm argument (used for MPI) has the expected
         behavior.
         """
+        run_func = dyPolyChord.pypolychord_utils.RunPyPolyChord(1, 2, 3)
         self.assertRaises(
-            AssertionError, dyPolyChord.pypolychord_utils.python_run_func,
-            {}, likelihood=1, prior=2, ndim=3, comm=DummyMPIComm(0))
+            AssertionError, run_func, {}, comm=DummyMPIComm(0))
         self.assertRaises(
-            AssertionError, dyPolyChord.pypolychord_utils.python_run_func,
-            {}, likelihood=1, prior=2, ndim=3, comm=DummyMPIComm(1))
+            AssertionError, run_func, {}, comm=DummyMPIComm(1))
 
 
 class TestPythonPriors(unittest.TestCase):
