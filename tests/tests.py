@@ -109,9 +109,9 @@ class TestRunDyPolyChordNumers(unittest.TestCase):
                 self.random_seed_msg.format(run['logl'][0], first_logl),
                 UserWarning)
         else:
-            self.assertEqual(e.count_samples(run), 910)
-            self.assertAlmostEqual(e.logz(run), -5.936453959351473, places=12)
-            self.assertAlmostEqual(e.param_mean(run), 0.009777308532134496,
+            self.assertEqual(e.count_samples(run), 548)
+            # self.assertAlmostEqual(e.logz(run), -5.936453959351473, places=12)
+            self.assertAlmostEqual(e.param_mean(run), 0.0952046545193311,
                                    places=12)
 
     def test_dynamic_both_evidence_and_param(self):
@@ -130,9 +130,8 @@ class TestRunDyPolyChordNumers(unittest.TestCase):
                 self.random_seed_msg.format(run['logl'][0], first_logl),
                 UserWarning)
         else:
-            self.assertEqual(e.count_samples(run), 694)
-            self.assertAlmostEqual(e.logz(run), -5.675476014203231, places=12)
-            self.assertAlmostEqual(e.param_mean(run), 0.0986638107065872,
+            self.assertEqual(e.count_samples(run), 518)
+            self.assertAlmostEqual(e.param_mean(run), 0.08488421272724601,
                                    places=12)
 
     def test_dynamic_param(self):
@@ -152,8 +151,7 @@ class TestRunDyPolyChordNumers(unittest.TestCase):
         else:
             self.assertEqual(run['output']['resume_ndead'], 40)
             self.assertEqual(run['output']['resume_nlike'], 56)
-            self.assertAlmostEqual(e.logz(run), -5.449496432328616, places=12)
-            self.assertAlmostEqual(e.param_mean(run), -0.04773763785996765,
+            self.assertAlmostEqual(e.param_mean(run), 0.21352566194422262,
                                    places=12)
 
 
