@@ -2,14 +2,63 @@
 """
 Contains main function for running dynamic nested sampling.
 """
+import copy
 import os
 import shutil
-import copy
+import warnings
 import numpy as np
 import scipy.signal
 import nestcheck.data_processing
 import nestcheck.io_utils
+import nestcheck.write_polychord_output
 import dyPolyChord.nlive_allocation
+import dyPolyChord.output_processing
+
+
+def check_settings_dict(settings_dict_in):
+    """
+    Checks the input dictionary of PolyChord settings. Issues warnings where
+    these are not appropriate, and adds default values.
+    """
+    default_settings = {'nlive': 100,
+                        'num_repeats': 20,
+                        'file_root': 'temp',
+                        'base_dir': 'chains',
+                        'seed': -1,
+                        'do_clustering': True,
+                        'max_ndead': -1}
+    mandatory_settings = {'cluster_posteriors': False,
+                          'nlives': {},
+                          'write_dead': True,
+                          'write_stats': True,
+                          'write_paramnames': False,
+                          'write_live': False,
+                          'write_resume': False,
+                          'read_resume': False,
+                          'cluster_posteriors': False}
+    settings_dict = copy.deepcopy(settings_dict_in)
+    # assign default settings
+    for key, value in default_settings.items():
+        if key not in settings_dict:
+            settings_dict[key] = value
+    # Produce warning if settings_dict_in has different values for any
+    # mandatory settings.
+    for key, value in mandatory_settings.items():
+        if key in settings_dict_in and settings_dict_in[key] != value:
+            warnings.warn((
+                'dyPolyChord currently only allows the setting {0}={1}, '
+                'so I am proceeding with this. You tried to specify {0}={2}.'
+                .format(key, value, settings_dict_in[key])), UserWarning)
+        settings_dict[key] = value
+    # Extract output settings (not needed until later)
+    output_settings = {}
+    for key in ['posteriors', 'equals']:
+        if key in settings_dict_in:
+            output_settings[key] = settings_dict_in[key]
+        else:
+            output_settings[key] = False
+        settings_dict_in[key] = False
+    return settings_dict, output_settings
 
 
 @nestcheck.io_utils.timing_decorator
@@ -29,6 +78,8 @@ def run_dypolychord(run_func, dynamic_goal, settings_dict_in, **kwargs):
     information.
     3) Generate dynamic nested sampling run using the calculated live point
     allocation.
+    4) Combine the initial and dynamic runs and write output files in the
+    PolyChord format.
 
     Parameters
     ----------
@@ -61,27 +112,15 @@ def run_dypolychord(run_func, dynamic_goal, settings_dict_in, **kwargs):
         each run by some number >> seed_increment.
     smoothing_filter: func, optional
         Smoothing to apply to the nlive allocation (if any).
+    logl_warn_only: bool, optional
+        Whether to raise error or warning if multiple samples have the same
+        loglikelihood. This is passed to nestcheck's check_ns_run function;
+        see its documentation for more details.
     """
-    default_settings = {'nlive': 100,
-                        'num_repeats': 20,
-                        'file_root': 'temp',
-                        'base_dir': 'chains',
-                        'seed': -1,
-                        'do_clustering': True,
-                        'max_ndead': -1,
-                        'write_dead': True,
-                        'write_stats': True,
-                        'write_live': False,
-                        'write_paramnames': False,
-                        'equals': False,
-                        'cluster_posteriors': False,
-                        'nlives': {},
-                        'write_resume': False,
-                        'read_resume': False}
-    for key, value in default_settings.items():
-        if key not in settings_dict_in:
-            settings_dict_in[key] = value
-    nlive_const = kwargs.pop('nlive_const', settings_dict_in['nlive'])
+    try:
+        nlive_const = kwargs.pop('nlive_const', settings_dict_in['nlive'])
+    except KeyError:
+        nlive_const = kwargs.pop('nlive_const', 100)
     ninit = kwargs.pop('ninit', 10)
     init_step = kwargs.pop('init_step', ninit)
     seed_increment = kwargs.pop('seed_increment', 100)
@@ -89,23 +128,23 @@ def run_dypolychord(run_func, dynamic_goal, settings_dict_in, **kwargs):
         x, 1 + (2 * ninit), 3, mode='nearest'))
     smoothing_filter = kwargs.pop('smoothing_filter', default_smoothing)
     comm = kwargs.pop('comm', None)
+    logl_warn_only = kwargs.pop('logl_warn_only', False)
+    if kwargs:
+        raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
+    # Step 1: do initial run
+    # ----------------------
+    # set up rank if running with MPI
     if comm is not None:
         rank = comm.Get_rank()
     else:
         rank = 0
-    if kwargs:
-        raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
-    assert not settings_dict_in['nlives']
-    assert not settings_dict_in['read_resume']
-    root = os.path.join(settings_dict_in['base_dir'],
-                        settings_dict_in['file_root'])
-    # Step 1: do initial run
-    # ----------------------
     settings_dict = None  # define for rank != 1
     if rank == 0:
-        # so we dont edit settings
-        settings_dict = copy.deepcopy(settings_dict_in)
-        settings_dict['file_root'] = settings_dict_in['file_root'] + '_init'
+        settings_dict_in, output_settings = check_settings_dict(settings_dict_in)
+        settings_dict = copy.deepcopy(settings_dict_in) # so we dont edit settings
+        root = os.path.join(settings_dict['base_dir'],
+                            settings_dict['file_root'])
+        settings_dict['file_root'] = settings_dict['file_root'] + '_init'
         settings_dict['nlive'] = ninit
     if dynamic_goal == 0:
         run_func(settings_dict, comm=comm)
@@ -198,10 +237,28 @@ def run_dypolychord(run_func, dynamic_goal, settings_dict_in, **kwargs):
         settings_dict['file_root'] = settings_dict_in['file_root'] + '_dyn'
     run_func(settings_dict, comm=comm)
     if rank == 0:
-        # tidy up remaining .resume files (if the function has reach this
-        # point, both the initial and dynamic runs have finished so we
-        # shouldn't need to resume)
+        # Step 4: process output and tidy
+        # -------------------------------
+        # Combine initial and dynamic runs
+        run = dyPolyChord.output_processing.process_dypolychord_run(
+            settings_dict_in['file_root'], settings_dict_in['base_dir'],
+            dynamic_goal=dynamic_goal, logl_warn_only=logl_warn_only)
+        for key in ['nlives_dict', 'dynamic_goal', 'dyn_nlike', 'resume_ndead',
+                    'peak_start_ind', 'init_nlive_allocation_unsmoothed',
+                    'init_nlike', 'init_nlive_allocation', 'resume_nlike']:
+            run['output'].pop(key, None)
+        # Save combined output in PolyChord format
+        nestcheck.write_polychord_output.write_run_output(
+            run, logl_warn_only=logl_warn_only,
+            stats_means_errs=False,
+            **output_settings)
+        # Remove temporary files
         for extra in ['init', 'dyn']:
+            os.remove(root + '_{0}.stats'.format(extra))
+            os.remove(root + '_{0}_dead-birth.txt'.format(extra))
+            # tidy up remaining .resume files (if the function has reach this
+            # point, both the initial and dynamic runs have finished so we
+            # shouldn't need to resume)
             try:
                 os.remove(root + '_{0}.resume'.format(extra))
             except OSError:
