@@ -12,6 +12,7 @@ import numpy as np
 import numpy.testing
 import nestcheck.estimators as e
 import nestcheck.dummy_data
+import nestcheck.write_polychord_output
 import dyPolyChord.python_likelihoods as likelihoods
 import dyPolyChord.python_priors as priors
 import dyPolyChord.output_processing
@@ -580,14 +581,13 @@ def dummy_run_func(settings, **kwargs):
     # make dead points array
     run = nestcheck.dummy_data.get_dummy_run(
         nthread, nsample, seed=seed, ndim=ndim, logl_range=logl_range)
-    nestcheck.ns_run_utils.get_run_threads(run)
-    dead = nestcheck.dummy_data.run_dead_points_array(run)
-    root = os.path.join(settings['base_dir'], settings['file_root'])
-    np.savetxt(root + '_dead-birth.txt', dead)
+    run['output'] = {'base_dir': settings['base_dir'],
+                     'file_root': settings['file_root']}
+    nestcheck.write_polychord_output.write_run_output(run)
     if settings['write_resume']:
+        # if required, save a dummy resume file
+        root = os.path.join(settings['base_dir'], settings['file_root'])
         np.savetxt(root + '.resume', np.zeros(10))
-    nestcheck.dummy_data.write_dummy_polychord_stats(
-        settings['file_root'], settings['base_dir'], ndead=dead.shape[0])
 
 
 class DummyMPIComm(object):
