@@ -15,54 +15,8 @@ import dyPolyChord.nlive_allocation
 import dyPolyChord.output_processing
 
 
-def check_settings_dict(settings_dict_in):
-    """
-    Checks the input dictionary of PolyChord settings. Issues warnings where
-    these are not appropriate, and adds default values.
-    """
-    default_settings = {'nlive': 100,
-                        'num_repeats': 20,
-                        'file_root': 'temp',
-                        'base_dir': 'chains',
-                        'seed': -1,
-                        'do_clustering': True,
-                        'max_ndead': -1}
-    mandatory_settings = {'cluster_posteriors': False,
-                          'nlives': {},
-                          'write_dead': True,
-                          'write_stats': True,
-                          'write_paramnames': False,
-                          'write_live': False,
-                          'write_resume': False,
-                          'read_resume': False,
-                          'cluster_posteriors': False}
-    settings_dict = copy.deepcopy(settings_dict_in)
-    # assign default settings
-    for key, value in default_settings.items():
-        if key not in settings_dict:
-            settings_dict[key] = value
-    # Produce warning if settings_dict_in has different values for any
-    # mandatory settings.
-    for key, value in mandatory_settings.items():
-        if key in settings_dict_in and settings_dict_in[key] != value:
-            warnings.warn((
-                'dyPolyChord currently only allows the setting {0}={1}, '
-                'so I am proceeding with this. You tried to specify {0}={2}.'
-                .format(key, value, settings_dict_in[key])), UserWarning)
-        settings_dict[key] = value
-    # Extract output settings (not needed until later)
-    output_settings = {}
-    for key in ['posteriors', 'equals']:
-        if key in settings_dict_in:
-            output_settings[key] = settings_dict_in[key]
-        else:
-            output_settings[key] = False
-        settings_dict_in[key] = False
-    return settings_dict, output_settings
-
-
 @nestcheck.io_utils.timing_decorator
-def run_dypolychord(run_func, dynamic_goal, settings_dict_in, **kwargs):
+def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
     """
     Performs dynamic nested sampling using the algorithm described in
     Appendix E of "Dynamic nested sampling: an improved algorithm for
@@ -83,15 +37,16 @@ def run_dypolychord(run_func, dynamic_goal, settings_dict_in, **kwargs):
 
     Parameters
     ----------
-    run_func: function
-        Function which runs PolyChord and takes a settings dictionary as its
-        argument.
+    run_polychord: callable
+        Callable which runs PolyChord with the desired likelihood and prior,
+        and takes a settings dictionary as its argument.
     dynamic_goal: float or int
         Number in (0, 1) which determines how to allocate computational effort
         between parameter estimation and evidence calculation. See the dynamic
         nested sampling paper for more details.
     settings_dict: dict
-        PolyChord settings to use (see below for default settings).
+        PolyChord settings to use (see check_settings_dict for information on
+        allowed and default settings).
     nlive_const: int, optional
         Used to calculate total number of samples if max_ndead not specified in
         settings. The total number of samples used is the estimated number that
@@ -138,48 +93,19 @@ def run_dypolychord(run_func, dynamic_goal, settings_dict_in, **kwargs):
         rank = comm.Get_rank()
     else:
         rank = 0
-    settings_dict = None  # define for rank != 1
+    settings_dict = None  # define for rank != 0
     if rank == 0:
-        settings_dict_in, output_settings = check_settings_dict(settings_dict_in)
-        settings_dict = copy.deepcopy(settings_dict_in) # so we dont edit settings
-        root = os.path.join(settings_dict['base_dir'],
-                            settings_dict['file_root'])
+        settings_dict_in, output_settings = check_settings_dict(
+            settings_dict_in)
+        # Make a copy of settings dic so we dont edit settings
+        settings_dict = copy.deepcopy(settings_dict_in)
         settings_dict['file_root'] = settings_dict['file_root'] + '_init'
         settings_dict['nlive'] = ninit
     if dynamic_goal == 0:
-        run_func(settings_dict, comm=comm)
+        run_polychord(settings_dict, comm=comm)
     else:
-        if rank == 0:
-            try:
-                os.remove(root + '_init.resume')
-            except OSError:
-                pass
-            settings_dict['write_resume'] = True
-            settings_dict['read_resume'] = True
-            step_ndead = []
-            resume_outputs = {}
-        add_points = True
-        while add_points:
-            if rank == 0:
-                settings_dict['max_ndead'] = (len(step_ndead) + 1) * init_step
-                if settings_dict['seed'] >= 0:
-                    settings_dict['seed'] += seed_increment
-            run_func(settings_dict, comm=comm)
-            if rank == 0:
-                run_output = nestcheck.data_processing.process_polychord_stats(
-                    settings_dict['file_root'], settings_dict['base_dir'])
-                # Store run outputs for getting number of likelihood calls
-                # while accounding for resuming a run.
-                resume_outputs[run_output['ndead']] = run_output
-                step_ndead.append(run_output['ndead'] - settings_dict['nlive'])
-                if len(step_ndead) >= 2 and step_ndead[-1] == step_ndead[-2]:
-                    add_points = False
-                # store resume file in new file path
-                shutil.copyfile(
-                    root + '_init.resume',
-                    root + '_init_' + str(step_ndead[-1]) + '.resume')
-            if comm is not None:
-                add_points = comm.bcast(add_points, root=0)
+        step_ndead, resume_outputs = run_and_save_resumes(
+            run_polychord, settings_dict, init_step, seed_increment, comm=comm)
     # Step 2: calculate an allocation of live points
     # ----------------------------------------------
     if rank == 0:
@@ -197,6 +123,8 @@ def run_dypolychord(run_func, dynamic_goal, settings_dict_in, **kwargs):
         dyn_info = dyPolyChord.nlive_allocation.allocate(
             init_run, samp_tot, dynamic_goal,
             smoothing_filter=smoothing_filter)
+        root_name = os.path.join(settings_dict_in['base_dir'],
+                                 settings_dict_in['file_root'])
         if dyn_info['peak_start_ind'] != 0:
             # subtract 1 as ndead=1 corresponds to point 0
             resume_steps = np.asarray(step_ndead) - 1
@@ -204,18 +132,19 @@ def run_dypolychord(run_func, dynamic_goal, settings_dict_in, **kwargs):
             resume_ndead = step_ndead[np.where(
                 resume_steps < dyn_info['peak_start_ind'])[0][-1]]
             # copy resume step to dynamic file root
-            shutil.copyfile(root + '_init_' + str(resume_ndead) + '.resume',
-                            root + '_dyn.resume')
+            shutil.copyfile(
+                root_name + '_init_' + str(resume_ndead) + '.resume',
+                root_name + '_dyn.resume')
             # Save resume info
             dyn_info['resume_ndead'] = resume_ndead
             dyn_info['resume_nlike'] = resume_outputs[resume_ndead]['nlike']
         nestcheck.io_utils.pickle_save(
-            dyn_info, root + '_dyn_info', overwrite_existing=True)
+            dyn_info, root_name + '_dyn_info', overwrite_existing=True)
         try:
             # Remove all the temporary resume files. Use set to avoid
             # duplicates as these cause OSErrors.
             for snd in set(step_ndead):
-                os.remove(root + '_init_' + str(snd) + '.resume')
+                os.remove(root_name + '_init_' + str(snd) + '.resume')
         except NameError:  # occurs when not saving resumes so step_ndead list
             pass
         # Step 3: do dynamic run
@@ -235,7 +164,7 @@ def run_dypolychord(run_func, dynamic_goal, settings_dict_in, **kwargs):
         settings_dict['nlives'] = dyn_info['nlives_dict']
         settings_dict['read_resume'] = (dyn_info['peak_start_ind'] != 0)
         settings_dict['file_root'] = settings_dict_in['file_root'] + '_dyn'
-    run_func(settings_dict, comm=comm)
+    run_polychord(settings_dict, comm=comm)
     if rank == 0:
         # Step 4: process output and tidy
         # -------------------------------
@@ -254,12 +183,143 @@ def run_dypolychord(run_func, dynamic_goal, settings_dict_in, **kwargs):
             **output_settings)
         # Remove temporary files
         for extra in ['init', 'dyn']:
-            os.remove(root + '_{0}.stats'.format(extra))
-            os.remove(root + '_{0}_dead-birth.txt'.format(extra))
+            os.remove(root_name + '_{0}.stats'.format(extra))
+            os.remove(root_name + '_{0}_dead-birth.txt'.format(extra))
+            os.remove(root_name + '_{0}_dead.txt'.format(extra))
             # tidy up remaining .resume files (if the function has reach this
             # point, both the initial and dynamic runs have finished so we
             # shouldn't need to resume)
             try:
-                os.remove(root + '_{0}.resume'.format(extra))
+                os.remove(root_name + '_{0}.resume'.format(extra))
             except OSError:
                 pass
+
+
+# Helper functions
+# ----------------
+
+def check_settings_dict(settings_dict_in):
+    """
+    Checks the input dictionary of PolyChord settings. Issues warnings where
+    these are not appropriate, and adds default values.
+
+    Parameters
+    ----------
+    settings_dict_in: dict
+        PolyChord settings to use.
+
+    Returns
+    -------
+    settings_dict: dict
+        Updated settings dictionary including default and mandatory values.
+    output_settings: dict
+        Settings for writing output files which are saved until the final
+        output files are calculated at the end.
+    """
+    default_settings = {'nlive': 100,
+                        'num_repeats': 20,
+                        'file_root': 'temp',
+                        'base_dir': 'chains',
+                        'seed': -1,
+                        'do_clustering': True,
+                        'max_ndead': -1,
+                        'equals': True,
+                        'posteriors': True}
+    mandatory_settings = {'nlives': {},
+                          'write_dead': True,
+                          'write_stats': True,
+                          'write_paramnames': False,
+                          'write_prior': False,
+                          'write_live': False,
+                          'write_resume': False,
+                          'read_resume': False,
+                          'cluster_posteriors': False}
+    settings_dict = copy.deepcopy(settings_dict_in)
+    # assign default settings
+    for key, value in default_settings.items():
+        if key not in settings_dict:
+            settings_dict[key] = value
+    # Produce warning if settings_dict_in has different values for any
+    # mandatory settings.
+    for key, value in mandatory_settings.items():
+        if key in settings_dict_in and settings_dict_in[key] != value:
+            warnings.warn((
+                'dyPolyChord currently only allows the setting {0}={1}, '
+                'so I am proceeding with this. You tried to specify {0}={2}.'
+                .format(key, value, settings_dict_in[key])), UserWarning)
+        settings_dict[key] = value
+    # Extract output settings (not needed until later)
+    output_settings = {}
+    for key in ['posteriors', 'equals']:
+        output_settings[key] = settings_dict[key]
+        settings_dict[key] = False
+    return settings_dict, output_settings
+
+
+def run_and_save_resumes(run_polychord, settings_dict, init_step,
+                         seed_increment, comm=None):
+    """
+    Run PolyChord pausing after every init_step dead points to save a resume
+    file.
+
+    Parameters
+    ----------
+    run_polychord: callable
+        Callable which runs PolyChord with the desired likelihood and prior,
+        and takes a settings dictionary as its argument.
+    settings_dict: dict
+        PolyChord settings to use (see check_settings_dict for information on
+        allowed and default settings).
+    ninit_step: int, optional
+        Number of samples taken between saving .resume files in Step 1.
+    seed_increment: int, optional
+        If seeding is used (PolyChord seed setting >= 0), this increment is
+        added to PolyChord's random seed each time it is run to avoid
+        repeated points.
+        When running in parallel using MPI, PolyChord hashes the seed with the
+        MPI rank using IEOR. Hence you need seed_increment to be > number of
+        processors to ensure no two processes use the same seed.
+        When running repeated results you need to increment the seed used for
+        each run by some number >> seed_increment.
+    comm: None or mpi4py MPI.COMM object, optional
+        For MPI parallelisation.
+    """
+    # set up rank if running with MPI
+    if comm is not None:
+        rank = comm.Get_rank()
+    else:
+        rank = 0
+    if rank == 0:
+        root_name = os.path.join(settings_dict['base_dir'],
+                                 settings_dict['file_root'])
+        try:
+            os.remove(root_name + '.resume')
+        except OSError:
+            pass
+        settings_dict['write_resume'] = True
+        settings_dict['read_resume'] = True
+        step_ndead = []
+        resume_outputs = {}
+    add_points = True
+    while add_points:
+        if rank == 0:
+            settings_dict['max_ndead'] = (len(step_ndead) + 1) * init_step
+            if settings_dict['seed'] >= 0:
+                settings_dict['seed'] += seed_increment
+        run_polychord(settings_dict, comm=comm)
+        if rank == 0:
+            run_output = nestcheck.data_processing.process_polychord_stats(
+                settings_dict['file_root'], settings_dict['base_dir'])
+            # Store run outputs for getting number of likelihood calls
+            # while accounding for resuming a run.
+            resume_outputs[run_output['ndead']] = run_output
+            step_ndead.append(run_output['ndead'] - settings_dict['nlive'])
+            if len(step_ndead) >= 2 and step_ndead[-1] == step_ndead[-2]:
+                add_points = False
+            # store resume file in new file path
+            shutil.copyfile(
+                root_name + '.resume',
+                root_name + '_' + str(step_ndead[-1]) + '.resume')
+        if comm is not None:
+            add_points = comm.bcast(add_points, root=0)
+    return step_ndead, resume_outputs

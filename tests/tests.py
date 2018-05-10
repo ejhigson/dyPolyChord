@@ -18,12 +18,13 @@ import dyPolyChord.python_likelihoods as likelihoods
 import dyPolyChord.python_priors as priors
 import dyPolyChord.output_processing
 import dyPolyChord.polychord_utils
+import dyPolyChord.run_dynamic_ns
 import dyPolyChord
 try:
     # Only pypolychord_utils tests if PyPolyChord is installed
     import PyPolyChord
     import dyPolyChord.pypolychord_utils
-    PYPOLYCHORD_AVAIL = False
+    PYPOLYCHORD_AVAIL = True
 except ImportError:
     PYPOLYCHORD_AVAIL = False
 
@@ -245,6 +246,13 @@ class TestRunDynamicNS(unittest.TestCase):
             self.run_func, dynamic_goal, self.settings,
             init_step=self.ninit, ninit=self.ninit,
             nlive_const=self.nlive_const, comm=DummyMPIComm(0))
+
+    def test_check_settings_dict(self):
+        settings = {'read_resume': True, 'equals': True, 'posteriors': False}
+        with warnings.catch_warnings(record=True) as war:
+            warnings.simplefilter("always")
+            dyPolyChord.run_dynamic_ns.check_settings_dict(settings)
+            self.assertEqual(len(war), 1)
 
 
 class TestNliveAllocation(unittest.TestCase):
