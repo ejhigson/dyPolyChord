@@ -174,9 +174,8 @@ class TestRunDynamicNS(unittest.TestCase):
         self.settings = {'base_dir': TEST_CACHE_DIR,
                          'file_root': 'test_run',
                          'seed': 1,
-                         'nlives': {},
-                         'write_resume': False,
-                         'max_ndead': -1}
+                         'max_ndead': -1,
+                         'posteriors': True}
 
     def tearDown(self):
         """Remove any caches saved by the tests."""
@@ -202,18 +201,19 @@ class TestRunDynamicNS(unittest.TestCase):
             dyPolyChord.run_dypolychord(
                 self.run_func, dynamic_goal, self.settings,
                 init_step=self.ninit, ninit=self.ninit,
-                nlive_const=self.nlive_const, logl_warn_only=True)
+                nlive_const=self.nlive_const, logl_warn_only=True,
+                stats_means_errs=False)
             self.assertEqual(len(war), 3)
-        # with warnings.catch_warnings(record=True) as war:
-        #     warnings.simplefilter("always")
-        #     run = nestcheck.data_processing.process_polychord_run(
-        #         self.settings['file_root'], self.settings['base_dir'],
-        #         logl_warn_only=True)
-        #     self.assertEqual(len(war), 2)
-        # self.assertAlmostEqual(run['logl'][0], 0.0011437481734488664,
-        #                        msg=self.random_seed_msg, places=12)
-        # self.assertEqual(e.count_samples(run), 24)
-        # self.assertAlmostEqual(e.logz(run), 5.130048204496198, places=12)
+        # Check the mean value using the posteriors file (its hard to make a
+        # dummy run_func which is realistic enough to not fail checks if we try
+        # loading the output normally with
+        # nesthcheck.data_processing.process_polychord_run).
+        posteriors = np.loadtxt(os.path.join(
+            self.settings['base_dir'], self.settings['file_root'] + '.txt'))
+        # posteriors have columns: weight / max weight, -2*logl, [params]
+        p1_mean = (np.sum(posteriors[:, 2] * posteriors[:, 0])
+                   / np.sum(posteriors[:, 0]))
+        self.assertAlmostEqual(p1_mean, 0.6509612992491138, places=12)
 
     def test_dynamic_param(self):
         """Check run_dypolychord targeting evidence. This uses dummy
@@ -224,18 +224,19 @@ class TestRunDynamicNS(unittest.TestCase):
             dyPolyChord.run_dypolychord(
                 self.run_func, dynamic_goal, self.settings,
                 init_step=self.ninit, ninit=self.ninit,
-                nlive_const=self.nlive_const, logl_warn_only=True)
+                nlive_const=self.nlive_const, logl_warn_only=True,
+                stats_means_errs=False)
             self.assertEqual(len(war), 2)
-        #     run = nestcheck.data_processing.process_polychord_run(
-        #         self.settings['file_root'], self.settings['base_dir'],
-        #         logl_warn_only=True)
-        #     self.assertEqual(len(war), 1)
-        # # test nlive allocation before tearDown removes the runs
-        # self.assertAlmostEqual(run['logl'][0], 0.0011437481734488664,
-        #                        msg=self.random_seed_msg, places=12)
-        # self.assertEqual(e.count_samples(run), 16)
-        # self.assertAlmostEqual(e.logz(run), 4.170019624479282, places=12)
-        # self.assertEqual(run['output']['resume_ndead'], 6)
+        # Check the mean value using the posteriors file (its hard to make a
+        # dummy run_func which is realistic enough to not fail checks if we try
+        # loading the output normally with
+        # nesthcheck.data_processing.process_polychord_run).
+        posteriors = np.loadtxt(os.path.join(
+            self.settings['base_dir'], self.settings['file_root'] + '.txt'))
+        # posteriors have columns: weight / max weight, -2*logl, [params]
+        p1_mean = (np.sum(posteriors[:, 2] * posteriors[:, 0])
+                   / np.sum(posteriors[:, 0]))
+        self.assertAlmostEqual(p1_mean, 0.614126384660822, places=12)
 
     def test_comm(self):
         """Test run_dyPolyChord's comm argument, which is used for running
@@ -248,6 +249,8 @@ class TestRunDynamicNS(unittest.TestCase):
             nlive_const=self.nlive_const, comm=DummyMPIComm(0))
 
     def test_check_settings_dict(self):
+        """Make sure settings are checked ok, including issuing warning if a
+        setting with a mandatory value is given a different value."""
         settings = {'read_resume': True, 'equals': True, 'posteriors': False}
         with warnings.catch_warnings(record=True) as war:
             warnings.simplefilter("always")

@@ -71,6 +71,10 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
         Whether to raise error or warning if multiple samples have the same
         loglikelihood. This is passed to nestcheck's check_ns_run function;
         see its documentation for more details.
+    stats_means_errs: bool, optional
+        Whether to include estimates of logZ and parameter mean values and
+        their uncertainties in the .stats file. This is passed to nestcheck's
+        write_run_output; see its documentation for more details.
     """
     try:
         nlive_const = kwargs.pop('nlive_const', settings_dict_in['nlive'])
@@ -84,6 +88,7 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
     smoothing_filter = kwargs.pop('smoothing_filter', default_smoothing)
     comm = kwargs.pop('comm', None)
     logl_warn_only = kwargs.pop('logl_warn_only', False)
+    stats_means_errs = kwargs.pop('stats_means_errs', True)
     if kwargs:
         raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
     # Step 1: do initial run
@@ -179,7 +184,7 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
         # Save combined output in PolyChord format
         nestcheck.write_polychord_output.write_run_output(
             run, logl_warn_only=logl_warn_only,
-            stats_means_errs=False,
+            stats_means_errs=stats_means_errs,
             **output_settings)
         # Remove temporary files
         for extra in ['init', 'dyn']:
