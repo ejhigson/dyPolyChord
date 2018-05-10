@@ -7,6 +7,9 @@
 *.resume
 *.stats
 
+# demo output
+docs/chains
+
 # Github default python .gitignore
 # --------------------------------
 
