@@ -238,7 +238,8 @@ def check_settings_dict(settings_dict_in):
                           'write_live': False,
                           'write_resume': False,
                           'read_resume': False,
-                          'cluster_posteriors': False}
+                          'cluster_posteriors': False,
+                          'boost_posterior': 0.0}
     settings_dict = copy.deepcopy(settings_dict_in)
     # assign default settings
     for key, value in default_settings.items():
