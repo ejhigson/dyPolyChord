@@ -75,6 +75,11 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
         Whether to include estimates of logZ and parameter mean values and
         their uncertainties in the .stats file. This is passed to nestcheck's
         write_run_output; see its documentation for more details.
+    clean: bool, optional
+        Clean the additional output files made by dyPolyChord, leaving only
+        output files for the combined run in PolyChord format.
+        When debugging this can be set to False to allow inspection of
+        intermediate output.
     """
     try:
         nlive_const = kwargs.pop('nlive_const', settings_dict_in['nlive'])
@@ -89,6 +94,7 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
     comm = kwargs.pop('comm', None)
     logl_warn_only = kwargs.pop('logl_warn_only', False)
     stats_means_errs = kwargs.pop('stats_means_errs', True)
+    clean = kwargs.pop('clean', True)
     if kwargs:
         raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
     # Step 1: do initial run
@@ -107,9 +113,12 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
         settings_dict['file_root'] = settings_dict['file_root'] + '_init'
         settings_dict['nlive'] = ninit
     if dynamic_goal == 0:
+        # We definitely won't need to resume midway through in this case, so
+        # just run PolyChod normally
         run_polychord(settings_dict, comm=comm)
+        final_init_seed = settings_dict['seed']
     else:
-        step_ndead, resume_outputs = run_and_save_resumes(
+        step_ndead, resume_outputs, final_init_seed = run_and_save_resumes(
             run_polychord, settings_dict, init_step, seed_increment, comm=comm)
     # Step 2: calculate an allocation of live points
     # ----------------------------------------------
@@ -145,16 +154,13 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
             dyn_info['resume_nlike'] = resume_outputs[resume_ndead]['nlike']
         nestcheck.io_utils.pickle_save(
             dyn_info, root_name + '_dyn_info', overwrite_existing=True)
-        try:
+        if dynamic_goal != 0:
             # Remove all the temporary resume files. Use set to avoid
             # duplicates as these cause OSErrors.
             for snd in set(step_ndead):
                 os.remove(root_name + '_init_' + str(snd) + '.resume')
-        except NameError:  # occurs when not saving resumes so step_ndead list
-            pass
         # Step 3: do dynamic run
         # ----------------------
-        final_init_seed = settings_dict['seed']
         # remove edits from init
         settings_dict = copy.deepcopy(settings_dict_in)
         if final_init_seed >= 0:
@@ -167,7 +173,9 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
             settings_dict['nlive'] = dyn_info['nlives_dict'][
                 min(dyn_info['nlives_dict'].keys())]
         settings_dict['nlives'] = dyn_info['nlives_dict']
-        settings_dict['read_resume'] = (dyn_info['peak_start_ind'] != 0)
+        # To write .ini files correctly, read_resume must be type bool not
+        # np.bool
+        settings_dict['read_resume'] = bool(dyn_info['peak_start_ind'] != 0)
         settings_dict['file_root'] = settings_dict_in['file_root'] + '_dyn'
     run_polychord(settings_dict, comm=comm)
     if rank == 0:
@@ -177,31 +185,40 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
         run = dyPolyChord.output_processing.process_dypolychord_run(
             settings_dict_in['file_root'], settings_dict_in['base_dir'],
             dynamic_goal=dynamic_goal, logl_warn_only=logl_warn_only)
-        for key in ['nlives_dict', 'dynamic_goal', 'dyn_nlike', 'resume_ndead',
-                    'peak_start_ind', 'init_nlive_allocation_unsmoothed',
-                    'init_nlike', 'init_nlive_allocation', 'resume_nlike']:
-            run['output'].pop(key, None)
         # Save combined output in PolyChord format
         nestcheck.write_polychord_output.write_run_output(
             run, logl_warn_only=logl_warn_only,
-            stats_means_errs=stats_means_errs,
-            **output_settings)
-        # Remove temporary files
-        for extra in ['init', 'dyn']:
-            os.remove(root_name + '_{0}.stats'.format(extra))
-            os.remove(root_name + '_{0}_dead-birth.txt'.format(extra))
-            os.remove(root_name + '_{0}_dead.txt'.format(extra))
-            # tidy up remaining .resume files (if the function has reach this
-            # point, both the initial and dynamic runs have finished so we
-            # shouldn't need to resume)
-            try:
-                os.remove(root_name + '_{0}.resume'.format(extra))
-            except OSError:
-                pass
+            stats_means_errs=stats_means_errs, **output_settings)
+        if clean:
+            # Remove temporary files
+            clean_extra_output(root_name)
 
 
 # Helper functions
 # ----------------
+
+def clean_extra_output(root_name):
+    """Clean the additional output files made by dyPolyChord, leaving only
+    output files for the combined run in PolyChord format.
+
+    Parameters
+    ----------
+    root_name: str
+        File root. Equivalent to os.path.join(base_dir, file_root).
+    """
+    os.remove(root_name + '_dyn_info.pkl')
+    for extra in ['init', 'dyn']:
+        os.remove(root_name + '_{0}.stats'.format(extra))
+        os.remove(root_name + '_{0}_dead-birth.txt'.format(extra))
+        os.remove(root_name + '_{0}_dead.txt'.format(extra))
+        # tidy up remaining .resume files (if the function has reach this
+        # point, both the initial and dynamic runs have finished so we
+        # shouldn't need to resume)
+        try:
+            os.remove(root_name + '_{0}.resume'.format(extra))
+        except OSError:
+            pass
+
 
 def check_settings_dict(settings_dict_in):
     """
@@ -262,7 +279,7 @@ def check_settings_dict(settings_dict_in):
     return settings_dict, output_settings
 
 
-def run_and_save_resumes(run_polychord, settings_dict, init_step,
+def run_and_save_resumes(run_polychord, settings_dict_in, init_step,
                          seed_increment, comm=None):
     """
     Run PolyChord pausing after every init_step dead points to save a resume
@@ -289,8 +306,17 @@ def run_and_save_resumes(run_polychord, settings_dict, init_step,
         each run by some number >> seed_increment.
     comm: None or mpi4py MPI.COMM object, optional
         For MPI parallelisation.
+
+    Returns
+    -------
+    step_ndead: list of ints
+        Numbers of dead points at which resume files are saved.
+    resume_outputs: dict
+        Dictionary containing run output (contents of .stats file) at each
+        resume. Keys are elements of step_ndead.
     """
     # set up rank if running with MPI
+    settings_dict = copy.deepcopy(settings_dict_in)
     if comm is not None:
         rank = comm.Get_rank()
     else:
@@ -328,4 +354,4 @@ def run_and_save_resumes(run_polychord, settings_dict, init_step,
                 root_name + '_' + str(step_ndead[-1]) + '.resume')
         if comm is not None:
             add_points = comm.bcast(add_points, root=0)
-    return step_ndead, resume_outputs
+    return step_ndead, resume_outputs, settings_dict['seed']

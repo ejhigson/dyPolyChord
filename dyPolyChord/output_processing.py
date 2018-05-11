@@ -95,20 +95,17 @@ def process_dypolychord_run(file_root, base_dir, **kwargs):
         # hence there are no samples repeated in both runs' files and we can
         # simply combine dyn and init using standard nestcheck functions.
         run = nestcheck.ns_run_utils.combine_ns_runs([init, dyn])
-        dyn_info['nlike'] = init['output']['nlike'] + dyn['output']['nlike']
+        nlike = init['output']['nlike'] + dyn['output']['nlike']
     else:
         # If dynamic_goal == 1, dyn was resumed part way through init and we
         # need to remove duplicate points from the combined run
         run = combine_resumed_dyn_run(init, dyn, dyn_info['resume_ndead'])
-        dyn_info['nlike'] = (init['output']['nlike'] + dyn['output']['nlike']
-                             - dyn_info['resume_nlike'])
+        nlike = (init['output']['nlike'] + dyn['output']['nlike']
+                 - dyn_info['resume_nlike'])
     # Add info to run
-    run['output'] = dyn_info
-    run['output']['file_root'] = file_root
-    run['output']['base_dir'] = base_dir
-    run['output']['dynamic_goal'] = dynamic_goal
-    run['output']['init_nlike'] = init['output']['nlike']
-    run['output']['dyn_nlike'] = dyn['output']['nlike']
+    run['output'] = {'nlike': nlike,
+                     'file_root': file_root,
+                     'base_dir': base_dir}
     # check the nested sampling run has the expected properties
     nestcheck.data_processing.check_ns_run(run, logl_warn_only=logl_warn_only)
     return run
