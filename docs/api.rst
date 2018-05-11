@@ -2,7 +2,7 @@
 Detailed API documentation
 ===========================
 
-This page documents the modules and functions in the ``dyPolyChord`` package.
+This page contains documentation for the user-facing parts of the ``dyPolyChord`` package. For details of the internal workings of the package, look at the source code and its documentation at https://github.com/ejhigson/dyPolyChord.
 
 run_dynamic_ns
 ==============
@@ -20,22 +20,4 @@ pypolychord_utils
 =================
 
 .. automodule:: dyPolyChord.pypolychord_utils
-    :members:
-
-nlive_allocation
-================
-
-.. automodule:: dyPolyChord.nlive_allocation
-    :members:
-
-output_processing
-=================
-
-.. automodule:: dyPolyChord.output_processing
-    :members:
-
-python_priors
-=============
-
-.. automodule:: dyPolyChord.python_priors
     :members:

@@ -15,6 +15,9 @@ import dyPolyChord.nlive_allocation
 import dyPolyChord.output_processing
 
 
+__all__ = ['run_dypolychord', 'check_settings']
+
+
 @nestcheck.io_utils.timing_decorator
 def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
     """
@@ -33,7 +36,7 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
     3) Generate dynamic nested sampling run using the calculated live point
     allocation.
     4) Combine the initial and dynamic runs and write output files in the
-    PolyChord format.
+    PolyChord format, and remove the intermediate output files produced.
 
     Parameters
     ----------
@@ -45,7 +48,7 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
         between parameter estimation and evidence calculation. See the dynamic
         nested sampling paper for more details.
     settings_dict: dict
-        PolyChord settings to use (see check_settings_dict for information on
+        PolyChord settings to use (see check_settings for information on
         allowed and default settings).
     nlive_const: int, optional
         Used to calculate total number of samples if max_ndead not specified in
@@ -106,7 +109,7 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
         rank = 0
     settings_dict = None  # define for rank != 0
     if rank == 0:
-        settings_dict_in, output_settings = check_settings_dict(
+        settings_dict_in, output_settings = check_settings(
             settings_dict_in)
         # Make a copy of settings dic so we dont edit settings
         settings_dict = copy.deepcopy(settings_dict_in)
@@ -220,7 +223,7 @@ def clean_extra_output(root_name):
             pass
 
 
-def check_settings_dict(settings_dict_in):
+def check_settings(settings_dict_in):
     """
     Checks the input dictionary of PolyChord settings. Issues warnings where
     these are not appropriate, and adds default values.
@@ -291,7 +294,7 @@ def run_and_save_resumes(run_polychord, settings_dict_in, init_step,
         Callable which runs PolyChord with the desired likelihood and prior,
         and takes a settings dictionary as its argument.
     settings_dict: dict
-        PolyChord settings to use (see check_settings_dict for information on
+        PolyChord settings to use (see check_settings for information on
         allowed and default settings).
     ninit_step: int, optional
         Number of samples taken between saving .resume files in Step 1.
