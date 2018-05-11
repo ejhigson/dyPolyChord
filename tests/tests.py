@@ -248,13 +248,13 @@ class TestRunDynamicNS(unittest.TestCase):
             init_step=self.ninit, ninit=self.ninit,
             nlive_const=self.nlive_const, comm=DummyMPIComm(0))
 
-    def test_check_settings_dict(self):
+    def test_check_settings(self):
         """Make sure settings are checked ok, including issuing warning if a
         setting with a mandatory value is given a different value."""
         settings = {'read_resume': True, 'equals': True, 'posteriors': False}
         with warnings.catch_warnings(record=True) as war:
             warnings.simplefilter("always")
-            dyPolyChord.run_dynamic_ns.check_settings_dict(settings)
+            dyPolyChord.run_dynamic_ns.check_settings(settings)
             self.assertEqual(len(war), 1)
 
 
