@@ -230,11 +230,11 @@ class GaussianMix(object):
         self.nderived = nderived
         self.weights = weights
         self.sigmas = [sigma] * len(weights)
-        positions = [np.zeros(2)] * 4
-        positions[0][1] += sep
-        positions[1][1] -= sep
-        positions[2][0] += sep
-        positions[3][0] -= sep
+        positions = []
+        positions.append(np.asarray([0, sep]))
+        positions.append(np.asarray([0, -sep]))
+        positions.append(np.asarray([sep, 0]))
+        positions.append(np.asarray([-sep, 0]))
         self.positions = positions[:len(weights)]
 
     def __call__(self, theta):
