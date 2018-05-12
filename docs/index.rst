@@ -34,7 +34,7 @@ Documentation contents
 Attribution
 -----------
 
-If this code is useful for your academic research, please cite the dynamic nested sampling paper and the ``PolyChord`` papers. The BibTeX is:
+If this code is useful for your academic research, please cite the dynamic nested sampling paper and the PolyChord papers. The BibTeX is:
 
 .. code-block:: tex
 
@@ -79,4 +79,4 @@ If you have any questions or suggestions please get in touch (e.higson@mrao.cam.
 Authors & License
 -----------------
 
-Copyright 2018 Edward Higson and contributors (MIT Licence). Note that ``PolyChord`` has a separate licence and authors - see https://ccpforge.cse.rl.ac.uk/gf/project/polychord/ for more information.
+Copyright 2018 Edward Higson and contributors (MIT Licence). Note that PolyChord has a separate licence and authors - see https://ccpforge.cse.rl.ac.uk/gf/project/polychord/ for more information.
