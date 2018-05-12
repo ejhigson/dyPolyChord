@@ -51,7 +51,7 @@ extensions = [
 
 # # Needed to avoid errors in class member docstrings
 # # For more information see https://stackoverflow.com/questions/12206334/sphinx-autosummary-toctree-contains-reference-to-nonexisting-document-warnings
-# numpydoc_show_class_members = False
+numpydoc_show_class_members = False
 
 # autodoc defaults
 # For more information see http://www.sphinx-doc.org/en/master/ext/autodoc.html
