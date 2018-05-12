@@ -55,7 +55,7 @@ numpydoc_show_class_members = False
 
 # autodoc defaults
 # For more information see http://www.sphinx-doc.org/en/master/ext/autodoc.html
-autodoc_default_flags = ['members']
+# autodoc_default_flags = ['members']
 
 # nbspinx options
 nbsphinx_execute = 'never'  # use stored output of notebook so data not needed
