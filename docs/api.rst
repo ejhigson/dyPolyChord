@@ -8,16 +8,15 @@ run_dynamic_ns
 ==============
 
 .. automodule:: dyPolyChord.run_dynamic_ns
-    :members:
 
 polychord_utils
 ===============
 
 .. automodule:: dyPolyChord.polychord_utils
-    :members:
+    :special-members:
 
 pypolychord_utils
 =================
 
 .. automodule:: dyPolyChord.pypolychord_utils
-    :members:
+    :special-members:

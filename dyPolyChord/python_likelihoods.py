@@ -8,6 +8,7 @@ types:
 Parameters
 ----------
 theta: float or 1d numpy array
+
 Returns
 -------
 logl: float
