@@ -435,13 +435,18 @@ class TestPolyChordUtils(unittest.TestCase):
         Check function for running a compiled PolyChord likelihood from
         within python (via os.system).
 
-        In place of an executable we just use the bash 'do nothing' command
-        ':'.
+        In place of an executable we just use a dummy file made with np.savetxt
+        as RunCompiledPolyChord checks if the file exists. We use the mpi_str
+        argument to comment out the command so nothing actually runs.
         """
+        executable_path = os.path.join(TEST_CACHE_DIR, 'dummy_ex')
+        print(executable_path, type(executable_path))
+        np.savetxt(executable_path, np.zeros(10))
         func = dyPolyChord.polychord_utils.RunCompiledPolyChord(
-            ':', 'this is a dummy prior block string')
+            executable_path, 'this is a dummy prior block string', mpi_str='#')
         self.assertEqual(set(func.__dict__.keys()),
-                         {'derived_str', 'ex_path', 'prior_str'})
+                         {'derived_str', 'executable_path', 'prior_str',
+                          'mpi_str'})
         func({'base_dir': TEST_CACHE_DIR, 'file_root': 'temp'})
 
 

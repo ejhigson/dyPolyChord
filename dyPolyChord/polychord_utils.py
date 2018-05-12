@@ -54,26 +54,38 @@ class RunCompiledPolyChord(object):
     """Object for running a compiled PolyChord executable with specified
     inputs."""
 
-    def __init__(self, ex_path, prior_str, derived_str=None):
+    def __init__(self, executable_path, prior_str, derived_str=None,
+                 mpi_str=None):
         """
         Specify path to executable, priors and derived parameters.
 
         Parameters
         ----------
-        ex_path: str
+        executable_path: str
+            Path to compiled likelihood. If this is in the directory from which
+            dyPolyChord is being run, you may need to prepend "./" to the
+            executable name for it to work.
         prior_str: str
             String specifying prior in the format required for PolyChord .ini
-            files (see prior_str for more details).
+            files (see get_prior_block_str for more details).
         derived_str: str or None, optional
+            String specifying prior in the format required for PolyChord .ini
+            files (see prior_str for more details).
+        mpi_str: str or None, optional
+            Optional mpi command to preprend to run command.
+            For example to run with 8 processors, use mpi_str = 'mprun -np 8'.
+            Note that PolyChord must be installed with MPI enabled to allow
+            running with MPI.
         """
-        self.ex_path = ex_path
+        self.executable_path = executable_path
         self.prior_str = prior_str
         self.derived_str = derived_str
+        self.mpi_str = mpi_str
 
     def __call__(self, settings_dict, comm=None):
         """
         Run PolyChord with the input settings by writing a .ini file then using
-        the compiled likelihood specified in ex_path.
+        the compiled likelihood specified in executable_path.
 
         See the PolyChord documentation for more details.
 
@@ -86,11 +98,15 @@ class RunCompiledPolyChord(object):
             equivalent python function (which uses the comm argument for
             runnign with MPI).
         """
-        assert comm is None
+        assert os.path.isfile(self.executable_path)
+        assert comm is None, 'comm not used for compiled likelihoods.'
         ini_path = os.path.join(settings_dict['base_dir'],
                                 settings_dict['file_root'] + '.ini')
         self.write_ini(settings_dict, ini_path)
-        os.system(self.ex_path + ' ' + ini_path)
+        command_str = self.executable_path + ' ' + ini_path
+        if self.mpi_str is not None:
+            command_str = self.mpi_str + ' ' + command_str
+        os.system(command_str)
 
     def write_ini(self, settings, file_path):
         """
