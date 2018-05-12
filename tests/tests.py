@@ -61,10 +61,11 @@ class TestRunDyPolyChordNumers(unittest.TestCase):
         self.run_func = dyPolyChord.pypolychord_utils.RunPyPolyChord(
             likelihoods.Gaussian(sigma=1), priors.Uniform(-10, 10), ndim=ndim)
         self.random_seed_msg = (
-            'First dead point logl is {0} != {1}. '
-            'This test is not affected by most of dyPolyChord, so if it fails '
-            'your PolyChord install\'s random seed number generator is '
-            'probably different to the one used to set the expected values.')
+            'First dead point logl {0} != {1}. '
+            'This indicates that your PolyChord install\'s random number '
+            'generator is different to the one used to calculate the expected '
+            'results, so I will skip tests of exact numerical values. If all '
+            'the other tests pass then everything should work ok.')
         self.settings = {
             'do_clustering': True,
             'posteriors': False,
@@ -124,14 +125,14 @@ class TestRunDyPolyChordNumers(unittest.TestCase):
             init_step=self.ninit, ninit=self.ninit)
         run = nestcheck.data_processing.process_polychord_run(
             self.settings['file_root'], self.settings['base_dir'])
-        first_logl = -82.3731123424932
+        first_logl = -89.9267531982664
         if not np.isclose(run['logl'][0], first_logl):
             warnings.warn(
                 self.random_seed_msg.format(run['logl'][0], first_logl),
                 UserWarning)
         else:
-            self.assertEqual(e.count_samples(run), 518)
-            self.assertAlmostEqual(e.param_mean(run), 0.08488421272724601,
+            self.assertEqual(e.count_samples(run), 556)
+            self.assertAlmostEqual(e.param_mean(run), 0.0710870438431606,
                                    places=12)
 
     def test_dynamic_param(self):
@@ -142,13 +143,13 @@ class TestRunDyPolyChordNumers(unittest.TestCase):
             init_step=self.ninit, ninit=self.ninit)
         run = nestcheck.data_processing.process_polychord_run(
             self.settings['file_root'], self.settings['base_dir'])
-        first_logl = -73.2283115991452
+        first_logl = -89.9267531982664
         if not np.isclose(run['logl'][0], first_logl):
             warnings.warn(
                 self.random_seed_msg.format(run['logl'][0], first_logl),
                 UserWarning)
         else:
-            self.assertAlmostEqual(e.param_mean(run), 0.21352566194422262,
+            self.assertAlmostEqual(e.param_mean(run), 0.029776073688009493,
                                    places=12)
 
 
