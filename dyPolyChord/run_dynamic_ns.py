@@ -119,9 +119,12 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
         # We definitely won't need to resume midway through in this case, so
         # just run PolyChod normally
         run_polychord(settings_dict, comm=comm)
-        final_init_seed = settings_dict['seed']
+        if settings_dict['seed'] >= 0:
+            final_seed = settings_dict['seed'] + seed_increment
+        else:
+            final_seed = settings_dict['seed']
     else:
-        step_ndead, resume_outputs, final_init_seed = run_and_save_resumes(
+        step_ndead, resume_outputs, final_seed = run_and_save_resumes(
             run_polychord, settings_dict, init_step, seed_increment, comm=comm)
     # Step 2: calculate an allocation of live points
     # ----------------------------------------------
@@ -166,10 +169,10 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
         # ----------------------
         # remove edits from init
         settings_dict = copy.deepcopy(settings_dict_in)
-        if final_init_seed >= 0:
+        settings_dict['seed'] = final_seed
+        if settings_dict['seed'] >= 0:
             assert settings_dict_in['seed'] >= 0, (
                 'if input seed was <0 it should not have been edited')
-            settings_dict['seed'] = final_init_seed + seed_increment
         if dyn_info['peak_start_ind'] != 0:
             settings_dict['nlive'] = ninit
         else:
@@ -317,6 +320,9 @@ def run_and_save_resumes(run_polychord, settings_dict_in, init_step,
     resume_outputs: dict
         Dictionary containing run output (contents of .stats file) at each
         resume. Keys are elements of step_ndead.
+    seed: int
+        Random seed. This is incremented after each run so it can be used
+        when resuming without generating correlated points.
     """
     # set up rank if running with MPI
     settings_dict = copy.deepcopy(settings_dict_in)
@@ -339,10 +345,10 @@ def run_and_save_resumes(run_polychord, settings_dict_in, init_step,
     while add_points:
         if rank == 0:
             settings_dict['max_ndead'] = (len(step_ndead) + 1) * init_step
-            if settings_dict['seed'] >= 0:
-                settings_dict['seed'] += seed_increment
         run_polychord(settings_dict, comm=comm)
         if rank == 0:
+            if settings_dict['seed'] >= 0:
+                settings_dict['seed'] += seed_increment
             run_output = nestcheck.data_processing.process_polychord_stats(
                 settings_dict['file_root'], settings_dict['base_dir'])
             # Store run outputs for getting number of likelihood calls
