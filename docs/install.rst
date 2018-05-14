@@ -10,7 +10,7 @@ Installation
    pip install dyPolyChord
 
 
-Alternatively, you can download the latest version and install it by cloning `the git
+Alternatively, you can download the latest version and install it by cloning `the github
 repository <https://github.com/ejhigson/dyPolyChord>`_:
 
 .. code-block:: bash
@@ -19,6 +19,7 @@ repository <https://github.com/ejhigson/dyPolyChord>`_:
     cd dyPolyChord
     python setup.py install
 
+Note that the github repository may include new changes which have not yet been released on PyPI (and therefore will not be included if installing with pip).
 
 Dependencies
 ------------
