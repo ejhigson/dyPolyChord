@@ -31,6 +31,11 @@ Documentation contents
    api
    likelihoods_and_priors
 
+Changelog
+---------
+
+The changelog for each release can be found at https://github.com/ejhigson/dyPolyChord/releases.
+
 Attribution
 -----------
 
