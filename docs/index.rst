@@ -60,7 +60,7 @@ If this code is useful for your academic research, please cite the dynamic neste
     year={2015}}
 
     @article{Handley2015b,
-    title={POLYCHORD: next-generation nested sampling},
+    title={PolyChord: next-generation nested sampling},
     author={Handley, WJ and Hobson, MP and Lasenby, AN},
     journal={Monthly Notices of the Royal Astronomical Society},
     volume={453},
@@ -68,6 +68,11 @@ If this code is useful for your academic research, please cite the dynamic neste
     pages={4384--4398},
     year={2015}}
 
+
+Changelog
+---------
+
+The changelog for each release can be found at https://github.com/ejhigson/nestcheck/releases.
 
 Contributions
 -------------

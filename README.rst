@@ -14,11 +14,6 @@ dyPolyChord
 .. image:: https://img.shields.io/badge/license-MIT-blue.svg
    :target: https://github.com/ejhigson/dyPolyChord/LICENSE
 
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-(Currently work in progress)
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-.. 
-    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    Read the documentation at `http://dyPolyChord.readthedocs.io <http://dyPolyChord.readthedocs.io>`_.
-    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Read the documentation at `http://dyPolyChord.readthedocs.io <http://dyPolyChord.readthedocs.io>`_.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
