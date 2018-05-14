@@ -43,12 +43,9 @@ setuptools.setup(name='dyPolyChord',
                      'Topic :: Scientific/Engineering :: Information Analysis',
                  ],
                  packages=['dyPolyChord'],
-                 # futures is in standard library for python >= 3.2, but
-                 # include it for compatibility with python 2.7.
                  install_requires=['numpy>=1.13',
                                    'scipy>=1.0.0',
-                                   # 'futures',
-                                   'nestcheck'],
+                                   'nestcheck>=0.1.0'],
                  test_suite='nose.collector',
                  tests_require=['nose', 'coverage'],
                  extras_require={'docs': ['sphinx',
