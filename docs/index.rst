@@ -9,8 +9,8 @@ dyPolyChord
 	:target: http://dypolychord.readthedocs.io/en/latest/?badge=latest
 	:alt: Documentation Status
 .. image:: https://api.codeclimate.com/v1/badges/b04cc235c8f73870029c/maintainability
-   :target: https://codeclimate.com/github/ejhigson/dyPolyChord/maintainability
-   :alt: Maintainability
+    :target: https://codeclimate.com/github/ejhigson/dyPolyChord/maintainability
+    :alt: Maintainability
 .. image:: https://img.shields.io/badge/license-MIT-blue.svg
     :target: https://github.com/ejhigson/dyPolyChord/LICENSE
 
@@ -30,11 +30,6 @@ Documentation contents
    demo
    api
    likelihoods_and_priors
-
-Changelog
----------
-
-The changelog for each release can be found at https://github.com/ejhigson/dyPolyChord/releases.
 
 Attribution
 -----------
