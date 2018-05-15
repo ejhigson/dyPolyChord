@@ -41,9 +41,6 @@ class Uniform(object):
 
         Parameters
         ----------
-        hypercube: list of floats
-            Point coordinate on unit hypercube (in probabily space).
-            See the PolyChord papers for more details.
         minimum: float
         maximum: float
         """
