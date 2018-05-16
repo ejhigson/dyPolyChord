@@ -4,7 +4,7 @@ dyPolyChord
 .. image:: https://travis-ci.org/ejhigson/dyPolyChord.svg?branch=master
     :target: https://travis-ci.org/ejhigson/dyPolyChord
 .. image:: https://coveralls.io/repos/github/ejhigson/dyPolyChord/badge.svg?branch=master
-    :target: https://coveralls.io/github/ejhigson/dyPolyChord?branch=master
+	:target: https://coveralls.io/github/ejhigson/dyPolyChord?branch=master
 .. image:: https://readthedocs.org/projects/dypolychord/badge/?version=latest
     :target: http://dypolychord.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
