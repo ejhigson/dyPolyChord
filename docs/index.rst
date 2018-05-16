@@ -2,17 +2,17 @@ dyPolyChord
 ===========
 
 .. image:: https://travis-ci.org/ejhigson/dyPolyChord.svg?branch=master
-    :target: https://travis-ci.org/ejhigson/dyPolyChord
+   :target: https://travis-ci.org/ejhigson/dyPolyChord
 .. image:: https://coveralls.io/repos/github/ejhigson/dyPolyChord/badge.svg?branch=master
-	:target: https://coveralls.io/github/ejhigson/dyPolyChord?branch=master
+   :target: https://coveralls.io/github/ejhigson/dyPolyChord?branch=master&service=github
 .. image:: https://readthedocs.org/projects/dypolychord/badge/?version=latest
-	:target: http://dypolychord.readthedocs.io/en/latest/?badge=latest
-	:alt: Documentation Status
+   :target: http://dypolychord.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
 .. image:: https://api.codeclimate.com/v1/badges/b04cc235c8f73870029c/maintainability
-    :target: https://codeclimate.com/github/ejhigson/dyPolyChord/maintainability
-    :alt: Maintainability
+   :target: https://codeclimate.com/github/ejhigson/dyPolyChord/maintainability
+   :alt: Maintainability
 .. image:: https://img.shields.io/badge/license-MIT-blue.svg
-    :target: https://github.com/ejhigson/dyPolyChord/LICENSE
+   :target: https://github.com/ejhigson/dyPolyChord/LICENSE
 
 ``dyPolyChord`` uses PolyChord to perform dynamic nested sampling by running it from within a python wrapper. Any likelihoods and priors which work with PolyChord can be used (python, C++ or Fortran), and the output files produced are in the PolyChord format.
 For more details of dynamic nested sampling see the dynamic nested sampling paper (`Higson et al., 2017 <https://arxiv.org/abs/1704.03459>`_).
