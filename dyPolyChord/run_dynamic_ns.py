@@ -111,6 +111,13 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
     if rank == 0:
         settings_dict_in, output_settings = check_settings(
             settings_dict_in)
+        if (settings_dict_in['seed'] >= 0 and comm is not None and
+                comm.Get_size() > 1):
+            warnings.warn((
+                'N.B. seeded results will not be reproducable when running '
+                'dyPolyChord with multiple MPI processes. You have seed={} '
+                'and {} MPI processes.').format(
+                    settings_dict_in['seed'], comm.Get_size()), UserWarning)
         # Make a copy of settings dic so we dont edit settings
         settings_dict = copy.deepcopy(settings_dict_in)
         settings_dict['file_root'] = settings_dict['file_root'] + '_init'

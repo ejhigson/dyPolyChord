@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 """
 Test suite for the dyPolyChord package.
+
+Extra tests which check exact results produced using random seeding are
+included, but are skipped unless PyPolyChord is installed. These also require
+mpi4py if you have installed PolyChord with MPI.
 """
 import os
 import shutil
@@ -24,6 +28,11 @@ try:
     # Only pypolychord_utils tests if PyPolyChord is installed
     import PyPolyChord
     import dyPolyChord.pypolychord_utils
+    # If PolyChord is installed with MPI, we need to initialise mpi4py in order
+    # to run it multiple times from within the same python process without
+    # having an error. If PolyChord is installed without MPI you can comment
+    # this line out
+    from mpi4py import MPI  # Initialize MPI
     PYPOLYCHORD_AVAIL = True
 except ImportError:
     PYPOLYCHORD_AVAIL = False
@@ -37,11 +46,12 @@ TEST_CACHE_DIR = 'temp_test_data_to_delete'
 def setUpModule():
     """Before running the test suite, check that TEST_CACHE_DIR does not
     already exist - as the tests will delete it."""
-    assert not os.path.exists(TEST_CACHE_DIR), (
-        'Directory ' + TEST_CACHE_DIR + ' exists! Tests use this directory to '
-        'check caching then delete it afterwards, so its path should be left '
-        'empty. You should manually delete or move ' + TEST_CACHE_DIR
-        + ' before running the tests.')
+    if os.path.exists(TEST_CACHE_DIR):
+        warnings.warn((
+            'Directory ' + TEST_CACHE_DIR + ' exists! Tests use this '
+            'directory to check caching and delete it afterwards, so its '
+            'path should be left empty.'), UserWarning)
+        shutil.rmtree(TEST_CACHE_DIR)
 
 
 @unittest.skipIf(not PYPOLYCHORD_AVAIL, 'PyPolyChord not installed.')
@@ -241,13 +251,20 @@ class TestRunDynamicNS(unittest.TestCase):
 
     def test_comm(self):
         """Test run_dyPolyChord's comm argument, which is used for running
-        python likelihoods using MPI parallelisation with mpi4py."""
+        python likelihoods using MPI parallelisation with mpi4py.
+
+        This should raise a warning due to running with seed > 0 and
+        comm.Get_size() > 1 to remind users that seeding is not reliable when
+        multiple MPI processes are used."""
         dynamic_goal = 1
-        self.assertRaises(
-            AssertionError, dyPolyChord.run_dypolychord,
-            self.run_func, dynamic_goal, self.settings,
-            init_step=self.ninit, ninit=self.ninit,
-            nlive_const=self.nlive_const, comm=DummyMPIComm(0))
+        with warnings.catch_warnings(record=True) as war:
+            warnings.simplefilter("always")
+            self.assertRaises(
+                AssertionError, dyPolyChord.run_dypolychord,
+                self.run_func, dynamic_goal, self.settings,
+                init_step=self.ninit, ninit=self.ninit,
+                nlive_const=self.nlive_const, comm=DummyMPIComm(0))
+            self.assertEqual(len(war), 1)
 
     def test_check_settings(self):
         """Make sure settings are checked ok, including issuing warning if a
@@ -617,6 +634,11 @@ class DummyMPIComm(object):
     def Get_rank(self):
         """Dummy version of mpi4py MPI.COMM's Get_rank()."""
         return self.rank
+
+    @staticmethod
+    def Get_size():
+        """Dummy version of mpi4py MPI.COMM's Get_size()."""
+        return 2
 
     @staticmethod
     def bcast(_, root=0):
