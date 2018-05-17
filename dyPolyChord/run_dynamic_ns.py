@@ -126,9 +126,10 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
         # We definitely won't need to resume midway through in this case, so
         # just run PolyChod normally
         run_polychord(settings_dict, comm=comm)
-        final_seed = settings_dict['seed']
-        if settings_dict['seed'] >= 0:
-            final_seed += seed_increment
+        if rank == 0:
+            final_seed = settings_dict['seed']
+            if settings_dict['seed'] >= 0:
+                final_seed += seed_increment
     else:
         step_ndead, resume_outputs, final_seed = run_and_save_resumes(
             run_polychord, settings_dict, init_step, seed_increment, comm=comm)
@@ -369,4 +370,11 @@ def run_and_save_resumes(run_polychord, settings_dict_in, init_step,
                 root_name + '_' + str(step_ndead[-1]) + '.resume')
         if comm is not None:
             add_points = comm.bcast(add_points, root=0)
-    return step_ndead, resume_outputs, settings_dict['seed']
+    if rank == 0:
+        final_seed = settings_dict['seed']
+    else:
+        # Define variables for other ranks
+        step_ndead = None
+        resume_outputs = None
+        final_seed = None
+    return step_ndead, resume_outputs, final_seed
