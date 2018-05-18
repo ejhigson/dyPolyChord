@@ -331,9 +331,14 @@ def run_and_save_resumes(run_polychord, settings_dict_in, init_step,
         Random seed. This is incremented after each run so it can be used
         when resuming without generating correlated points.
     """
-    # set up rank if running with MPI
     settings_dict = copy.deepcopy(settings_dict_in)
+    # set up rank if running with MPI
     if comm is not None:
+        # Define variables for rank != 0
+        step_ndead = None
+        resume_outputs = None
+        final_seed = None
+        # Get rank
         rank = comm.Get_rank()
     else:
         rank = 0
@@ -372,9 +377,4 @@ def run_and_save_resumes(run_polychord, settings_dict_in, init_step,
             add_points = comm.bcast(add_points, root=0)
     if rank == 0:
         final_seed = settings_dict['seed']
-    else:
-        # Define variables for other ranks
-        step_ndead = None
-        resume_outputs = None
-        final_seed = None
     return step_ndead, resume_outputs, final_seed
