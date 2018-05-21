@@ -12,7 +12,7 @@ dyPolyChord
    :target: https://codeclimate.com/github/ejhigson/dyPolyChord/maintainability
    :alt: Maintainability
 .. image:: https://img.shields.io/badge/license-MIT-blue.svg
-   :target: https://github.com/ejhigson/dyPolyChord/LICENSE
+   :target: https://github.com/ejhigson/dyPolyChord/blob/master/LICENSE
 
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 Read the documentation at `http://dyPolyChord.readthedocs.io <http://dyPolyChord.readthedocs.io>`_.
