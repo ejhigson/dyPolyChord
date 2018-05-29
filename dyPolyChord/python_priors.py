@@ -54,13 +54,13 @@ class Uniform(object):
 
         Parameters
         ----------
-        hypercube: list of floats
+        hypercube: float or 1d numpy array
             Point coordinate on unit hypercube (in probabily space).
             See the PolyChord papers for more details.
 
         Returns
         -------
-        theta: list of floats
+        theta: float or 1d numpy array
             Physical parameter values corresponding to hypercube.
         """
         return self.minimum + (self.maximum - self.minimum) * hypercube
@@ -87,13 +87,13 @@ class Gaussian(object):
 
         Parameters
         ----------
-        hypercube: list of floats
+        hypercube: float or 1d numpy array
             Point coordinate on unit hypercube (in probabily space).
             See the PolyChord papers for more details.
 
         Returns
         -------
-        theta: list of floats
+        theta: float or 1d numpy array
             Physical parameter values corresponding to hypercube.
         """
         theta = scipy.special.erfinv(2 * hypercube - 1)
