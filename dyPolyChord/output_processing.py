@@ -74,15 +74,18 @@ def process_dypolychord_run(file_root, base_dir, **kwargs):
         information).
     """
     dynamic_goal = kwargs.pop('dynamic_goal')
-    logl_warn_only = kwargs.pop('logl_warn_only', False)
+    dup_assert = kwargs.pop('dup_assert', False)
+    dup_warn = kwargs.pop('dup_warn', False)
     if kwargs:
         raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
     init = nestcheck.data_processing.process_polychord_run(
-        file_root + '_init', base_dir, logl_warn_only=logl_warn_only)
+        file_root + '_init', base_dir, dup_assert=dup_assert,
+        dup_warn=dup_warn)
     assert np.all(init['thread_min_max'][:, 0] == -np.inf), (
         str(init['thread_min_max']))
     dyn = nestcheck.data_processing.process_polychord_run(
-        file_root + '_dyn', base_dir, logl_warn_only=logl_warn_only)
+        file_root + '_dyn', base_dir, dup_assert=dup_assert,
+        dup_warn=dup_warn)
     dyn_info = iou.pickle_load(os.path.join(
         base_dir, file_root + '_dyn_info'))
     if dynamic_goal == 0:
@@ -107,7 +110,8 @@ def process_dypolychord_run(file_root, base_dir, **kwargs):
                      'file_root': file_root,
                      'base_dir': base_dir}
     # check the nested sampling run has the expected properties
-    nestcheck.data_processing.check_ns_run(run, logl_warn_only=logl_warn_only)
+    nestcheck.data_processing.check_ns_run(run, dup_assert=dup_assert,
+                                           dup_warn=dup_warn)
     return run
 
 

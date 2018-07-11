@@ -207,14 +207,10 @@ class TestRunDynamicNS(unittest.TestCase):
         PolyChord-format data."""
         dynamic_goal = 0
         self.settings['max_ndead'] = 24
-        with warnings.catch_warnings(record=True) as war:
-            warnings.simplefilter("always")
-            dyPolyChord.run_dypolychord(
-                self.run_func, dynamic_goal, self.settings,
-                init_step=self.ninit, ninit=self.ninit,
-                nlive_const=self.nlive_const, logl_warn_only=True,
-                stats_means_errs=False)
-            self.assertEqual(len(war), 3)
+        dyPolyChord.run_dypolychord(
+            self.run_func, dynamic_goal, self.settings,
+            init_step=self.ninit, ninit=self.ninit,
+            nlive_const=self.nlive_const, stats_means_errs=False)
         # Check the mean value using the posteriors file (its hard to make a
         # dummy run_func which is realistic enough to not fail checks if we try
         # loading the output normally with
@@ -230,14 +226,10 @@ class TestRunDynamicNS(unittest.TestCase):
         """Check run_dypolychord targeting evidence. This uses dummy
         PolyChord-format data."""
         dynamic_goal = 1
-        with warnings.catch_warnings(record=True) as war:
-            warnings.simplefilter("always")
-            dyPolyChord.run_dypolychord(
-                self.run_func, dynamic_goal, self.settings,
-                init_step=self.ninit, ninit=self.ninit,
-                nlive_const=self.nlive_const, logl_warn_only=True,
-                stats_means_errs=False)
-            self.assertEqual(len(war), 2)
+        dyPolyChord.run_dypolychord(
+            self.run_func, dynamic_goal, self.settings,
+            init_step=self.ninit, ninit=self.ninit,
+            nlive_const=self.nlive_const, stats_means_errs=False)
         # Check the mean value using the posteriors file (its hard to make a
         # dummy run_func which is realistic enough to not fail checks if we try
         # loading the output normally with

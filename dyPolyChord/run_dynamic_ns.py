@@ -70,10 +70,6 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
         each run by some number >> seed_increment.
     smoothing_filter: func, optional
         Smoothing to apply to the nlive allocation (if any).
-    logl_warn_only: bool, optional
-        Whether to raise error or warning if multiple samples have the same
-        loglikelihood. This is passed to nestcheck's check_ns_run function;
-        see its documentation for more details.
     stats_means_errs: bool, optional
         Whether to include estimates of logZ and parameter mean values and
         their uncertainties in the .stats file. This is passed to nestcheck's
@@ -95,7 +91,6 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
         x, 1 + (2 * ninit), 3, mode='nearest'))
     smoothing_filter = kwargs.pop('smoothing_filter', default_smoothing)
     comm = kwargs.pop('comm', None)
-    logl_warn_only = kwargs.pop('logl_warn_only', False)
     stats_means_errs = kwargs.pop('stats_means_errs', True)
     clean = kwargs.pop('clean', True)
     if kwargs:
@@ -197,11 +192,10 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
         # Combine initial and dynamic runs
         run = dyPolyChord.output_processing.process_dypolychord_run(
             settings_dict_in['file_root'], settings_dict_in['base_dir'],
-            dynamic_goal=dynamic_goal, logl_warn_only=logl_warn_only)
+            dynamic_goal=dynamic_goal)
         # Save combined output in PolyChord format
         nestcheck.write_polychord_output.write_run_output(
-            run, logl_warn_only=logl_warn_only,
-            stats_means_errs=stats_means_errs, **output_settings)
+            run, stats_means_errs=stats_means_errs, **output_settings)
         if clean:
             # Remove temporary files
             clean_extra_output(root_name)
