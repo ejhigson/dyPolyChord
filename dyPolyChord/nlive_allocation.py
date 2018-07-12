@@ -33,7 +33,8 @@ def allocate(init_run, samp_tot, dynamic_goal, smoothing_filter=None):
     -------
     dyn_info: dict
     """
-    assert np.all(np.diff(init_run['logl']) > 0)
+    assert np.all(np.diff(init_run['logl']) >= 0), (
+        'the minimum logl diff is {}'.format(np.diff(init_run['logl']).min()))
     # Calculate nlive allocation with and without smoothing
     nlives = dyn_nlive_array(init_run, samp_tot, dynamic_goal,
                              smoothing_filter=smoothing_filter)
