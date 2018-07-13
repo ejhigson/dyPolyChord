@@ -61,10 +61,12 @@ def process_dypolychord_run(file_root, base_dir, **kwargs):
     file_root: str
     base_dir: str
     dynamic_goal: float
-    logl_warn_only: bool, optional
-        Whether to throw error or warning if there are duplicate point
-        likelihoods. This is passed to nestcheck's check_ns_run function; see
-        its documentation for more details.
+    dup_assert: bool, optional
+        Whether to throw an AssertionError if there are duplicate point
+        loglikelihood values.
+    dup_warn: bool, optional
+        Whether to give a UserWarning if there are duplicate point
+        loglikelihood values.
 
     Returns
     -------
