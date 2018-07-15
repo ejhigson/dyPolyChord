@@ -84,7 +84,8 @@ def process_dypolychord_run(file_root, base_dir, **kwargs):
         file_root + '_init', base_dir, dup_assert=dup_assert,
         dup_warn=dup_warn)
     assert np.all(init['thread_min_max'][:, 0] == -np.inf), (
-        str(init['thread_min_max']))
+        'Initial run contains threads not starting at -inf.\n'
+        'thread_min_max=' + str(init['thread_min_max']))
     dyn = nestcheck.data_processing.process_polychord_run(
         file_root + '_dyn', base_dir, dup_assert=dup_assert,
         dup_warn=dup_warn)
