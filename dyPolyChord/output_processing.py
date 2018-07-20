@@ -37,17 +37,15 @@ def settings_root(likelihood_name, prior_name, ndims, **kwargs):
     init_step = kwargs.pop('init_step', None)
     if kwargs:
         raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
-    root = likelihood_name + '_' + prior_name + '_' + str(prior_scale)
-    root += '_dg' + str(dynamic_goal)
+    root = '{}_{}_{}_dg{}'.format(likelihood_name, prior_name, prior_scale,
+                                  dynamic_goal)
     if dynamic_goal is not None:
         assert ninit is not None
-        root += '_' + str(ninit) + 'init'
+        root += '_{}init'.format(ninit)
         if dynamic_goal != 0:
             assert init_step is not None
-            root += '_' + str(init_step) + 'is'
-    root += '_' + str(ndims) + 'd'
-    root += '_' + str(nlive_const) + 'nlive'
-    root += '_' + str(nrepeats) + 'nrepeats'
+            root += '_{}is'.format(init_step)
+    root += '_{}d_{}nlive_{}nrepeats'.format(ndims, nlive_const, nrepeats)
     return root
 
 
