@@ -60,8 +60,7 @@ class Gaussian(object):
         phi: list of length nderived
             Any derived parameters.
         """
-        logl = -(np.sum(theta ** 2) / (2 * self.sigma ** 2))
-        logl -= np.log(2 * np.pi * (self.sigma ** 2)) * len(theta) / 2.0
+        logl = log_gaussian_pdf(theta, sigma=self.sigma, mu=0)
         return logl, [0.0] * self.nderived
 
 
@@ -263,3 +262,112 @@ class GaussianMix(object):
                   + np.log(self.weights[i])) for i in range(len(self.weights))]
         logl = scipy.special.logsumexp(logls)
         return logl, [0.0] * self.nderived
+
+
+class LogGammaMix(object):
+
+    """The loggamma mix used in Beaujean and Caldwell (2013) and Feroz et al.
+    (2013)."""
+
+    def __init__(self, nderived=0):
+        """
+        Define likelihood hyperparameter values.
+
+        Parameters
+        ----------
+        nderived: int, optional
+            Number of derived parameters.
+        """
+        self.nderived = nderived
+
+    def __call__(self, theta):
+        """
+        Calculate loglikelihood(theta), as well as any derived parameters.
+
+        N.B. this loglikelihood is not normalised.
+
+        Parameters
+        ----------
+        theta: float or 1d numpy array
+
+        Returns
+        -------
+        logl: float
+            Loglikelihood
+        phi: list of length nderived
+            Any derived parameters.
+        """
+        assert theta.shape[0] % 2 == 0, (
+            'ndim={} must be even'.format(theta.shape))
+        # first component is
+        # l(t) = 0.5 * loggamma(t - 10, 1, 1) + 0.5 * loggamma(t + 10, 1, 1)
+        logl = np.log(0.5) + scipy.special.logsumexp(
+            [log_loggamma_pdf(th, alpha=1, beta=1) for th in
+             [theta[0] - 10, theta[0] + 10]])
+        # second component is
+        # l(t) = 0.5 * N(t - 10, 1, 1) + 0.5 * N(t + 10, 1, 1)
+        logl += np.log(0.5) + scipy.special.logsumexp(
+            [log_gaussian_pdf(th, sigma=1) for th in
+             [theta[1] - 10, theta[1] + 10]])
+        if theta.shape[0] > 2:
+            # remaining components are half loggamma and half gaussian
+            bound_ind = (theta.shape[0] // 2) + 1
+            logl += log_loggamma_pdf(theta[2:bound_ind], alpha=1, beta=1)
+            logl += log_gaussian_pdf(theta[bound_ind:], sigma=1)
+        return logl, [0.0] * self.nderived
+
+
+# Helper functions
+# ----------------
+
+def log_loggamma_pdf(theta, alpha=1, beta=1):
+    """
+    Log gamma distribution, with each component of theta independently having
+    PDF:
+    .. math::
+
+        f(x) = \\frac{
+            \\mathrm{e}^{\\beta x} \\mathrm{e}^{-\\mathrm{e}^x / \\alpha}
+            }{\\alpha^{\\beta} \\Gamma(\\beta)}
+
+    This function returns :math:`\\log f(x)`.
+
+    Parameters
+    ----------
+    theta: float or array
+        Where to evaluate :math:`\\log f(x)`. Values
+        :math:`\\in (-\\inf, \\inf)`.
+    alpha: float, > 0
+        Scale parameter
+    beta: float, > 0
+        Shape parameter
+
+    Returns
+    -------
+    logl: float
+    """
+    # log of numerator
+    logl = beta * theta
+    logl += -np.exp(theta) / alpha
+    # log of denominator
+    logl -= np.log(alpha) * beta
+    logl -= scipy.special.gammaln(beta)
+    # If there are many components, sum their log-space consributions
+    if not isinstance(logl, (float, int)):
+        assert logl.shape == theta.shape, (
+            'logl={} theta={}'.format(logl, theta))
+        logl = np.sum(logl)
+    return logl
+
+
+def log_gaussian_pdf(theta, sigma=1, mu=0, ndim=None):
+    """Log of uncorrelated Gaussian pdf."""
+    if ndim is None:
+        try:
+            ndim = len(theta)
+        except TypeError:
+            assert isinstance(theta, (float, int)), theta
+            ndim = 1
+    logl = -(np.sum((theta - mu) ** 2) / (2 * sigma ** 2))
+    logl -= np.log(2 * np.pi * (sigma ** 2)) * ndim / 2.0
+    return logl

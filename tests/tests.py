@@ -537,6 +537,9 @@ class TestPythonLikelihoods(unittest.TestCase):
         self.assertAlmostEqual(logl, logl_expected, places=12)
         self.assertIsInstance(phi, list)
         self.assertEqual(len(phi), 0)
+        # Check matches sum of individal logls
+        sep_logls = [likelihoods.log_gaussian_pdf(th, sigma=sigma) for th in theta]
+        self.assertAlmostEqual(sum(sep_logls), logl)
 
     def test_gaussian_shell(self):
         """Check the Gaussian shell likelihood."""
@@ -557,6 +560,14 @@ class TestPythonLikelihoods(unittest.TestCase):
         dim = 5
         theta = np.random.random(dim)
         _, phi = likelihoods.GaussianMix()(theta)
+        self.assertIsInstance(phi, list)
+        self.assertEqual(len(phi), 0)
+
+    def test_loggamma_mix(self):
+        """Check the loggamma mixture model likelihood."""
+        dim = 6
+        theta = np.random.random(dim)
+        _, phi = likelihoods.LogGammaMix()(theta)
         self.assertIsInstance(phi, list)
         self.assertEqual(len(phi), 0)
 
