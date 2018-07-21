@@ -9,7 +9,7 @@ import nestcheck.data_processing
 import nestcheck.io_utils as iou
 
 
-def settings_root(likelihood_name, prior_name, ndims, **kwargs):
+def settings_root(likelihood_name, prior_name, ndim, **kwargs):
     """
     Returns a standard string containing information about settings.
 
@@ -17,7 +17,7 @@ def settings_root(likelihood_name, prior_name, ndims, **kwargs):
     ----------
     likelihood_name: str
     prior_name: str
-    ndims: int
+    ndim: int
     prior_scale: float or int
     dynamic_goal: float, int or None
     nlive_const: int
@@ -45,8 +45,8 @@ def settings_root(likelihood_name, prior_name, ndims, **kwargs):
         if dynamic_goal != 0:
             assert init_step is not None
             root += '_{}is'.format(init_step)
-    root += '_{}d_{}nlive_{}nrepeats'.format(ndims, nlive_const, nrepeats)
-    return root
+    root += '_{}d_{}nlive_{}nrepeats'.format(ndim, nlive_const, nrepeats)
+    return root.replace('.', '_')
 
 
 def process_dypolychord_run(file_root, base_dir, **kwargs):
