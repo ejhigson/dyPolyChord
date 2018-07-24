@@ -320,9 +320,9 @@ class LogGammaMix(object):
 # Helper functions
 # ----------------
 
-def log_loggamma_pdf(theta, alpha=1, beta=1):
+def log_loggamma_pdf_1d(theta, alpha=1, beta=1):
     """
-    Log gamma distribution, with each component of theta independently having
+    1d gamma distribution, with each component of theta independently having
     PDF:
     .. math::
 
@@ -344,7 +344,7 @@ def log_loggamma_pdf(theta, alpha=1, beta=1):
 
     Returns
     -------
-    logl: float
+    logl: same type as theta
     """
     # log of numerator
     logl = beta * theta
@@ -352,6 +352,16 @@ def log_loggamma_pdf(theta, alpha=1, beta=1):
     # log of denominator
     logl -= np.log(alpha) * beta
     logl -= scipy.special.gammaln(beta)
+    return logl
+
+
+def log_loggamma_pdf(theta, alpha=1, beta=1):
+    """
+    Multidimensional loggamma distribution, with each component of theta
+    independently having a loggamma distribution.
+
+    Always returns a float."""
+    logl = log_loggamma_pdf_1d(theta, alpha=alpha, beta=beta)
     # If there are many components, sum their log-space consributions
     if not isinstance(logl, (float, int)):
         assert logl.shape == theta.shape, (
