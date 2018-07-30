@@ -38,7 +38,7 @@ If this code is useful for your academic research, please cite the dynamic neste
 
 .. code-block:: tex
 
-    @article{Higson2017b,
+    @article{Higson2017,
     author={Higson, Edward and Handley, Will and Hobson, Mike and Lasenby, Anthony},
     title={Dynamic nested sampling: an improved algorithm for parameter estimation and evidence calculation},
     journal={arXiv preprint arXiv:1704.03459},
@@ -77,7 +77,7 @@ Contributions are welcome! Development takes place on github:
 - source code: https://github.com/ejhigson/dyPolyChord;
 - issue tracker: https://github.com/ejhigson/dyPolyChord/issues.
 
-When creating a pull request, please try to make sure the tests pass and use numpy-style docstrings (see `here <http://www.sphinx-doc.org/en/master/ext/example_numpy.html>`_ for an example).
+When creating a pull request, please try to make sure the tests pass and use numpy-style docstrings.
 
 If you have any questions or suggestions please get in touch (e.higson@mrao.cam.ac.uk).
 
