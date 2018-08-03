@@ -17,7 +17,7 @@ def get_long_description():
 
 
 setuptools.setup(name='dyPolyChord',
-                 version='0.0.1',
+                 version='0.0.2',
                  description=(
                      'Super fast dynamic nested sampling with '
                      'PolyChord (python, C++ and Fortran likelihoods).'),
@@ -45,7 +45,7 @@ setuptools.setup(name='dyPolyChord',
                  packages=['dyPolyChord'],
                  install_requires=['numpy>=1.13',
                                    'scipy>=1.0.0',
-                                   'nestcheck>=0.1.0'],
+                                   'nestcheck>=0.1.4'],
                  test_suite='nose.collector',
                  tests_require=['nose', 'coverage'],
                  extras_require={'docs': ['sphinx',
