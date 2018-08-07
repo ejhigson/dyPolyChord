@@ -4,6 +4,8 @@ Contains main function for running dynamic nested sampling.
 """
 import copy
 import os
+import traceback
+import sys
 import shutil
 import warnings
 import numpy as np
@@ -13,6 +15,7 @@ import nestcheck.io_utils
 import nestcheck.write_polychord_output
 import dyPolyChord.nlive_allocation
 import dyPolyChord.output_processing
+# pylint: disable=bare-except
 
 
 __all__ = ['run_dypolychord', 'check_settings']
@@ -125,80 +128,154 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
             final_seed = settings_dict['seed']
             if settings_dict['seed'] >= 0:
                 final_seed += seed_increment
+            step_ndead = None
+            resume_outputs = None
     else:
         step_ndead, resume_outputs, final_seed = run_and_save_resumes(
             run_polychord, settings_dict, init_step, seed_increment, comm=comm)
     # Step 2: calculate an allocation of live points
     # ----------------------------------------------
     if rank == 0:
-        init_run = nestcheck.data_processing.process_polychord_run(
-            settings_dict_in['file_root'] + '_init',
-            settings_dict_in['base_dir'])
-        # Calculate max number of samples
-        if settings_dict_in['max_ndead'] > 0:
-            samp_tot = settings_dict_in['max_ndead']
-            assert settings_dict_in['max_ndead'] > init_run['logl'].shape[0], (
-                'all points used in init run - None left for dynamic run')
-        else:
-            samp_tot = init_run['logl'].shape[0] * (nlive_const / ninit)
-            assert nlive_const > ninit
-        dyn_info = dyPolyChord.nlive_allocation.allocate(
-            init_run, samp_tot, dynamic_goal,
-            smoothing_filter=smoothing_filter)
-        root_name = os.path.join(settings_dict_in['base_dir'],
-                                 settings_dict_in['file_root'])
-        if dyn_info['peak_start_ind'] != 0:
-            # subtract 1 as ndead=1 corresponds to point 0
-            resume_steps = np.asarray(step_ndead) - 1
-            # Work out which resume file to load
-            resume_ndead = step_ndead[np.where(
-                resume_steps < dyn_info['peak_start_ind'])[0][-1]]
-            # copy resume step to dynamic file root
-            shutil.copyfile(
-                root_name + '_init_' + str(resume_ndead) + '.resume',
-                root_name + '_dyn.resume')
-            # Save resume info
-            dyn_info['resume_ndead'] = resume_ndead
-            dyn_info['resume_nlike'] = resume_outputs[resume_ndead]['nlike']
-        nestcheck.io_utils.pickle_save(
-            dyn_info, root_name + '_dyn_info', overwrite_existing=True)
-        if dynamic_goal != 0:
-            # Remove all the temporary resume files. Use set to avoid
-            # duplicates as these cause OSErrors.
-            for snd in set(step_ndead):
-                os.remove(root_name + '_init_' + str(snd) + '.resume')
-        # Step 3: do dynamic run
-        # ----------------------
-        # remove edits from init
-        settings_dict = copy.deepcopy(settings_dict_in)
-        settings_dict['seed'] = final_seed
-        if settings_dict['seed'] >= 0:
-            assert settings_dict_in['seed'] >= 0, (
-                'if input seed was <0 it should not have been edited')
-        if dyn_info['peak_start_ind'] != 0:
-            settings_dict['nlive'] = ninit
-        else:
-            settings_dict['nlive'] = dyn_info['nlives_dict'][
-                min(dyn_info['nlives_dict'].keys())]
-        settings_dict['nlives'] = dyn_info['nlives_dict']
-        # To write .ini files correctly, read_resume must be type bool not
-        # np.bool
-        settings_dict['read_resume'] = bool(dyn_info['peak_start_ind'] != 0)
-        settings_dict['file_root'] = settings_dict_in['file_root'] + '_dyn'
+        try:
+            # Get settings for dynamic run based on initial run
+            settings_dict = process_initial_run(
+                settings_dict_in, nlive_const=nlive_const,
+                smoothing_filter=smoothing_filter,
+                step_ndead=step_ndead, resume_outputs=resume_outputs,
+                ninit=ninit, dynamic_goal=dynamic_goal,
+                final_seed=final_seed)
+        except:  # pragma: no cover
+            if comm is None or comm.Get_size() == 1:
+                raise
+            else:
+                # print error info
+                traceback.print_exc(file=sys.stdout)
+                # force all MPI processes to abort to avoid hanging
+                comm.Abort(1)
+    # Step 3: do dynamic run
+    # ----------------------
     run_polychord(settings_dict, comm=comm)
+    # Step 4: process output and tidy
+    # -------------------------------
     if rank == 0:
-        # Step 4: process output and tidy
-        # -------------------------------
-        # Combine initial and dynamic runs
-        run = dyPolyChord.output_processing.process_dypolychord_run(
-            settings_dict_in['file_root'], settings_dict_in['base_dir'],
-            dynamic_goal=dynamic_goal)
-        # Save combined output in PolyChord format
-        nestcheck.write_polychord_output.write_run_output(
-            run, stats_means_errs=stats_means_errs, **output_settings)
-        if clean:
-            # Remove temporary files
-            clean_extra_output(root_name)
+        try:
+            # Combine initial and dynamic runs
+            run = dyPolyChord.output_processing.process_dypolychord_run(
+                settings_dict_in['file_root'], settings_dict_in['base_dir'],
+                dynamic_goal=dynamic_goal)
+            # Save combined output in PolyChord format
+            nestcheck.write_polychord_output.write_run_output(
+                run, stats_means_errs=stats_means_errs, **output_settings)
+            if clean:
+                # Remove temporary files
+                root_name = os.path.join(settings_dict_in['base_dir'],
+                                         settings_dict_in['file_root'])
+                clean_extra_output(root_name)
+        except:  # pragma: no cover
+            if comm is None or comm.Get_size() == 1:
+                raise
+            else:
+                # print error info
+                traceback.print_exc(file=sys.stdout)
+                # force all MPI processes to abort to avoid hanging
+                comm.Abort(1)
+
+
+def process_initial_run(settings_dict_in, **kwargs):
+    """Loads the initial exploratory run and analyses it to create the settings
+    for the second, dynamic run.
+
+    Parameters
+    ----------
+    settings_dict_in: dict
+        Initial PolyChord settings (see check_settings for information on
+        allowed and default settings).
+    dynamic_goal: float or int
+        Number in (0, 1) which determines how to allocate computational effort
+        between parameter estimation and evidence calculation. See the dynamic
+        nested sampling paper for more details.
+    nlive_const: int
+        Used to calculate total number of samples if max_ndead not specified in
+        settings. The total number of samples used is the estimated number that
+        would be taken by a nested sampling run with a constant number of live
+        points nlive_const.
+    ninit: int
+        Number of live points to use for the initial exporatory run (Step 1).
+    smoothing_filter: func
+        Smoothing to apply to the nlive allocation (if any).
+    step_ndead: list of ints
+        Numbers of dead points at which resume files are saved.
+    resume_outputs: dict
+        Dictionary containing run output (contents of .stats file) at each
+        resume. Keys are elements of step_ndead.
+    final_seed: int
+        Random seed at the end of the initial run.
+    """
+    dynamic_goal = kwargs.pop('dynamic_goal')
+    nlive_const = kwargs.pop('nlive_const')
+    ninit = kwargs.pop('ninit')
+    smoothing_filter = kwargs.pop('smoothing_filter')
+    step_ndead = kwargs.pop('step_ndead')
+    resume_outputs = kwargs.pop('resume_outputs')
+    final_seed = kwargs.pop('final_seed')
+    if kwargs:
+        raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
+    init_run = nestcheck.data_processing.process_polychord_run(
+        settings_dict_in['file_root'] + '_init',
+        settings_dict_in['base_dir'])
+    # Calculate max number of samples
+    if settings_dict_in['max_ndead'] > 0:
+        samp_tot = settings_dict_in['max_ndead']
+        assert (settings_dict_in['max_ndead']
+                > init_run['logl'].shape[0]), (
+                    'all points used in init run - '
+                    'none left for dynamic')
+    else:
+        samp_tot = init_run['logl'].shape[0] * (nlive_const / ninit)
+        assert nlive_const > ninit
+    dyn_info = dyPolyChord.nlive_allocation.allocate(
+        init_run, samp_tot, dynamic_goal,
+        smoothing_filter=smoothing_filter)
+    root_name = os.path.join(settings_dict_in['base_dir'],
+                             settings_dict_in['file_root'])
+    if dyn_info['peak_start_ind'] != 0:
+        # subtract 1 as ndead=1 corresponds to point 0
+        resume_steps = np.asarray(step_ndead) - 1
+        # Work out which resume file to load
+        resume_ndead = step_ndead[np.where(
+            resume_steps < dyn_info['peak_start_ind'])[0][-1]]
+        # copy resume step to dynamic file root
+        shutil.copyfile(
+            root_name + '_init_' + str(resume_ndead) + '.resume',
+            root_name + '_dyn.resume')
+        # Save resume info
+        dyn_info['resume_ndead'] = resume_ndead
+        dyn_info['resume_nlike'] = (
+            resume_outputs[resume_ndead]['nlike'])
+    nestcheck.io_utils.pickle_save(
+        dyn_info, root_name + '_dyn_info', overwrite_existing=True)
+    if dynamic_goal != 0:
+        # Remove all the temporary resume files. Use set to avoid
+        # duplicates as these cause OSErrors.
+        for snd in set(step_ndead):
+            os.remove(root_name + '_init_' + str(snd) + '.resume')
+    settings_dict = copy.deepcopy(settings_dict_in)
+    settings_dict['seed'] = final_seed
+    if settings_dict['seed'] >= 0:
+        assert settings_dict_in['seed'] >= 0, (
+            'if input seed was <0 it should not have been edited')
+    if dyn_info['peak_start_ind'] != 0:
+        settings_dict['nlive'] = ninit
+    else:
+        settings_dict['nlive'] = dyn_info['nlives_dict'][
+            min(dyn_info['nlives_dict'].keys())]
+    settings_dict['nlives'] = dyn_info['nlives_dict']
+    # To write .ini files correctly, read_resume must be type bool not
+    # np.bool
+    settings_dict['read_resume'] = (
+        bool(dyn_info['peak_start_ind'] != 0))
+    settings_dict['file_root'] = settings_dict_in['file_root'] + '_dyn'
+    return settings_dict
 
 
 # Helper functions
@@ -321,7 +398,7 @@ def run_and_save_resumes(run_polychord, settings_dict_in, init_step,
     resume_outputs: dict
         Dictionary containing run output (contents of .stats file) at each
         resume. Keys are elements of step_ndead.
-    seed: int
+    final_seed: int
         Random seed. This is incremented after each run so it can be used
         when resuming without generating correlated points.
     """
@@ -353,20 +430,29 @@ def run_and_save_resumes(run_polychord, settings_dict_in, init_step,
             settings_dict['max_ndead'] = (len(step_ndead) + 1) * init_step
         run_polychord(settings_dict, comm=comm)
         if rank == 0:
-            if settings_dict['seed'] >= 0:
-                settings_dict['seed'] += seed_increment
-            run_output = nestcheck.data_processing.process_polychord_stats(
-                settings_dict['file_root'], settings_dict['base_dir'])
-            # Store run outputs for getting number of likelihood calls
-            # while accounding for resuming a run.
-            resume_outputs[run_output['ndead']] = run_output
-            step_ndead.append(run_output['ndead'] - settings_dict['nlive'])
-            if len(step_ndead) >= 2 and step_ndead[-1] == step_ndead[-2]:
-                add_points = False
-            # store resume file in new file path
-            shutil.copyfile(
-                root_name + '.resume',
-                root_name + '_' + str(step_ndead[-1]) + '.resume')
+            try:
+                if settings_dict['seed'] >= 0:
+                    settings_dict['seed'] += seed_increment
+                run_output = nestcheck.data_processing.process_polychord_stats(
+                    settings_dict['file_root'], settings_dict['base_dir'])
+                # Store run outputs for getting number of likelihood calls
+                # while accounding for resuming a run.
+                resume_outputs[run_output['ndead']] = run_output
+                step_ndead.append(run_output['ndead'] - settings_dict['nlive'])
+                if len(step_ndead) >= 2 and step_ndead[-1] == step_ndead[-2]:
+                    add_points = False
+                # store resume file in new file path
+                shutil.copyfile(
+                    root_name + '.resume',
+                    root_name + '_' + str(step_ndead[-1]) + '.resume')
+            except:  # pragma: no cover
+                if comm is None or comm.Get_size() == 1:
+                    raise
+                else:
+                    # print error info
+                    traceback.print_exc(file=sys.stdout)
+                    # force all MPI processes to abort to avoid hanging
+                    comm.Abort(1)
         if comm is not None:
             add_points = comm.bcast(add_points, root=0)
     if rank == 0:
