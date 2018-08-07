@@ -43,6 +43,7 @@ setuptools.setup(name='dyPolyChord',
                      'Topic :: Scientific/Engineering :: Information Analysis',
                  ],
                  packages=['dyPolyChord'],
+                 # Note that PolyChord is also required to do nested sampling
                  install_requires=['numpy>=1.13',
                                    'scipy>=1.0.0',
                                    'nestcheck>=0.1.4'],
@@ -51,6 +52,7 @@ setuptools.setup(name='dyPolyChord',
                  extras_require={'docs': ['sphinx',
                                           'numpydoc',
                                           'sphinx-rtd-theme',
-                                          'nbsphinx>=0.3.3']},
+                                          'nbsphinx>=0.3.3'],
+                                 'MPI': ['mpi4py']},
                  project_urls={  # Optional
                      'Docs': 'http://dyPolyChord.readthedocs.io/en/latest/'})
