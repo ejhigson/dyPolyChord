@@ -40,7 +40,7 @@ def get_prior_block_str(prior_name, prior_params, nparam, **kwargs):
     speed = kwargs.pop('speed', 1)
     block = kwargs.pop('block', 1)
     if kwargs:
-        raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
+        raise TypeError('unexpected **kwargs: {0}'.format(kwargs))
     block_str = ''
     for i in range(start_param, nparam + start_param):
         block_str += ('P : p{0} | \\theta_{{{0}}} | {1} | {2} | {3} |'
@@ -54,8 +54,7 @@ class RunCompiledPolyChord(object):
     """Object for running a compiled PolyChord executable with specified
     inputs."""
 
-    def __init__(self, executable_path, prior_str, derived_str=None,
-                 mpi_str=None):
+    def __init__(self, executable_path, prior_str, **kwargs):
         """
         Specify path to executable, priors and derived parameters.
 
@@ -68,6 +67,8 @@ class RunCompiledPolyChord(object):
         prior_str: str
             String specifying prior in the format required for PolyChord .ini
             files (see get_prior_block_str for more details).
+        config_str: str, optional
+            String to be written to [root].cfg file if required.
         derived_str: str or None, optional
             String specifying prior in the format required for PolyChord .ini
             files (see prior_str for more details).
@@ -77,10 +78,13 @@ class RunCompiledPolyChord(object):
             Note that PolyChord must be installed with MPI enabled to allow
             running with MPI.
         """
+        self.config_str = kwargs.pop('config_str', None)
+        self.derived_str = kwargs.pop('derived_str', None)
+        self.mpi_str = kwargs.pop('mpi_str', None)
+        if kwargs:
+            raise TypeError('unexpected **kwargs: {0}'.format(kwargs))
         self.executable_path = executable_path
         self.prior_str = prior_str
-        self.derived_str = derived_str
-        self.mpi_str = mpi_str
 
     def __call__(self, settings_dict, comm=None):
         """
@@ -100,42 +104,40 @@ class RunCompiledPolyChord(object):
         """
         assert os.path.isfile(self.executable_path)
         assert comm is None, 'comm not used for compiled likelihoods.'
-        ini_path = os.path.join(settings_dict['base_dir'],
-                                settings_dict['file_root'] + '.ini')
-        self.write_ini(settings_dict, ini_path)
-        command_str = self.executable_path + ' ' + ini_path
+        # Write settings to ini file
+        file_path = os.path.join(
+            settings_dict['base_dir'], settings_dict['file_root'])
+        with open(file_path + '.ini', 'w') as ini_file:
+            ini_file.write(self.ini_string(settings_dict))
+        # If required, write config file
+        if self.config_str is not None:
+            with open(file_path + '.cfg', 'w') as cfg_file:
+                cfg_file.write(self.config_str)
+        # Execute command
+        command_str = self.executable_path + ' ' + file_path + '.ini'
         if self.mpi_str is not None:
             command_str = self.mpi_str + ' ' + command_str
         os.system(command_str)
 
-    def write_ini(self, settings, file_path):
+    def ini_string(self, settings):
+        """Get a PolyChord format .ini file string based on the input settings.
         """
-        Writes a PolyChord format .ini file based on the input settings.
-
-        Parameters
-        ----------
-        settings: dict
-            Input PolyChord settings.
-        file_path: str
-            Path to write ini file to.
-        """
-        with open(file_path, 'w') as ini_file:
-            # Write the settings
-            for key, value in settings.items():
-                if key == 'nlives':
-                    if value:
-                        loglikes = sorted(settings['nlives'])
-                        ini_file.write(
-                            'loglikes = ' + format_setting(loglikes) + '\n')
-                        nlives = [settings['nlives'][ll] for ll in loglikes]
-                        ini_file.write(
-                            'nlives = ' + format_setting(nlives) + '\n')
-                else:
-                    ini_file.write(key + ' = ' + format_setting(value) + '\n')
-            # write the prior
-            ini_file.write(self.prior_str)
-            if self.derived_str is not None:
-                ini_file.write(self.derived_str)
+        string = ''
+        # Add the settings
+        for key, value in settings.items():
+            if key == 'nlives':
+                if value:
+                    loglikes = sorted(settings['nlives'])
+                    string += 'loglikes = ' + format_setting(loglikes) + '\n'
+                    nlives = [settings['nlives'][ll] for ll in loglikes]
+                    string += 'nlives = ' + format_setting(nlives) + '\n'
+            else:
+                string += key + ' = ' + format_setting(value) + '\n'
+        # Add the prior
+        string += self.prior_str
+        if self.derived_str is not None:
+            string += self.derived_str
+        return string
 
 
 def format_setting(setting):

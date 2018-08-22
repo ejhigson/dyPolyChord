@@ -427,18 +427,15 @@ class TestPolyChordUtils(unittest.TestCase):
         derived_str = 'derived'
         run_obj = dyPolyChord.polychord_utils.RunCompiledPolyChord(
             ':', prior_str, derived_str=derived_str)
-        file_path = os.path.join(TEST_CACHE_DIR, 'temp.ini')
-        run_obj.write_ini(settings, file_path)
-        with open(file_path, 'r') as ini_file:
-            lines = ini_file.readlines()
-        self.assertEqual(lines[-2], prior_str)
+        lines = run_obj.ini_string(settings).splitlines()
+        self.assertEqual(lines[-2], prior_str.replace('\n', ''))
         self.assertEqual(lines[-1], derived_str)
         # Use sorted as ini lines written from dict.items() so order not
         # guarenteed.
         self.assertEqual(sorted(lines[:3]),
-                         ['loglikes = -20.0 -10.0\n',
-                          'nlive = 50\n',
-                          'nlives = 100 200\n'])
+                         ['loglikes = -20.0 -10.0',
+                          'nlive = 50',
+                          'nlives = 100 200'])
 
     def test_compiled_run_func(self):
         """
@@ -453,10 +450,11 @@ class TestPolyChordUtils(unittest.TestCase):
         print(executable_path, type(executable_path))
         np.savetxt(executable_path, np.zeros(10))
         func = dyPolyChord.polychord_utils.RunCompiledPolyChord(
-            executable_path, 'this is a dummy prior block string', mpi_str='#')
+            executable_path, 'this is a dummy prior block string', mpi_str='#',
+            config_str='this is a dummy config string')
         self.assertEqual(set(func.__dict__.keys()),
                          {'derived_str', 'executable_path', 'prior_str',
-                          'mpi_str'})
+                          'mpi_str', 'config_str'})
         func({'base_dir': TEST_CACHE_DIR, 'file_root': 'temp'})
 
 
