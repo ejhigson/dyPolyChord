@@ -150,7 +150,8 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
             else:
                 # print error info
                 traceback.print_exc(file=sys.stdout)
-                # force all MPI processes to abort to avoid hanging
+                print('Error in process with rank == 0: forcing MPI abort.')
+                sys.stdout.flush()  # Make sure message prints before abort
                 comm.Abort(1)
     # Step 3: do dynamic run
     # ----------------------
@@ -177,7 +178,8 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
             else:
                 # print error info
                 traceback.print_exc(file=sys.stdout)
-                # force all MPI processes to abort to avoid hanging
+                print('Error in process with rank == 0: forcing MPI abort.')
+                sys.stdout.flush()  # Make sure message prints before abort
                 comm.Abort(1)
 
 
@@ -451,7 +453,9 @@ def run_and_save_resumes(run_polychord, settings_dict_in, init_step,
                 else:
                     # print error info
                     traceback.print_exc(file=sys.stdout)
-                    # force all MPI processes to abort to avoid hanging
+                    print('Error in process with rank == 0: '
+                          'forcing MPI abort.')
+                    sys.stdout.flush()  # Make sure message prints before abort
                     comm.Abort(1)
         if comm is not None:
             add_points = comm.bcast(add_points, root=0)
