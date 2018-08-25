@@ -6,49 +6,6 @@ likelihoods.
 import os
 
 
-def get_prior_block_str(prior_name, prior_params, nparam, **kwargs):
-    """
-    Returns a PolyChord format prior block for inclusion in PolyChord .ini
-    files.
-
-    See the PolyChord documentation for more details.
-
-    Parameters
-    ----------
-    prior_name: str
-        Name of prior. See the PolyChord documentation for a list of currently
-        available priors and details of how to add your own.
-    prior_params: str, float or list of strs and floats
-        Parameters for the prior function.
-    nparam: int
-        Number of parameters.
-    start_param: int, optional
-        Where to start param numbering. For when multiple prior blocks are
-        being used.
-    block: int, optional
-        Number of block (only needed when using multiple prior blocks).
-    speed: int, optional
-        Use to specify fast and slow parameters if required. See the PolyChord
-        documentation for more details.
-
-    Returns
-    -------
-    block_str: str
-        PolyChord format prior block.
-    """
-    start_param = kwargs.pop('start_param', 1)
-    speed = kwargs.pop('speed', 1)
-    block = kwargs.pop('block', 1)
-    if kwargs:
-        raise TypeError('unexpected **kwargs: {0}'.format(kwargs))
-    block_str = ''
-    for i in range(start_param, nparam + start_param):
-        block_str += ('P : p{0} | \\theta_{{{0}}} | {1} | {2} | {3} |'
-                      .format(i, speed, prior_name, block))
-        block_str += format_setting(prior_params) + '\n'
-    return block_str
-
-
 class RunCompiledPolyChord(object):
 
     """Object for running a compiled PolyChord executable with specified
@@ -140,6 +97,53 @@ class RunCompiledPolyChord(object):
         return string
 
 
+# Helper functions for making PolyChord prior strings
+# ---------------------------------------------------
+
+
+def get_prior_block_str(prior_name, prior_params, nparam, **kwargs):
+    """
+    Returns a PolyChord format prior block for inclusion in PolyChord .ini
+    files.
+
+    See the PolyChord documentation for more details.
+
+    Parameters
+    ----------
+    prior_name: str
+        Name of prior. See the PolyChord documentation for a list of currently
+        available priors and details of how to add your own.
+    prior_params: str, float or list of strs and floats
+        Parameters for the prior function.
+    nparam: int
+        Number of parameters.
+    start_param: int, optional
+        Where to start param numbering. For when multiple prior blocks are
+        being used.
+    block: int, optional
+        Number of block (only needed when using multiple prior blocks).
+    speed: int, optional
+        Use to specify fast and slow parameters if required. See the PolyChord
+        documentation for more details.
+
+    Returns
+    -------
+    block_str: str
+        PolyChord format prior block string for ini file.
+    """
+    start_param = kwargs.pop('start_param', 1)
+    speed = kwargs.pop('speed', 1)
+    block = kwargs.pop('block', 1)
+    if kwargs:
+        raise TypeError('unexpected **kwargs: {0}'.format(kwargs))
+    block_str = ''
+    for i in range(start_param, nparam + start_param):
+        block_str += ('P : p{0} | \\theta_{{{0}}} | {1} | {2} | {3} |'
+                      .format(i, speed, prior_name, block))
+        block_str += format_setting(prior_params) + '\n'
+    return block_str
+
+
 def format_setting(setting):
     """
     Return setting as string in the format needed for PolyChord's .ini files.
@@ -163,3 +167,82 @@ def format_setting(setting):
         return string
     else:
         return str(setting)
+
+
+def python_prior_to_str(prior, **kwargs):
+    """Utility function for mapping python priors (of the type in
+    python_priors.py) to  ini file format strings used for compiled (C++
+    or Fortran) likelihoods.
+
+    The input prior must correspond to a prior function set up in
+    PolyChord/src/polychord/priors.F90. You can easily add your own too.
+    Note that some of the priors are not available in PolyChord v1.14.
+
+    Parameters
+    ----------
+    prior_obj: python prior object
+        Of the type defined in python_priors.py
+    kwargs: dict, optional
+        Passed to get_prior_block_str (see its docstring for more details).
+
+    Returns
+    -------
+    block_str: str
+        PolyChord format prior block string for ini file.
+    """
+    nparam = kwargs.pop('nparam')
+    name = type(prior).__name__.lower()
+    if name == 'uniform':
+        parameters = [prior.minimum, prior.maximum]
+    elif name == 'poweruniform':
+        name = 'power_uniform'
+        parameters = [prior.minimum, prior.maximum, prior.power]
+        assert prior.power < 0, (
+            'compiled power_uniform currently only takes negative powers.'
+            'power={}'.format(prior.power))
+    elif name == 'gaussian':
+        parameters = [getattr(prior, 'mu', 0.0), prior.sigma]
+        if getattr(prior, 'half', False):
+            name = 'half_' + name
+    elif name == 'exponential':
+        parameters = [prior.lambd]
+    else:
+        raise TypeError('Not set up for ' + name)
+    if getattr(prior, 'sort', False):
+        name = 'sorted_' + name
+    if getattr(prior, 'adaptive', False):
+        name = 'adaptive_' + name
+        assert getattr(prior, "nfunc_min", 1) == 1, (
+            'compiled adaptive priors currently only take nfunc_min=1.'
+            'prior.nfunc_min={}'.format(prior.nfunc_min))
+    return get_prior_block_str(name, parameters, nparam, **kwargs)
+
+
+def python_block_prior_to_str(bp_obj):
+    """As for python_prior_to_str, but for BlockPrior objects of the type
+    defined in python_priors.py. python_prior_to_str is called seperately on
+    every block.
+
+    Parameters
+    ----------
+    prior_obj: python prior object
+        Of the type defined in python_priors.py.
+    kwargs: dict, optional
+        Passed to get_prior_block_str (see its docstring for more details).
+
+    Returns
+    -------
+    block_str: str
+        PolyChord format prior block string for ini file.
+    """
+    assert type(bp_obj).__name__ == 'BlockPrior', (
+        'Unexpected input object type: {}'.format(
+            type(bp_obj).__name__))
+    start_param = 1
+    string = ''
+    for i, prior in enumerate(bp_obj.prior_blocks):
+        string += python_prior_to_str(
+            prior, block=(i + 1), start_param=start_param,
+            nparam=bp_obj.block_sizes[i])
+        start_param += bp_obj.block_sizes[i]
+    return string
