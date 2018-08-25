@@ -27,7 +27,7 @@ import dyPolyChord.run_dynamic_ns
 import dyPolyChord
 try:
     # pylint: disable=unused-import,ungrouped-imports
-    # Only pypolychord_utils tests if PyPolyChord is installed
+    # Only do pypolychord_utils tests if PyPolyChord is installed
     import PyPolyChord
     import dyPolyChord.pypolychord_utils
     # If PolyChord is installed with MPI, we need to initialise mpi4py in order
@@ -413,6 +413,53 @@ class TestPolyChordUtils(unittest.TestCase):
         expected += '\n'
         self.assertEqual(dyPolyChord.polychord_utils.get_prior_block_str(
             name, prior_params, 1, speed=1, block=1), expected)
+
+    def test_python_prior_to_str(self):
+        """Check functions for mapping Python prior objects to ini file
+        strings."""
+        nparam = 3
+        prior_params = [1, 2, -3]
+        prior_str = dyPolyChord.polychord_utils.get_prior_block_str(
+            'adaptive_sorted_uniform', prior_params[:2], nparam)
+        prior_obj = dyPolyChord.python_priors.Uniform(
+            *prior_params[:2], adaptive=True, sort=True)
+        self.assertEqual(
+            dyPolyChord.polychord_utils.python_prior_to_str(
+                prior_obj, nparam=nparam),
+            prior_str)
+        # Now check from block prior
+        block_obj = dyPolyChord.python_priors.BlockPrior(
+            [prior_obj], [nparam])
+        self.assertEqual(
+            dyPolyChord.polychord_utils.python_block_prior_to_str(
+                block_obj), prior_str)
+        # Finally, lets check the other types of prior
+        # Power uniform
+        prior_str = dyPolyChord.polychord_utils.get_prior_block_str(
+            'power_uniform', prior_params, nparam)
+        prior_obj = dyPolyChord.python_priors.PowerUniform(
+            *prior_params)
+        self.assertEqual(
+            dyPolyChord.polychord_utils.python_prior_to_str(
+                prior_obj, nparam=nparam), prior_str)
+        # Exponential
+        prior_str = dyPolyChord.polychord_utils.get_prior_block_str(
+            'exponential', prior_params[:1], nparam)
+        prior_obj = dyPolyChord.python_priors.Exponential(
+            *prior_params[:1])
+        self.assertEqual(
+            dyPolyChord.polychord_utils.python_prior_to_str(
+                prior_obj, nparam=nparam), prior_str)
+        # (half) Gaussian
+        mu = 0.5
+        prior_str = dyPolyChord.polychord_utils.get_prior_block_str(
+            'half_gaussian', [mu, prior_params[0]], nparam)
+        prior_obj = dyPolyChord.python_priors.Gaussian(
+            *prior_params[:1], half=True, mu=mu)
+        self.assertEqual(
+            dyPolyChord.polychord_utils.python_prior_to_str(
+                prior_obj, nparam=nparam), prior_str)
+
 
     def test_get_prior_block_unexpected_kwargs(self):
         """Check appropriate error is raised when an unexpected keyword
