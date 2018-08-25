@@ -4,4 +4,5 @@ omit =
     dyPolyChord/pypolychord_utils.py
 exclude_lines =
     pragma: no cover
+    raise
     raise TypeError

@@ -7,6 +7,7 @@ included, but are skipped unless PyPolyChord is installed. These also require
 mpi4py if you have installed PolyChord with MPI.
 """
 import os
+import copy
 import shutil
 import unittest
 import functools
@@ -25,6 +26,7 @@ import dyPolyChord.polychord_utils
 import dyPolyChord.run_dynamic_ns
 import dyPolyChord
 try:
+    # pylint: disable=unused-import,ungrouped-imports
     # Only pypolychord_utils tests if PyPolyChord is installed
     import PyPolyChord
     import dyPolyChord.pypolychord_utils
@@ -500,24 +502,130 @@ class TestPythonPriors(unittest.TestCase):
 
     """Tests for the python_priors.py module."""
 
-    def test_uniform(self):
+    @staticmethod
+    def test_base_prior():
+        """Check uniform prior."""
+        state = np.random.get_state()
+        np.random.seed(0)
+        cube = np.random.random(5)
+        # Check without sorting or adaptive
+        numpy.testing.assert_allclose(
+            cube, dyPolyChord.python_priors.BasePrior()(cube))
+        # Check with sorting
+        numpy.testing.assert_allclose(
+            dyPolyChord.python_priors.forced_identifiability(cube),
+            dyPolyChord.python_priors.BasePrior(sort=True)(cube))
+        np.random.set_state(state)
+        # Check adaptive
+        expected = copy.deepcopy(cube)
+        expected[0] = 0.5 + (expected[0] * (cube.shape[0] - 1))
+        nfunc = int(np.round(expected[0]))
+        expected[1:1 + nfunc] = (
+            dyPolyChord.python_priors.forced_identifiability(
+                expected[1:1 + nfunc]))
+        numpy.testing.assert_allclose(
+            dyPolyChord.python_priors.BasePrior(
+                adaptive=True, sort=True)(cube),
+            expected)
+        # Check adaptive nan handling
+        cube[0] = np.nan
+        numpy.testing.assert_allclose(
+            np.full(cube.shape, np.nan),
+            dyPolyChord.python_priors.Uniform(adaptive=True, sort=True)(cube))
+
+    @staticmethod
+    def test_uniform():
         """Check uniform prior."""
         prior_scale = 5
         hypercube = np.random.random(5)
-        theta = priors.Uniform(-prior_scale, prior_scale)(hypercube)
-        for i, th in enumerate(theta):
-            self.assertEqual(
-                th, (hypercube[i] * 2 * prior_scale) - prior_scale)
+        theta_prior = dyPolyChord.python_priors.Uniform(
+            -prior_scale, prior_scale)(hypercube)
+        theta_check = (hypercube * 2 * prior_scale) - prior_scale
+        numpy.testing.assert_allclose(theta_prior, theta_check)
 
-    def test_gaussian(self):
+    @staticmethod
+    def test_power_uniform():
+        """Check prior for some power of theta uniformly distributed"""
+        cube = np.random.random(10)
+        for power in [-2, 3]:
+            maximum = 20
+            minimum = 0.1
+            theta = dyPolyChord.python_priors.PowerUniform(
+                minimum, maximum, power=power)(cube)
+            # Check this vs doing a uniform prior and transforming
+            # Note if power < 0, the high to low order of X is inverted
+            umin = min(minimum ** (1 / power), maximum ** (1 / power))
+            umax = max(minimum ** (1 / power), maximum ** (1 / power))
+            test_prior = dyPolyChord.python_priors.Uniform(umin, umax)
+            if power < 0:
+                theta_check = test_prior(1 - cube) ** power
+            else:
+                theta_check = test_prior(cube) ** power
+            numpy.testing.assert_allclose(theta, theta_check)
+
+
+    @staticmethod
+    def test_gaussian():
         """Check spherically symmetric Gaussian prior centred on the origin."""
         prior_scale = 5
         hypercube = np.random.random(5)
-        theta = priors.Gaussian(prior_scale)(hypercube)
-        for i, th in enumerate(theta):
-            self.assertAlmostEqual(
-                th, (scipy.special.erfinv(hypercube[i] * 2 - 1) *
-                     prior_scale * np.sqrt(2)), places=12)
+        theta_prior = dyPolyChord.python_priors.Gaussian(
+            prior_scale)(hypercube)
+        theta_check = (scipy.special.erfinv(hypercube * 2 - 1) *
+                       prior_scale * np.sqrt(2))
+        numpy.testing.assert_allclose(theta_prior, theta_check)
+        # With half=True
+        theta_prior = dyPolyChord.python_priors.Gaussian(
+            prior_scale, half=True)(hypercube)
+        theta_check = (scipy.special.erfinv(hypercube) *
+                       prior_scale * np.sqrt(2))
+        numpy.testing.assert_allclose(theta_prior, theta_check)
+
+    @staticmethod
+    def test_exponential_prior():
+        """Check the exponential prior."""
+        prior_scale = 5
+        hypercube = np.random.random(5)
+        theta_prior = dyPolyChord.python_priors.Exponential(
+            prior_scale)(hypercube)
+        theta_check = -np.log(1 - hypercube) / prior_scale
+        numpy.testing.assert_allclose(theta_prior, theta_check)
+
+    @staticmethod
+    def test_block_prior():
+        """Check the block prior."""
+        prior_blocks = [dyPolyChord.python_priors.Uniform(0, 1),
+                        dyPolyChord.python_priors.Uniform(1, 2)]
+        block_sizes = [2, 3]
+        hypercube = np.random.random(sum(block_sizes))
+        theta_prior = dyPolyChord.python_priors.BlockPrior(
+            prior_blocks, block_sizes)(hypercube)
+        theta_check = copy.deepcopy(hypercube)
+        theta_check[block_sizes[0]:] += 1
+        numpy.testing.assert_allclose(theta_prior, theta_check)
+
+
+    @staticmethod
+    def test_forced_identifiability():
+        """Check the forced identifiability (forced ordering) transform.
+        Note that the PolyChord paper contains a typo in the formulae."""
+        n = 5
+        hypercube = np.random.random(n)
+        theta_func = dyPolyChord.python_priors.forced_identifiability(
+            hypercube)
+
+        def forced_ident_transform(x):
+            """PyPolyChord version of the forced identifiability transform.
+            (gives correct value)."""
+            n = len(x)
+            theta = numpy.zeros(n)
+            theta[n - 1] = x[n - 1] ** (1. / n)
+            for i in range(n - 2, -1, -1):
+                theta[i] = x[i] ** (1. / (i + 1)) * theta[i + 1]
+            return theta
+
+        theta_check = forced_ident_transform(hypercube)
+        numpy.testing.assert_allclose(theta_func, theta_check)
 
 
 class TestPythonLikelihoods(unittest.TestCase):
@@ -536,7 +644,8 @@ class TestPythonLikelihoods(unittest.TestCase):
         self.assertIsInstance(phi, list)
         self.assertEqual(len(phi), 0)
         # Check matches sum of individal logls
-        sep_logls = [likelihoods.log_gaussian_pdf(th, sigma=sigma) for th in theta]
+        sep_logls = [likelihoods.log_gaussian_pdf(th, sigma=sigma)
+                     for th in theta]
         self.assertAlmostEqual(sum(sep_logls), logl)
 
     def test_gaussian_shell(self):
@@ -637,7 +746,7 @@ class DummyMPIComm(object):
         return self.rank
 
     @staticmethod
-    def Get_size():
+    def Get_size():  # pylint: disable=invalid-name
         """Dummy version of mpi4py MPI.COMM's Get_size()."""
         return 2
 
