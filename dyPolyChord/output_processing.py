@@ -98,7 +98,7 @@ def process_dypolychord_run(file_root, base_dir, **kwargs):
     run_output = {'file_root': file_root,
                   'base_dir': base_dir}
     if 'resume_ndead' not in dyn_info:
-        # If dynamic_goal == 0, dyn was not resumed part way through init:
+        # The dynamic run was not resumed part way through the initial run:
         # hence there are no samples repeated in both runs' files and we can
         # simply combine dyn and init using standard nestcheck functions.
         run = nestcheck.ns_run_utils.combine_ns_runs([init, dyn])
@@ -108,8 +108,8 @@ def process_dypolychord_run(file_root, base_dir, **kwargs):
         except KeyError:
             pass # protection from errors reading PolyChord .stats files
     else:
-        # If dynamic_goal == 1, dyn was resumed part way through init and we
-        # need to remove duplicate points from the combined run
+        # The dynamic run started by resuming the initial run part way
+        # through, and we need to remove duplicate points from the combined run
         run = combine_resumed_dyn_run(init, dyn, dyn_info['resume_ndead'])
         try:
             run_output['nlike'] = (
