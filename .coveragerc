@@ -6,3 +6,5 @@ exclude_lines =
     pragma: no cover
     raise
     raise TypeError
+    except KeyError
+    pass

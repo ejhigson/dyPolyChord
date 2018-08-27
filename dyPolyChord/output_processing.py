@@ -94,22 +94,30 @@ def process_dypolychord_run(file_root, base_dir, **kwargs):
         # start by sampling
         assert np.all(dyn['thread_min_max'][:, 0] == -np.inf), (
             str(dyn['thread_min_max']))
+    # Get info to run
+    run_output = {'file_root': file_root,
+                  'base_dir': base_dir}
     if 'resume_ndead' not in dyn_info:
         # If dynamic_goal == 0, dyn was not resumed part way through init:
         # hence there are no samples repeated in both runs' files and we can
         # simply combine dyn and init using standard nestcheck functions.
         run = nestcheck.ns_run_utils.combine_ns_runs([init, dyn])
-        nlike = init['output']['nlike'] + dyn['output']['nlike']
+        try:
+            run_output['nlike'] = (
+                init['output']['nlike'] + dyn['output']['nlike'])
+        except KeyError:
+            pass # protection from errors reading PolyChord .stats files
     else:
         # If dynamic_goal == 1, dyn was resumed part way through init and we
         # need to remove duplicate points from the combined run
         run = combine_resumed_dyn_run(init, dyn, dyn_info['resume_ndead'])
-        nlike = (init['output']['nlike'] + dyn['output']['nlike']
-                 - dyn_info['resume_nlike'])
-    # Add info to run
-    run['output'] = {'nlike': nlike,
-                     'file_root': file_root,
-                     'base_dir': base_dir}
+        try:
+            run_output['nlike'] = (
+                init['output']['nlike'] + dyn['output']['nlike']
+                - dyn_info['resume_nlike'])
+        except KeyError:
+            pass # protection from errors reading PolyChord .stats files
+    run['output'] = run_output
     # check the nested sampling run has the expected properties
     nestcheck.data_processing.check_ns_run(run, dup_assert=dup_assert,
                                            dup_warn=dup_warn)

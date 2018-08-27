@@ -756,6 +756,7 @@ def dummy_run_func(settings, **kwargs):
     ndead_term = kwargs.pop('ndead_term', 10)
     seed = kwargs.pop('seed', 1)
     logl_range = kwargs.pop('logl_range', 10)
+    write_stats = kwargs.pop('write_stats', True)
     kwargs.pop('comm', None)
     if kwargs:
         raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
@@ -774,7 +775,8 @@ def dummy_run_func(settings, **kwargs):
         nthread, nsample, seed=seed, ndim=ndim, logl_range=logl_range)
     run['output'] = {'base_dir': settings['base_dir'],
                      'file_root': settings['file_root']}
-    nestcheck.write_polychord_output.write_run_output(run)
+    if write_stats:
+        nestcheck.write_polychord_output.write_run_output(run)
     if settings['write_resume']:
         # if required, save a dummy resume file
         root = os.path.join(settings['base_dir'], settings['file_root'])
