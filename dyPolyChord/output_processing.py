@@ -3,6 +3,7 @@
 Functions for loading and processing dyPolyChord dynamic nested sampling runs.
 """
 import os
+import warnings
 import numpy as np
 import nestcheck.ns_run_utils
 import nestcheck.data_processing
@@ -90,8 +91,8 @@ def process_dypolychord_run(file_root, base_dir, **kwargs):
     dyn_info = iou.pickle_load(os.path.join(
         base_dir, file_root + '_dyn_info'))
     if dynamic_goal == 0:
-        # If dynamic_goal == 0 nlive only decreases, so check all threads
-        # start by sampling
+        # If dynamic_goal == 0 then nlive should only decrease, so check all
+        # threads start by sampling
         assert np.all(dyn['thread_min_max'][:, 0] == -np.inf), (
             str(dyn['thread_min_max']))
     # Get info to run
@@ -152,19 +153,30 @@ def combine_resumed_dyn_run(init, dyn, resume_ndead):
     for key in ['nlive_array', 'logl', 'thread_labels']:
         init[key] = init[key][resume_ndead:]
     # We also need to remove the points that were live when the resume file was
-    # written, as these show up as dead points in dyn
+    # written, as these show up as samples in both dyn and init
     live_inds = []
     empty_thread_inds = []
     for i, th_lab in enumerate(np.unique(init['thread_labels'])):
         th_inds = np.where(init['thread_labels'] == th_lab)[0]
-        live_inds.append(th_inds[0])
         live_logl = init['logl'][th_inds[0]]
-        if th_inds.shape[0] == 1:
-            empty_thread_inds.append(i)
-        assert np.where(dyn['logl'] == live_logl)[0].shape == (1,), (
-            'point should be present in dyn too! logl=' + str(live_logl))
         init['thread_min_max'][i, 0] = live_logl
-    # lets remove the live points at init
+        if np.where(dyn['logl'] == live_logl)[0].shape[0] > 0:
+            live_inds.append(th_inds[0])
+            if th_inds.shape[0] == 1:
+                empty_thread_inds.append(i)
+        else:
+            warnings.warn(
+                ('Expected live point at resume should be present in dynamic '
+                 'run. If there are no further errors, this warning can be '
+                 'ignored.\nlogl={}, th_lab={}, inds={}, init samples (after '
+                 'removing first resume_ndead)={}, unique threads in init={}, '
+                 'dyn samples={}, resume_ndead={}.').format(
+                    str(live_logl), th_lab,
+                    np.where(dyn['logl'] == live_logl),
+                    init['logl'].shape[0],
+                    np.unique(init['thread_labels']).shape[0],
+                    dyn['logl'].shape[0], resume_ndead), UserWarning)
+    # Remove the live points at resume from init
     init['theta'] = np.delete(init['theta'], live_inds, axis=0)
     for key in ['nlive_array', 'logl', 'thread_labels']:
         init[key] = np.delete(init[key], live_inds)
@@ -189,5 +201,5 @@ def combine_resumed_dyn_run(init, dyn, resume_ndead):
     run = nestcheck.ns_run_utils.combine_threads(
         nestcheck.ns_run_utils.get_run_threads(dyn) +
         nestcheck.ns_run_utils.get_run_threads(init),
-        assert_birth_point=True)
+        assert_birth_point=False)
     return run
