@@ -252,8 +252,11 @@ def process_initial_run(settings_dict_in, **kwargs):
             root_name + '_dyn.resume')
         # Save resume info
         dyn_info['resume_ndead'] = resume_ndead
-        dyn_info['resume_nlike'] = (
-            resume_outputs[resume_ndead]['nlike'])
+        try:
+            dyn_info['resume_nlike'] = (
+                resume_outputs[resume_ndead]['nlike'])
+        except KeyError:
+            pass  # protect from error reading nlike from .stats file
     nestcheck.io_utils.pickle_save(
         dyn_info, root_name + '_dyn_info', overwrite_existing=True)
     if dynamic_goal != 0:

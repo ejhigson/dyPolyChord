@@ -107,7 +107,7 @@ def process_dypolychord_run(file_root, base_dir, **kwargs):
             run_output['nlike'] = (
                 init['output']['nlike'] + dyn['output']['nlike'])
         except KeyError:
-            pass # protection from errors reading PolyChord .stats files
+            pass # protect from error reading nlike from .stats file
     else:
         # The dynamic run started by resuming the initial run part way
         # through, and we need to remove duplicate points from the combined run
@@ -117,7 +117,7 @@ def process_dypolychord_run(file_root, base_dir, **kwargs):
                 init['output']['nlike'] + dyn['output']['nlike']
                 - dyn_info['resume_nlike'])
         except KeyError:
-            pass # protection from errors reading PolyChord .stats files
+            pass # protect from error reading nlike from .stats file
     run['output'] = run_output
     # check the nested sampling run has the expected properties
     nestcheck.data_processing.check_ns_run(run, dup_assert=dup_assert,
