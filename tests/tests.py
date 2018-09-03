@@ -360,6 +360,13 @@ class TestOutputProcessing(unittest.TestCase):
             run['nlive_array'][-1] = 1
             run['thread_min_max'] = np.asarray(
                 [[-np.inf, run['logl'][-2]], [-np.inf, run['logl'][-1]]])
+        with warnings.catch_warnings(record=True) as war:
+            warnings.simplefilter("always")
+            # when live points at resume are not present in both init and dyn,
+            # a warning should be given
+            dyPolyChord.output_processing.combine_resumed_dyn_run(
+                init.copy(), dyn.copy(), 2)
+            self.assertEqual(len(war), 1)
         comb = dyPolyChord.output_processing.combine_resumed_dyn_run(
             init, dyn, 1)
         self.assertEqual(set(comb.keys()),
