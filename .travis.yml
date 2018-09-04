@@ -12,3 +12,6 @@ script:
  - nosetests --with-coverage --cover-erase --cover-package=dyPolyChord
 after_success:
  - coveralls
+notifications:
+  email:
+    - e.higson@mrao.cam.ac.uk
