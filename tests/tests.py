@@ -608,8 +608,8 @@ class TestPythonPriors(unittest.TestCase):
                 minimum, maximum, power=power)(cube)
             # Check this vs doing a uniform prior and transforming
             # Note if power < 0, the high to low order of X is inverted
-            umin = min(minimum ** (1 / power), maximum ** (1 / power))
-            umax = max(minimum ** (1 / power), maximum ** (1 / power))
+            umin = min(minimum ** (1.0 / power), maximum ** (1.0 / power))
+            umax = max(minimum ** (1.0 / power), maximum ** (1.0 / power))
             test_prior = dyPolyChord.python_priors.Uniform(umin, umax)
             if power < 0:
                 theta_check = test_prior(1 - cube) ** power
