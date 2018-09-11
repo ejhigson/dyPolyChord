@@ -8,16 +8,29 @@ import os
 import setuptools
 
 
+def get_package_dir():
+    """Get the file path for dyPolyChord's directory."""
+    return os.path.abspath(os.path.dirname(__file__))
+
+
 def get_long_description():
     """Get PyPI long description from README.rst."""
-    here = os.path.abspath(os.path.dirname(__file__))
-    with open(os.path.join(here, 'README.rst')) as readme_file:
+    pkg_dir = get_package_dir()
+    with open(os.path.join(pkg_dir, 'README.rst')) as readme_file:
         long_description = readme_file.read()
     return long_description
 
 
+def get_version():
+    """Get single-source __version__."""
+    pkg_dir = get_package_dir()
+    with open(os.path.join(pkg_dir, 'dyPolyChord/_version.py')) as ver_file:
+        string = ver_file.read()
+    return string.strip().replace('__version__ = ', '').replace('\'', '')
+
+
 setuptools.setup(name='dyPolyChord',
-                 version='0.0.2',
+                 version=get_version(),
                  description=(
                      'Super fast dynamic nested sampling with '
                      'PolyChord (python, C++ and Fortran likelihoods).'),
