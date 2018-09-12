@@ -175,8 +175,8 @@ def python_prior_to_str(prior, **kwargs):
     or Fortran) likelihoods.
 
     The input prior must correspond to a prior function set up in
-    PolyChord/src/polychord/priors.F90. You can easily add your own too.
-    Note that some of the priors are not available in PolyChord v1.14.
+    PolyChord/src/polychord/priors.f90. You can easily add your own too.
+    Note that some of the priors are only available in PolyChord >= v1.15.
 
     Parameters
     ----------
