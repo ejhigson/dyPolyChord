@@ -120,8 +120,8 @@ def process_dypolychord_run(file_root, base_dir, **kwargs):
             pass # protect from error reading nlike from .stats file
     run['output'] = run_output
     # check the nested sampling run has the expected properties
-    nestcheck.data_processing.check_ns_run(run, dup_assert=dup_assert,
-                                           dup_warn=dup_warn)
+    nestcheck.ns_run_utils.check_ns_run(
+        run, dup_assert=dup_assert, dup_warn=dup_warn)
     return run
 
 

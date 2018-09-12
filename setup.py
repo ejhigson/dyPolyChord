@@ -59,7 +59,7 @@ setuptools.setup(name='dyPolyChord',
                  # Note that PolyChord is also required to do nested sampling
                  install_requires=['numpy>=1.13',
                                    'scipy>=1.0.0',
-                                   'nestcheck>=0.1.4'],
+                                   'nestcheck>=0.1.8'],
                  test_suite='nose.collector',
                  tests_require=['nose', 'coverage'],
                  extras_require={'docs': ['sphinx',
