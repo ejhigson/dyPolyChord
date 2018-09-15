@@ -59,7 +59,8 @@ class RunCompiledPolyChord(object):
             equivalent python function (which uses the comm argument for
             runnign with MPI).
         """
-        assert os.path.isfile(self.executable_path)
+        assert os.path.isfile(self.executable_path), (
+            'executable not found: ' + self.executable_path)
         assert comm is None, 'comm not used for compiled likelihoods.'
         # Write settings to ini file
         file_path = os.path.join(
