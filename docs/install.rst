@@ -29,7 +29,7 @@ Dependencies
  - ``PolyChord`` >=v1.14;
  - ``numpy`` >=v1.13;
  - ``scipy`` >=v1.0.0;
- - ``nestcheck`` >=v0.1.0.
+ - ``nestcheck`` >=v0.1.8.
 
 
 ``PolyChord`` is available at https://ccpforge.cse.rl.ac.uk/gf/project/polychord/ and has its own installation and licence instructions; see the link for more information.
