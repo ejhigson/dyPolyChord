@@ -79,6 +79,14 @@ class RunCompiledPolyChord(object):
 
     def ini_string(self, settings):
         """Get a PolyChord format .ini file string based on the input settings.
+
+        Parameters
+        ----------
+        settings: dict
+
+        Returns
+        -------
+        string: str
         """
         string = ''
         # Add the settings

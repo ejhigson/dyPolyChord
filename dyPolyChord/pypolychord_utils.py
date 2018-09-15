@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-"""
-Functions for running dyPolyChord using PyPolyChord (PolyChord's built-in
-python wrapper) using with python likelihoods and priors.
+"""Functions for running dyPolyChord using PyPolyChord (PolyChord's
+built-in python wrapper) using with python likelihoods and priors.
 """
 # Exception handling needed to allow readthedocs to work without installing
 # PyPolyChord.

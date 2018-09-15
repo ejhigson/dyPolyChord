@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-"""
-Python priors for use with PolyChord.
+"""Python priors for use with PolyChord.
 
 PolyChord v1.14 requires priors to be callables with parameter and return
 types:

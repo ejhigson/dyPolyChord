@@ -23,14 +23,13 @@ __all__ = ['run_dypolychord', 'check_settings']
 
 @nestcheck.io_utils.timing_decorator
 def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
-    """
-    Performs dynamic nested sampling using the algorithm described in
+    r"""Performs dynamic nested sampling using the algorithm described in
     Appendix E of "Dynamic nested sampling: an improved algorithm for
     parameter estimation and evidence calculation" (Higson et al., 2018).
-    This proceeds in 3 steps:
+    This proceeds in 4 steps:
 
     1) Generate an initial run with a constant number of live points
-    :math:`n_\\mathrm{init}`. This process is run in chuncks using PolyChord's
+    :math:`n_\mathrm{init}`. This process is run in chuncks using PolyChord's
     max_ndead setting to allow periodic saving of .resume files so the initial
     run can be resumed at different points.
     2) Calculate an allocation of the number of live points at each likelihood

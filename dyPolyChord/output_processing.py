@@ -171,11 +171,11 @@ def combine_resumed_dyn_run(init, dyn, resume_ndead):
                  'ignored.\nlogl={}, th_lab={}, inds={}, init samples (after '
                  'removing first resume_ndead)={}, unique threads in init={}, '
                  'dyn samples={}, resume_ndead={}.').format(
-                    str(live_logl), th_lab,
-                    np.where(dyn['logl'] == live_logl),
-                    init['logl'].shape[0],
-                    np.unique(init['thread_labels']).shape[0],
-                    dyn['logl'].shape[0], resume_ndead), UserWarning)
+                     str(live_logl), th_lab,
+                     np.where(dyn['logl'] == live_logl),
+                     init['logl'].shape[0],
+                     np.unique(init['thread_labels']).shape[0],
+                     dyn['logl'].shape[0], resume_ndead), UserWarning)
     # Remove the live points at resume from init
     init['theta'] = np.delete(init['theta'], live_inds, axis=0)
     for key in ['nlive_array', 'logl', 'thread_labels']:

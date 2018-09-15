@@ -3,7 +3,7 @@
 Loglikelihood functions for use with PyPolyChord (PolyChord's python wrapper).
 
 PolyChord v1.14 requires likelihoods to be callables with parameter and return
-types:
+signatures:
 
 Parameters
 ----------
@@ -109,7 +109,8 @@ class GaussianShell(object):
 
 class Rastrigin(object):
 
-    """Rastrigin loglikelihood as described in the PolyChord paper."""
+    """Rastrigin loglikelihood as described in "PolyChord: next-generation
+    nested sampling" (Handley et al., 2015)."""
 
     def __init__(self, a=10, nderived=0):
         """
@@ -150,7 +151,8 @@ class Rastrigin(object):
 
 class Rosenbrock(object):
 
-    """Rosenbrock loglikelihood as described in the PolyChord paper."""
+    """Rosenbrock loglikelihood as described in "PolyChord: next-generation
+    nested sampling" (Handley et al., 2015)."""
 
     def __init__(self, a=1, b=100, nderived=0):
         """
@@ -196,12 +198,11 @@ class Rosenbrock(object):
 
 class GaussianMix(object):
 
-    """
-    Gaussian mixture likelihood in :math:`\\ge 2` dimensions with up to
+    r"""Gaussian mixture likelihood in :math:`\ge 2` dimensions with up to
     4 compoents.
 
-    Each component has the same standard deviation :math:`\\sigma`, and
-    they their centres respectively have :math:`(\\theta_1, \\theta_2)`
+    Each component has the same standard deviation :math:`\sigma`, and
+    they their centres respectively have :math:`(\theta_1, \theta_2)`
     coordinates:
 
     (0, sep), (0, -sep), (sep, 0), (-sep, 0).
@@ -321,22 +322,22 @@ class LogGammaMix(object):
 # ----------------
 
 def log_loggamma_pdf_1d(theta, alpha=1, beta=1):
-    """
-    1d gamma distribution, with each component of theta independently having
-    PDF:
+    r"""1d gamma distribution, with each component of theta independently
+    having PDF:
+
     .. math::
 
-        f(x) = \\frac{
-            \\mathrm{e}^{\\beta x} \\mathrm{e}^{-\\mathrm{e}^x / \\alpha}
-            }{\\alpha^{\\beta} \\Gamma(\\beta)}
+        f(x) = \frac{
+            \mathrm{e}^{\beta x} \mathrm{e}^{-\mathrm{e}^x / \alpha}
+            }{\alpha^{\beta} \Gamma(\beta)}
 
-    This function returns :math:`\\log f(x)`.
+    This function returns :math:`\log f(x)`.
 
     Parameters
     ----------
     theta: float or array
-        Where to evaluate :math:`\\log f(x)`. Values
-        :math:`\\in (-\\inf, \\inf)`.
+        Where to evaluate :math:`\log f(x)`. Values
+        :math:`\in (-\inf, \inf)`.
     alpha: float, > 0
         Scale parameter
     beta: float, > 0
@@ -356,11 +357,22 @@ def log_loggamma_pdf_1d(theta, alpha=1, beta=1):
 
 
 def log_loggamma_pdf(theta, alpha=1, beta=1):
-    """
-    Multidimensional loggamma distribution, with each component of theta
-    independently having a loggamma distribution.
+    """Loglikelihood for multidimensional loggamma distribution, with
+    each component of theta having an independent loggamma distribution.
 
-    Always returns a float."""
+    Always returns a float.
+
+    Parameters
+    ----------
+    theta: float or numpy array
+    alpha: float, optional
+    beta: float, optional
+
+    Returns
+    -------
+    logl: float
+        Loglikelihood.
+    """
     logl = log_loggamma_pdf_1d(theta, alpha=alpha, beta=beta)
     # If there are many components, sum their log-space consributions
     if not isinstance(logl, (float, int)):
@@ -371,7 +383,20 @@ def log_loggamma_pdf(theta, alpha=1, beta=1):
 
 
 def log_gaussian_pdf(theta, sigma=1, mu=0, ndim=None):
-    """Log of uncorrelated Gaussian pdf."""
+    """Log of uncorrelated Gaussian pdf.
+
+    Parameters
+    ----------
+    theta: float or 1d numpy array
+    sigma: float, optional
+    mu: float, optional
+    ndim: int, optional
+
+    Returns
+    -------
+    logl: float
+        Loglikelihood.
+    """
     if ndim is None:
         try:
             ndim = len(theta)

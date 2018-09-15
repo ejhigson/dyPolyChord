@@ -11,10 +11,9 @@ import nestcheck.data_processing
 
 
 def allocate(init_run, samp_tot, dynamic_goal, smoothing_filter=None):
-    """
-    Calculates an allocation of life points for dynamic run, checks the output
-    allocation and the smoothing applied, and returns the information needed
-    for the dynamic run in a dictionary.
+    """Calculates an allocation of life points for dynamic run, checks the
+    output allocation and the smoothing applied, and returns the information
+    needed for the dynamic run in a dictionary.
 
     Parameters
     ----------
@@ -85,8 +84,7 @@ def allocate(init_run, samp_tot, dynamic_goal, smoothing_filter=None):
 
 
 def dyn_nlive_array(init_run, samp_tot, dynamic_goal, smoothing_filter=None):
-    """
-    Calculate the dynamic nlive allocation from the theoretical, point
+    r"""Calculate the dynamic nlive allocation from the theoretical, point
     importance-based allocation. This allows for the samples taken in the
     initial run, including areas where more samples than were needed have been
     taken (meaning there are fewer samples available for the regions with peak
@@ -95,7 +93,7 @@ def dyn_nlive_array(init_run, samp_tot, dynamic_goal, smoothing_filter=None):
 
     Normalisation uses the the formulae for the expected number of samples:
 
-    .. math:: N_\\mathrm{samp} = \\int n(\\log X) \\mathrm{d}\\log X
+    .. math:: N_\mathrm{samp} = \int n(\log X) \mathrm{d}\log X
 
     where :math:`n` is the local number of live points.
 
@@ -165,7 +163,7 @@ def sample_importance(run, dynamic_goal):
     Returns
     -------
     importance: 1d numpy array
-        Importance of each sample. Normalised to np.sum(importance) = 1
+        Importance of each sample. Normalised to np.sum(importance) = 1.
     """
     assert 0 <= dynamic_goal <= 1, (
         'dynamic_goal={0} not in [0,1]'.format(dynamic_goal))
@@ -184,7 +182,17 @@ def sample_importance(run, dynamic_goal):
 
 
 def count_turning_points(array):
-    """Returns number of turning points in a 1d array."""
+    """Returns number of turning points the input sequence of values.
+
+    Parameters
+    ----------
+    array: 1d numpy array
+
+    Returns
+    -------
+    int
+        Number of turning points.
+    """
     # Remove adjacent duplicates only
     uniq = np.asarray([k for k, g in itertools.groupby(array)])
     # Count turning points
