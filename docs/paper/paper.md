@@ -28,9 +28,9 @@ Dynamic nested sampling [@Higson2017b] is a generalisation of the nested samplin
 
 ``dyPolyChord`` implements dynamic nested sampling using the efficient ``PolyChord`` sampler to provide nested sampling with state-of-the-art performance for computationally expensive likelihoods.
 The output files are in the same format as those produced by ``PolyChord``.
-The package is compatible with Python, C++ and Fortran likelihoods, and is parallelised with MPI.
+The package is compatible with Python, C``++`` and Fortran likelihoods, and is parallelised with MPI.
 
-In addition to ``PolyChord``, ``dyPolyChord`` requires the ``mpi4py`` [@Dalcin2011], ``nestcheck`` [@Higson2018nestcheck, @Higson2018a, @Higson2017a], ``scipy`` [@Jones2001] and ``numpy`` [@Oliphant2010] packages.
+In addition to ``PolyChord``, ``dyPolyChord`` requires ``mpi4py`` [@Dalcin2011], ``nestcheck`` [@Higson2018nestcheck, @Higson2018a, @Higson2017a], ``scipy`` [@Jones2001] and ``numpy`` [@Oliphant2006].
 Two alternative publicly available dynamic nested sampling packages are ``dynesty`` (pure Python, see <https://github.com/joshspeagle/dynesty> for more information) and ``perfectns`` (pure Python, spherically symmetric likelihoods only) [@Higson2018perfectns].
 
 ``dyPolyChord`` was used for the numerical tests in the dynamic nested sampling paper [@Higson2017b], and parts of its functionality and interfaces were used in the code for [@Higson2018a].
