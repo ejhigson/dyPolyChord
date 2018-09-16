@@ -21,7 +21,7 @@ bibliography: paper.bib
 # Summary
 
 Nested sampling [@Skilling2006] is a popular numerical method for calculating Bayesian evidences and generating posterior samples given some likelihood and prior.
-The initial development of the algorithm was targeted at evidence calculation, but implementations such as ``MultiNest`` [@Feroz2008; @Feroz2009; @Feroz2013] and ``PolyChord`` [@Handley2015a; @Handley2015b] are now used extensively for parameter estimation in scientific research - see for example [@Joudaki2016; @DESCollaboration2017; @Chua2018].
+The initial development of the algorithm was targeted at evidence calculation, but implementations such as ``MultiNest`` [@Feroz2008; @Feroz2009; @Feroz2013] and ``PolyChord`` [@Handley2015a; @Handley2015b] are now used extensively for parameter estimation in scientific research (and in particular in astrophysics); see for example [@DESCollaboration2017; @Chua2018].
 Nested sampling performs well compared to Markov chain Monte Carlo (MCMC)-based alternatives at exploring multimodal and degenerate distributions, and the ``PolyChord`` software is well-suited to high-dimensional problems.
 
 Dynamic nested sampling [@Higson2017b] is a generalisation of the nested sampling algorithm which dynamically allocates samples to the regions of the posterior where they will have the greatest effect on calculation accuracy. This allows order-of-magnitude increases in computational efficiency, with the largest gains for high dimensional parameter estimation problems.
