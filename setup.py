@@ -42,7 +42,7 @@ setuptools.setup(name='dyPolyChord',
                  license='MIT',
                  keywords='nested-sampling dynamic-nested-sampling',
                  classifiers=[  # Optional
-                     'Development Status :: 4 - Beta',
+                     'Development Status :: 5 - Production/Stable',
                      'Intended Audience :: Science/Research',
                      'License :: OSI Approved :: MIT License',
                      'Programming Language :: Python :: 2',
