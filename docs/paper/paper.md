@@ -26,10 +26,12 @@ Nested sampling performs well compared to Markov chain Monte Carlo (MCMC)-based 
 
 Dynamic nested sampling [@Higson2017b] is a generalisation of the nested sampling algorithm which dynamically allocates samples to the regions of the posterior where they will have the greatest effect on calculation accuracy. This allows order-of-magnitude increases in computational efficiency, with the largest gains for high dimensional parameter estimation problems.
 
-``dyPolyChord`` implements dynamic nested sampling using the efficient ``PolyChord`` sampler to provide nested sampling with state-of-the-art performance for computationally expensive likelihoods.
-The output files are in the same format as those produced by ``PolyChord``.
-The package is compatible with Python, C``++`` and Fortran likelihoods, and is parallelised with MPI.
+``dyPolyChord`` implements dynamic nested sampling using the efficient ``PolyChord`` sampler to provide state-of-the-art nested sampling performance.
+The software uses a version of the dynamic nested sampling algorithm designed to minimise the computational overhead of allocating additional samples, so this should typically be a small part of the total computational cost.
+However this overhead may become significant for calculations where likelihood evaluations are fast and a large number of MPI processes are used (the saving, loading and processing of the initial exploratory samples is not currently fully parallelised).
 
+``dyPolyChord`` output files are in the same format as those produced by ``PolyChord``.
+The package is compatible with Python, C``++`` and Fortran likelihoods, and is parallelised with MPI.
 In addition to ``PolyChord``, ``dyPolyChord`` requires ``mpi4py`` [@Dalcin2011], ``nestcheck`` [@Higson2018nestcheck, @Higson2018a, @Higson2017a], ``scipy`` [@Jones2001] and ``numpy`` [@Oliphant2006].
 Two alternative publicly available dynamic nested sampling packages are ``dynesty`` (pure Python, see <https://github.com/joshspeagle/dynesty> for more information) and ``perfectns`` (pure Python, spherically symmetric likelihoods only) [@Higson2018perfectns].
 
