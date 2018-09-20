@@ -30,7 +30,7 @@ Dynamic nested sampling [@Higson2017b] is a generalisation of the nested samplin
 Like ``PolyChord``, ``dyPolyChord`` is optimized for calculations where the main computational cost is sampling new live points.
 ``dyPolyChord`` uses a version of the dynamic nested sampling algorithm designed to minimise the computational overhead of allocating additional samples, so this should typically be a small part of the total computational cost.
 However this overhead may become significant for calculations where likelihood evaluations are fast and a large number of MPI processes are used (the saving, loading and processing of the initial exploratory samples is not currently fully parallelised).
-It is also worth noting that ``PolyChord``'s slice sampling-based implementation is less efficient than ``MultiNest`` (which uses rejection sampling) for low dimensional problems, although for calculations using``dyPolyChord`` this is may be offset by efficiency gains from dynamic nested sampling. See [@Handley2015b] for more details.
+It is also worth noting that ``PolyChord``'s slice sampling-based implementation is less efficient than ``MultiNest`` (which uses rejection sampling) for low dimensional problems, although for calculations using ``dyPolyChord`` this is may be offset by efficiency gains from dynamic nested sampling. See [@Handley2015b] for more details.
 
 ``dyPolyChord`` output files are in the same format as those produced by ``PolyChord``.
 The package is compatible with Python, C``++`` and Fortran likelihoods, and is parallelised with MPI.
