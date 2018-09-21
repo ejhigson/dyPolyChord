@@ -67,7 +67,7 @@ If this code is useful for your academic research, please cite the dynamic neste
 Changelog
 ---------
 
-The changelog for each release can be found at https://github.com/ejhigson/nestcheck/releases.
+The changelog for each release can be found at https://github.com/ejhigson/dyPolyChord/releases.
 
 Contributions
 -------------
