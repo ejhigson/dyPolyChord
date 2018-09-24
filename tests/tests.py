@@ -38,6 +38,12 @@ try:
     PYPOLYCHORD_AVAIL = True
 except ImportError:
     PYPOLYCHORD_AVAIL = False
+    warnings.warn(
+        ('I can\'t import PyPolyChord, so I am skipping the tests which '
+         'need it. PyPolyChord is not needed for compiled C++ and Fortran '
+         'likelihoods, so you can ignore this warning. However, you will need '
+         'to install PyPolyChord to run Python likelihoods.'),
+        UserWarning)
 
 
 # Define a directory to output files produced by tests (this will be deleted
