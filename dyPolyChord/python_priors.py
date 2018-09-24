@@ -28,11 +28,14 @@ The BlockPrior class allows convenient use of different priors on different
 parameters.
 
 Inheritance of the BasePrior class allows priors to:
+
    1. have parameters' values sorted to give an enforced order. Useful when the
    parameter space is symmetric under exchange of variables as this allows the
-   space to be explored to be contracted by N! (where N is the number of such
-   parameters).
-   2. adaptive selection of the number of parameters to use.
+   space to be explored to be contracted by a factor of N! (where N is the
+   number of such parameters);
+
+   2. adaptively select the number of parameters to use.
+
 You can ignore these if you don't need them.
 """
 import copy

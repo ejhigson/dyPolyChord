@@ -32,13 +32,40 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
     :math:`n_\mathrm{init}`. This process is run in chuncks using PolyChord's
     max_ndead setting to allow periodic saving of .resume files so the initial
     run can be resumed at different points.
+
     2) Calculate an allocation of the number of live points at each likelihood
     for use in step 3. Also cleans up resume files and saves relevant
     information.
+
     3) Generate dynamic nested sampling run using the calculated live point
     allocation.
+
     4) Combine the initial and dynamic runs and write output files in the
     PolyChord format, and remove the intermediate output files produced.
+
+    The output files are of the same format produced by ``PolyChord``, and
+    contain posterior samples and an estimate of the Bayesian evidence.
+    Further analysis, including estimating uncertainties, can be performed
+    with ``nestcheck``.
+
+    Like for ``PolyChord``, the output files are saved in base_dir (specified in
+    settings_dict_in, default value is 'chains'). Their names are determined
+    by file_root (also specified in settings_dict_in). ``dyPolyChord`` ensures
+    the following following files are always produced:
+
+        * [base_dir]/[file_root].stats: run statistics including an estimate of
+          the Bayesian evidence;
+        * [base_dir]/[file_root]_dead.txt: posterior samples;
+        * [base_dir]/[file_root]_dead-birth.txt: as above but with an extra
+          column containing information about when points were sampled.
+
+    For more information about the output format, see ``PolyChord``'s
+    documentation. Note that ``dyPolyChord`` is not able to produce all of the
+    types of output files made by ``PolyChord`` - see check_settings's
+    documentation for more information.
+    In addition, a number of intermediate files are produced during the dynamic
+    nested sampling process which are removed by default when the process
+    finishes. See clean_extra_output's documentation for more details.
 
     Parameters
     ----------
