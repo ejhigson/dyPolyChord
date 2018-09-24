@@ -30,11 +30,6 @@ try:
     # Only do pypolychord_utils tests if PyPolyChord is installed
     import PyPolyChord
     import dyPolyChord.pypolychord_utils
-    # If PolyChord is installed with MPI, we need to initialise mpi4py in order
-    # to run it multiple times from within the same python process without
-    # having an error. If PolyChord is installed without MPI you can comment
-    # this line out
-    from mpi4py import MPI  # Initialize MPI
     PYPOLYCHORD_AVAIL = True
 except ImportError:
     PYPOLYCHORD_AVAIL = False
@@ -44,6 +39,21 @@ except ImportError:
          'likelihoods, so you can ignore this warning. However, you will need '
          'to install PyPolyChord to run Python likelihoods.'),
         UserWarning)
+if PYPOLYCHORD_AVAIL:
+    try:
+        # If PolyChord is installed with MPI, we need to initialise mpi4py in order
+        # to run it multiple times from within the same python process without
+        # having an error.
+        # pylint: disable=unused-import
+        from mpi4py import MPI  # Initialize MPI
+    except ImportError:
+        warnings.warn(
+            ('I can\'t import mpi4py. This is only needed by '
+             'dyPolyChord when PolyChord is installed with MPI. If this '
+             'is the case, the tests will fail and you should install mpi4py. '
+             'If your PolyChord install does not use MPI, you can ignore/'
+             'comment out/filter this warning.'),
+            UserWarning)
 
 
 # Define a directory to output files produced by tests (this will be deleted
