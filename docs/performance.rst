@@ -4,6 +4,8 @@ Performance
 ===========
 
 ``dyPolyChord`` uses ``PolyChord`` to perform dynamic nested sampling by running it from within a python wrapper.
+Dynamic nested sampling allows significant increases in performance over standard nested sampling, with the largest efficiency gains for high-dimensional parameter estimation (``PolyChord`` and ``dyPolyChord`` can handle calculations with over 100 dimensions).
+
 Like ``PolyChord``, ``dyPolyChord`` is optimized for calculations where the main computational cost is sampling new live points.
 For empirical tests of ``dyPolyChord``'s performance, see the dynamic nested sampling paper (`Higson et al., 2017 <https://arxiv.org/abs/1704.03459>`_).
 These tests can be reproduced using the code at https://github.com/ejhigson/dns.
