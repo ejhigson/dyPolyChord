@@ -84,8 +84,8 @@ class TestRunDyPolyChordNumers(unittest.TestCase):
             os.makedirs(TEST_CACHE_DIR)
         except FileExistsError:
             pass
-        self.ninit = 20
-        ndim = 2
+        self.ninit = 40
+        ndim = 4
         self.run_func = dyPolyChord.pypolychord_utils.RunPyPolyChord(
             likelihoods.Gaussian(sigma=1), priors.Uniform(-10, 10), ndim=ndim)
         self.random_seed_msg = (
@@ -104,19 +104,21 @@ class TestRunDyPolyChordNumers(unittest.TestCase):
             'write_stats': True,
             'write_prior': False,
             'write_live': False,
-            'num_repeats': 1,
+            'num_repeats': 10,
             'feedback': -1,
             'cluster_posteriors': False,
-            # Set precision_criterion low to avoid non-deterministic like
-            # errors. These occur due in the low dimension and low and nlive
+            # Set precision_criterion to a relatively high value (i.e.
+            # precision) to PolyChord "non-deterministic likelihood" problems.
+            # These occur due in the low dimension and low and nlive
             # cases we use for fast testing as runs sometimes get very close
-            # to the peak where the likelihood becomes approximately constant.
-            'precision_criterion': 0.01,
+            # to the peak where the likelihood becomes approximately constant,
+            # and at this point PolyChord gets stuck.
+            'precision_criterion': 0.1,
             'seed': 1,
             'max_ndead': -1,
             'base_dir': TEST_CACHE_DIR,
             'file_root': 'test_run',
-            'nlive': 50,  # used for nlive_const
+            'nlive': 100,  # used for nlive_const
             'nlives': {}}
 
     def tearDown(self):
@@ -134,14 +136,14 @@ class TestRunDyPolyChordNumers(unittest.TestCase):
             init_step=self.ninit, ninit=self.ninit)
         run = nestcheck.data_processing.process_polychord_run(
             self.settings['file_root'], self.settings['base_dir'])
-        first_logl = -89.9267531982664
+        first_logl = -158.773632799691
         if not np.isclose(run['logl'][0], first_logl):
             warnings.warn(
                 self.random_seed_msg.format(run['logl'][0], first_logl),
                 UserWarning)
         else:
-            self.assertEqual(e.count_samples(run), 548)
-            self.assertAlmostEqual(e.param_mean(run), 0.0952046545193311,
+            self.assertEqual(e.count_samples(run), 1169)
+            self.assertAlmostEqual(e.param_mean(run), 0.026487985350451874,
                                    places=12)
 
     def test_dynamic_both_evidence_and_param(self):
@@ -153,14 +155,14 @@ class TestRunDyPolyChordNumers(unittest.TestCase):
             init_step=self.ninit, ninit=self.ninit)
         run = nestcheck.data_processing.process_polychord_run(
             self.settings['file_root'], self.settings['base_dir'])
-        first_logl = -89.9267531982664
+        first_logl = -165.502617578541
         if not np.isclose(run['logl'][0], first_logl):
             warnings.warn(
                 self.random_seed_msg.format(run['logl'][0], first_logl),
                 UserWarning)
         else:
-            self.assertEqual(e.count_samples(run), 556)
-            self.assertAlmostEqual(e.param_mean(run), 0.0710870438431606,
+            self.assertEqual(e.count_samples(run), 1093)
+            self.assertAlmostEqual(e.param_mean(run), -0.0021307716191374263,
                                    places=12)
 
     def test_dynamic_param(self):
@@ -171,13 +173,13 @@ class TestRunDyPolyChordNumers(unittest.TestCase):
             init_step=self.ninit, ninit=self.ninit)
         run = nestcheck.data_processing.process_polychord_run(
             self.settings['file_root'], self.settings['base_dir'])
-        first_logl = -89.9267531982664
+        first_logl = -137.231721859574
         if not np.isclose(run['logl'][0], first_logl):
             warnings.warn(
                 self.random_seed_msg.format(run['logl'][0], first_logl),
                 UserWarning)
         else:
-            self.assertAlmostEqual(e.param_mean(run), 0.029776073688009493,
+            self.assertAlmostEqual(e.param_mean(run), -0.05323120028149568,
                                    places=12)
 
 
