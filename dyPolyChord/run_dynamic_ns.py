@@ -2,6 +2,7 @@
 """
 Contains main function for running dynamic nested sampling.
 """
+from __future__ import division  # Enforce float division in python2
 import copy
 import os
 import traceback
