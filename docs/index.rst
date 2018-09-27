@@ -14,7 +14,7 @@ dyPolyChord
 .. image:: https://img.shields.io/badge/license-MIT-blue.svg
    :target: https://github.com/ejhigson/dyPolyChord/blob/master/LICENSE
 
-Nested sampling is a numerical method for Bayesian computation which simultaneously calculates posterior samples and Bayesian evidences for a given likelihood and prior.
+Nested sampling is a numerical method for Bayesian computation which simultaneously calculates posterior samples and an estimate of the Bayesian evidence for a given likelihood and prior.
 The approach is popular in scientific research, and performs well compared to Markov chain Monte Carlo (MCMC)-based sampling for multi-modal or degenerate posterior distributions.
 
 ``dyPolyChord`` implements dynamic nested sampling using the efficient ``PolyChord`` sampler to provide state-of-the-art nested sampling performance.
