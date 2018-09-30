@@ -66,6 +66,9 @@ setuptools.setup(name='dyPolyChord',
                                           'numpydoc',
                                           'sphinx-rtd-theme',
                                           'nbsphinx>=0.3.3'],
-                                 'MPI': ['mpi4py']},
+                                 'MPI': ['mpi4py'],
+                                 ':python_version == "2.7"': ['futures',
+                                                              'pytz',
+                                                              'python-dateutil']},
                  project_urls={  # Optional
                      'Docs': 'http://dyPolyChord.readthedocs.io/en/latest/'})
