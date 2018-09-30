@@ -8,6 +8,8 @@ dyPolyChord
 .. image:: https://readthedocs.org/projects/dypolychord/badge/?version=latest
    :target: http://dypolychord.readthedocs.io/en/latest/?badge=latest
    :alt: Documentation Status
+.. image:: http://joss.theoj.org/papers/10.21105/joss.00965/status.svg
+   :target: https://doi.org/10.21105/joss.00965
 .. image:: https://api.codeclimate.com/v1/badges/b04cc235c8f73870029c/maintainability
    :target: https://codeclimate.com/github/ejhigson/dyPolyChord/maintainability
    :alt: Maintainability

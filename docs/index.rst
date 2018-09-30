@@ -8,6 +8,8 @@ dyPolyChord
 .. image:: https://readthedocs.org/projects/dypolychord/badge/?version=latest
    :target: http://dypolychord.readthedocs.io/en/latest/?badge=latest
    :alt: Documentation Status
+.. image:: http://joss.theoj.org/papers/10.21105/joss.00965/status.svg
+   :target: https://doi.org/10.21105/joss.00965
 .. image:: https://api.codeclimate.com/v1/badges/b04cc235c8f73870029c/maintainability
    :target: https://codeclimate.com/github/ejhigson/dyPolyChord/maintainability
    :alt: Maintainability
@@ -41,34 +43,27 @@ Documentation contents
 Attribution
 -----------
 
-If this code is useful for your academic research, please cite the dynamic nested sampling paper and the PolyChord papers. The BibTeX is:
+If you use ``dyPolyChord`` in your academic research, please cite the two papers introducing the software and the dynamic nested sampling algorithm it uses (the BibTeX is below). Note that ``dyPolyChord`` runs use ``PolyChord``, which also requires its associated papers to be cited.
 
 .. code-block:: tex
 
-    @article{Higson2017,
+    @article{Higson2017dynamic,
     author={Higson, Edward and Handley, Will and Hobson, Mike and Lasenby, Anthony},
     title={Dynamic nested sampling: an improved algorithm for parameter estimation and evidence calculation},
     journal={arXiv preprint arXiv:1704.03459},
     url={https://arxiv.org/abs/1704.03459},
     year={2017}}
 
-    @article{Handley2015a,
-    title={PolyChord: nested sampling for cosmology},
-    author={Handley, WJ and Hobson, MP and Lasenby, AN},
-    journal={Monthly Notices of the Royal Astronomical Society: Letters},
-    volume={450},
-    number={1},
-    pages={L61--L65},
-    year={2015}}
-
-    @article{Handley2015b,
-    title={PolyChord: next-generation nested sampling},
-    author={Handley, WJ and Hobson, MP and Lasenby, AN},
-    journal={Monthly Notices of the Royal Astronomical Society},
-    volume={453},
-    number={4},
-    pages={4384--4398},
-    year={2015}}
+    @article{higson2018dypolychord,
+    title={dyPolyChord: dynamic nested sampling with PolyChord},
+    author={Higson, Edward},
+    year={2018},
+    journal={Journal of Open Source Software},
+    number={29},
+    pages={916},
+    volume={3},
+    doi={10.21105/joss.00965},
+    url={http://joss.theoj.org/papers/10.21105/joss.00965}}
 
 
 Changelog
