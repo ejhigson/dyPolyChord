@@ -3,7 +3,7 @@
 Test suite for the dyPolyChord package.
 
 Extra tests which check exact results produced using random seeding are
-included, but are skipped unless PyPolyChord is installed. These also require
+included, but are skipped unless pypolychord is installed. These also require
 mpi4py if you have installed PolyChord with MPI.
 """
 import os
@@ -27,17 +27,17 @@ import dyPolyChord.run_dynamic_ns
 import dyPolyChord
 try:
     # pylint: disable=unused-import,ungrouped-imports
-    # Only do pypolychord_utils tests if PyPolyChord is installed
-    import PyPolyChord
+    # Only do pypolychord_utils tests if pypolychord is installed
+    import pypolychord
     import dyPolyChord.pypolychord_utils
     PYPOLYCHORD_AVAIL = True
 except ImportError:
     PYPOLYCHORD_AVAIL = False
     warnings.warn(
-        ('I can\'t import PyPolyChord, so I am skipping the tests which '
-         'need it. PyPolyChord is not needed for compiled C++ and Fortran '
+        ('I can\'t import pypolychord, so I am skipping the tests which '
+         'need it. pypolychord is not needed for compiled C++ and Fortran '
          'likelihoods, so you can ignore this warning. However, you will need '
-         'to install PyPolyChord to run Python likelihoods.'),
+         'to install pypolychord to run Python likelihoods.'),
         UserWarning)
 if PYPOLYCHORD_AVAIL:
     try:
@@ -72,10 +72,10 @@ def setUpModule():
         shutil.rmtree(TEST_CACHE_DIR)
 
 
-@unittest.skipIf(not PYPOLYCHORD_AVAIL, 'PyPolyChord not installed.')
+@unittest.skipIf(not PYPOLYCHORD_AVAIL, 'pypolychord not installed.')
 class TestRunDyPolyChordNumers(unittest.TestCase):
 
-    """Tests for run_dypolychord which use PyPolyChord and check numerical
+    """Tests for run_dypolychord which use pypolychord and check numerical
     outputs by setting random seed."""
 
     def setUp(self):
@@ -532,18 +532,18 @@ class TestPolyChordUtils(unittest.TestCase):
         func({'base_dir': TEST_CACHE_DIR, 'file_root': 'temp'})
 
 
-@unittest.skipIf(not PYPOLYCHORD_AVAIL, 'PyPolyChord not installed.')
+@unittest.skipIf(not PYPOLYCHORD_AVAIL, 'pypolychord not installed.')
 class TestPyPolyChordUtils(unittest.TestCase):
 
     """
     Tests for the pypolychord_utils.py module.
 
-    These are skipped if PyPolyChord is not installed as it is not needed for
+    These are skipped if pypolychord is not installed as it is not needed for
     compiled likelihoods.
     """
 
     def test_python_run_func(self):
-        """Check functions for running PolyChord via the PyPolyChord wrapper
+        """Check functions for running PolyChord via the pypolychord wrapper
         (as opposed to with a compiled likelihood) in the form needed for
         dynamic nested sampling."""
         try:
@@ -687,7 +687,7 @@ class TestPythonPriors(unittest.TestCase):
             hypercube)
 
         def forced_ident_transform(x):
-            """PyPolyChord version of the forced identifiability transform.
+            """pypolychord version of the forced identifiability transform.
             (gives correct value)."""
             n = len(x)
             theta = numpy.zeros(n)

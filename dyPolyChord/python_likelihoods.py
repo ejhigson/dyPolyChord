@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Loglikelihood functions for use with PyPolyChord (PolyChord's python wrapper).
+Loglikelihood functions for use with pypolychord (PolyChord's python wrapper).
 
 PolyChord v1.14 requires likelihoods to be callables with parameter and return
 signatures:
