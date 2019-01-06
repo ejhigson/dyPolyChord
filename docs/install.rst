@@ -32,8 +32,8 @@ Dependencies
  - ``nestcheck`` >=v0.1.8.
 
 
-``PolyChord`` is available at https://ccpforge.cse.rl.ac.uk/gf/project/polychord/ and has its own installation and licence instructions; see the link for more information.
-Note running ``dyPolyChord`` with compiled C++ or Fortran likelihoods does not require the installation of ``pypolychord`` (``PolyChord``'s Python interface).
+``PolyChord`` is available at https://github.com/PolyChord/PolyChordLite and has its own installation and licence instructions; see the link for more information.
+Note running ``dyPolyChord`` with compiled C++ or Fortran likelihoods does not require the installation of ``PolyChord``'s Python interface.
 
 
 Tests
