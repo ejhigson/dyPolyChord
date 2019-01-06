@@ -1,12 +1,12 @@
 #!/usr/bin/env python
-"""Functions for running dyPolyChord using PyPolyChord (PolyChord's
+"""Functions for running dyPolyChord using pypolychord (PolyChord's
 built-in python wrapper) using with python likelihoods and priors.
 """
 # Exception handling needed to allow readthedocs to work without installing
-# PyPolyChord.
+# pypolychord.
 try:
-    import PyPolyChord
-    import PyPolyChord.settings
+    import pypolychord
+    import pypolychord.settings
 except ImportError:
     pass
 
@@ -34,8 +34,8 @@ class RunPyPolyChord(object):
 
     def __call__(self, settings_dict, comm=None):
         """
-        Runs PyPolyChord with specified inputs and writes output files. See the
-        PyPolyChord documentation for more details.
+        Runs pypolychord with specified inputs and writes output files. See the
+        pypolychord documentation for more details.
 
         Parameters
         ----------
@@ -45,15 +45,15 @@ class RunPyPolyChord(object):
             For MPI parallelisation.
         """
         if comm is None:
-            settings = PyPolyChord.settings.PolyChordSettings(
+            settings = pypolychord.settings.PolyChordSettings(
                 self.ndim, self.nderived, **settings_dict)
         else:
             rank = comm.Get_rank()
             if rank == 0:
-                settings = PyPolyChord.settings.PolyChordSettings(
+                settings = pypolychord.settings.PolyChordSettings(
                     self.ndim, self.nderived, **settings_dict)
             else:
                 settings = None
             settings = comm.bcast(settings, root=0)
-        PyPolyChord.run_polychord(self.likelihood, self.ndim, self.nderived,
+        pypolychord.run_polychord(self.likelihood, self.ndim, self.nderived,
                                   settings, prior=self.prior)
