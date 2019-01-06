@@ -5,6 +5,10 @@ Test suite for the dyPolyChord package.
 Extra tests which check exact results produced using random seeding are
 included, but are skipped unless pypolychord is installed. These also require
 mpi4py if you have installed PolyChord with MPI.
+
+Note that pypolychord was called PyPolyChord before PolyChord v1.15;
+if pypolychord cannot be imported then we try importing PyPolyChord
+instead for backwards compatibility with the old module name.
 """
 import os
 import copy
@@ -28,13 +32,18 @@ import dyPolyChord
 try:
     # pylint: disable=unused-import,ungrouped-imports
     # Only do pypolychord_utils tests if pypolychord is installed
-    import pypolychord
+    try:
+        import pypolychord
+    except ImportError:
+        # See if pypolychord is installed under its old name
+        import PyPolyChord as pypolychord
     import dyPolyChord.pypolychord_utils
     PYPOLYCHORD_AVAIL = True
 except ImportError:
     PYPOLYCHORD_AVAIL = False
     warnings.warn(
-        ('I can\'t import pypolychord, so I am skipping the tests which '
+        ('I can\'t import pypolychord (I also tried importing it using its '
+         'old name "PyPolyChord"). I am therefore skipping the tests which '
          'need it. pypolychord is not needed for compiled C++ and Fortran '
          'likelihoods, so you can ignore this warning. However, you will need '
          'to install pypolychord to run Python likelihoods.'),
