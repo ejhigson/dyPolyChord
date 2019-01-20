@@ -20,7 +20,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'dyPolyChord'
-copyright = '2018, Edward Higson'
+copyright = '2018-Present Edward Higson and contributors (MIT license).'
 author = 'Edward Higson'
 
 # The short X.Y version
@@ -172,7 +172,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'dyPolyChord', 'dyPolyChord Documentation',
-     author, 'dyPolyChord', 'One line description of project.',
+     author, 'dyPolyChord', 'Dynamic nested sampling with PolyChord.',
      'Miscellaneous'),
 ]
 

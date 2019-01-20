@@ -86,4 +86,4 @@ If you have any questions or suggestions please get in touch (e.higson@mrao.cam.
 Authors & License
 -----------------
 
-Copyright 2018 Edward Higson and contributors (MIT Licence). Note that PolyChord has a separate licence and authors - see https://github.com/PolyChord/PolyChordLite for more information.
+Copyright 2018-Present Edward Higson and contributors (MIT license). Note that PolyChord has a separate license and authors - see https://github.com/PolyChord/PolyChordLite for more information.
