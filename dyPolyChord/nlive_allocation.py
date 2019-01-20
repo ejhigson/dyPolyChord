@@ -97,8 +97,8 @@ def dyn_nlive_array(init_run, samp_tot, dynamic_goal, smoothing_filter=None):
 
     where :math:`n` is the local number of live points.
 
-    See Appendix E of "Dynamic nested sampling: an improved algorithm for
-    parameter estimation and evidence calculation" (Higson et al., 2018) for
+    See Appendix F of "Dynamic nested sampling: an improved algorithm for
+    parameter estimation and evidence calculation" (Higson et al., 2019) for
     more information.
 
     Parameters
@@ -147,7 +147,7 @@ def sample_importance(run, dynamic_goal):
     Calculate the importance of each sample in the run.
 
     See "Dynamic nested sampling: an improved algorithm for parameter
-    estimation and evidence calculation" (Higson et al., 2018) for more
+    estimation and evidence calculation" (Higson et al., 2019) for more
     information.
 
     Parameters
