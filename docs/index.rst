@@ -25,7 +25,7 @@ Any likelihoods and priors which work with ``PolyChord`` can be used (Python, C+
 To get started, see the `installation instructions <http://dyPolyChord.readthedocs.io/en/latest/install.html>`_ and the `demo <http://dyPolyChord.readthedocs.io/en/latest/demo.html>`_.
 N.B. ``dyPolyChord`` requires ``PolyChord`` v1.14 or higher.
 
-For more details about dynamic nested sampling, see the dynamic nested sampling paper (`Higson et al., 2017 <https://arxiv.org/abs/1704.03459>`_).
+For more details about dynamic nested sampling, see the dynamic nested sampling paper (`Higson et al., 2019 <https://doi.org/10.1007/s11222-018-9844-0>`_).
 For a discussion of ``dyPolyChord``'s performance, see the `performance section <http://dyPolyChord.readthedocs.io/en/latest/performance.html>`_ of the documentation.
 
 Documentation contents
@@ -47,12 +47,15 @@ If you use ``dyPolyChord`` in your academic research, please cite the two papers
 
 .. code-block:: tex
 
-    @article{Higson2017dynamic,
-    author={Higson, Edward and Handley, Will and Hobson, Mike and Lasenby, Anthony},
+    @article{Higson2019dynamic,
+    author={Higson, Edward and Handley, Will and Hobson, Michael and Lasenby, Anthony},
     title={Dynamic nested sampling: an improved algorithm for parameter estimation and evidence calculation},
-    journal={arXiv preprint arXiv:1704.03459},
-    url={https://arxiv.org/abs/1704.03459},
-    year={2017}}
+    year={2019},
+    journal={Statistics and Computing},
+    doi={10.1007/s11222-018-9844-0},
+    url={https://doi.org/10.1007/s11222-018-9844-0},
+    archivePrefix={arXiv},
+    arxivId={1704.03459}}
 
     @article{higson2018dypolychord,
     title={dyPolyChord: dynamic nested sampling with PolyChord},
