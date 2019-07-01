@@ -49,10 +49,10 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
     Further analysis, including estimating uncertainties, can be performed
     with ``nestcheck``.
 
-    Like for ``PolyChord``, the output files are saved in base_dir (specified in
-    settings_dict_in, default value is 'chains'). Their names are determined
-    by file_root (also specified in settings_dict_in). ``dyPolyChord`` ensures
-    the following following files are always produced:
+    Like for ``PolyChord``, the output files are saved in base_dir (specified
+    in settings_dict_in, default value is 'chains'). Their names are
+    determined by file_root (also specified in settings_dict_in).
+    ``dyPolyChord`` ensures the following following files are always produced:
 
         * [base_dir]/[file_root].stats: run statistics including an estimate of
           the Bayesian evidence;
@@ -270,20 +270,25 @@ def process_initial_run(settings_dict_in, **kwargs):
     if dyn_info['peak_start_ind'] != 0:
         # subtract 1 as ndead=1 corresponds to point 0
         resume_steps = np.asarray(step_ndead) - 1
-        # Work out which resume file to load
-        resume_ndead = step_ndead[np.where(
-            resume_steps < dyn_info['peak_start_ind'])[0][-1]]
-        # copy resume step to dynamic file root
-        shutil.copyfile(
-            root_name + '_init_' + str(resume_ndead) + '.resume',
-            root_name + '_dyn.resume')
-        # Save resume info
-        dyn_info['resume_ndead'] = resume_ndead
-        try:
-            dyn_info['resume_nlike'] = (
-                resume_outputs[resume_ndead]['nlike'])
-        except KeyError:
-            pass  # protect from error reading nlike from .stats file
+        # Work out which resume file to load. This is the first resume file
+        # before dyn_info['peak_start_ind']. If there are no such files then we
+        # do not reload and instead start the second dynamic run by samling
+        # from the entire prior.
+        indexes_before_peak = np.where(
+            resume_steps < dyn_info['peak_start_ind'])[0]
+        if indexes_before_peak.shape[0] > 0:
+            resume_ndead = step_ndead[indexes_before_peak[-1]]
+            # copy resume step to dynamic file root
+            shutil.copyfile(
+                root_name + '_init_' + str(resume_ndead) + '.resume',
+                root_name + '_dyn.resume')
+            # Save resume info
+            dyn_info['resume_ndead'] = resume_ndead
+            try:
+                dyn_info['resume_nlike'] = (
+                    resume_outputs[resume_ndead]['nlike'])
+            except KeyError:
+                pass  # protect from error reading nlike from .stats file
     nestcheck.io_utils.pickle_save(
         dyn_info, root_name + '_dyn_info', overwrite_existing=True)
     if dynamic_goal != 0:
