@@ -129,7 +129,7 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
     comm = kwargs.pop('comm', None)
     stats_means_errs = kwargs.pop('stats_means_errs', True)
     clean = kwargs.pop('clean', True)
-    resume_dyn_run = kwargs.pop('resume_dyn_run', True)
+    resume_dyn_run = kwargs.pop('resume_dyn_run', False)
     if kwargs:
         raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
     # Set Up
@@ -189,8 +189,8 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
             settings_dict['file_root'] = settings_dict['file_root'] + '_init'
             settings_dict['nlive'] = ninit
         if dynamic_goal == 0:
-            # We definitely won't need to resume midway through in this case, so
-            # just run PolyChod normally
+            # We definitely won't need to resume midway through in this case,
+            # so just run PolyChord normally
             run_polychord(settings_dict, comm=comm)
             if rank == 0:
                 final_seed = settings_dict['seed']
@@ -200,7 +200,8 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
                 resume_outputs = None
         else:
             step_ndead, resume_outputs, final_seed = run_and_save_resumes(
-                run_polychord, settings_dict, init_step, seed_increment, comm=comm)
+                run_polychord, settings_dict, init_step, seed_increment,
+                comm=comm)
         # Step 2: calculate an allocation of live points
         # ----------------------------------------------
         if rank == 0:
@@ -218,7 +219,7 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
                 else:
                     # print error info
                     traceback.print_exc(file=sys.stdout)
-                    print('Error in process with rank == 0: forcing MPI abort.')
+                    print('Error in process with rank == 0: forcing MPI abort')
                     sys.stdout.flush()  # Make sure message prints before abort
                     comm.Abort(1)
     # Step 3: do dynamic run
