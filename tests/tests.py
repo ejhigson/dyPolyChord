@@ -50,9 +50,9 @@ except ImportError:
         UserWarning)
 if PYPOLYCHORD_AVAIL:
     try:
-        # If PolyChord is installed with MPI, we need to initialise mpi4py in order
-        # to run it multiple times from within the same python process without
-        # having an error.
+        # If PolyChord is installed with MPI, we need to initialise mpi4py in
+        # order to run it multiple times from within the same python process
+        # without having an error.
         # pylint: disable=unused-import
         from mpi4py import MPI  # Initialize MPI
     except ImportError:
@@ -258,7 +258,8 @@ class TestRunDynamicNS(unittest.TestCase):
         dyPolyChord.run_dypolychord(
             self.run_func, dynamic_goal, self.settings,
             init_step=self.ninit, ninit=self.ninit,
-            nlive_const=self.nlive_const, stats_means_errs=False)
+            nlive_const=self.nlive_const, stats_means_errs=False,
+            clean=False)
         # Check the mean value using the posteriors file (its hard to make a
         # dummy run_func which is realistic enough to not fail checks if we try
         # loading the output normally with
@@ -269,6 +270,22 @@ class TestRunDynamicNS(unittest.TestCase):
         p1_mean = (np.sum(posteriors[:, 2] * posteriors[:, 0])
                    / np.sum(posteriors[:, 0]))
         self.assertAlmostEqual(p1_mean, 0.614126384660822, places=12)
+        # Test running with resume_dyn_run=True
+        dyPolyChord.run_dypolychord(
+            self.run_func, dynamic_goal, self.settings,
+            init_step=self.ninit, ninit=self.ninit,
+            nlive_const=self.nlive_const, stats_means_errs=False,
+            clean=False, resume_dyn_run=True)
+        # Test trying to resume when not all the required files are present
+        root = os.path.join(self.settings['base_dir'],
+                            self.settings['file_root'])
+        os.remove(root + '_dyn_info.pkl')
+        dyPolyChord.run_dypolychord(
+            self.run_func, dynamic_goal, self.settings,
+            init_step=self.ninit, ninit=self.ninit,
+            nlive_const=self.nlive_const, stats_means_errs=False,
+            clean=False, resume_dyn_run=True)
+
 
     def test_comm(self):
         """Test run_dyPolyChord's comm argument, which is used for running
