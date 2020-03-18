@@ -117,6 +117,8 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
     smoothing_filter: func or None, optional
         Smoothing function to apply to the nlive allocation array of target
         live points. Use smoothing_filter=None for no smoothing.
+    comm: None or mpi4py MPI.COMM object, optional
+        For MPI parallelisation.
     stats_means_errs: bool, optional
         Whether to include estimates of the log evidence logZ and the
         parameter mean values and their uncertainties in the .stats file.
