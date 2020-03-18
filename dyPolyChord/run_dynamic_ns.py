@@ -105,8 +105,8 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
         A callable which performs nested sampling using PolyChord
         for a given likelihood and prior, and takes a settings dictionary as
         its argument. Note that the likelihood and prior must be specified
-        within the run_polychord callable. For helper functions for creating such
-        callables, see the documentation for dyPolyChord.pypolychord
+        within the run_polychord callable. For helper functions for creating
+        such callables, see the documentation for dyPolyChord.pypolychord
         (Python likelihoods) and dyPolyChord.polychord (C++ and Fortran
         likelihoods). Examples can be found at:
         https://dypolychord.readthedocs.io/en/latest/demo.html
@@ -141,7 +141,8 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
     stats_means_errs: bool, optional
         Whether to include estimates of the log evidence logZ and the
         parameter mean values and their uncertainties in the .stats file.
-        This is passed to nestcheck's write_run_output; see its documentation for more details.
+        This is passed to nestcheck's write_run_output; see its documentation
+        for more details.
     clean: bool, optional
         Clean the additional output files made by dyPolyChord, leaving only
         output files for the combined run in PolyChord format.
@@ -573,8 +574,9 @@ def process_initial_run(settings_dict_in, **kwargs):
 
 
 def get_dynamic_settings(settings_dict_in, dyn_info):
-    """Loads the initial exploratory run and analyses it to create information
-    about the second, dynamic run. This information is returned in a dictionary.
+    """Loads the initial exploratory run and analyses it to create
+    information about the second, dynamic run. This information is returned
+    in a dictionary.
 
     Parameters
     ----------
