@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 """
-This module contains dyPolyChord's high-level functionality for
+This module contains ``dyPolyChord``'s high-level functionality for
 performing dynamic nested sampling calculations. For more details see
-the dyPolyChord package documentation at
+the ``dyPolyChord`` package documentation at
 https://dypolychord.readthedocs.io/en/latest/. For a demo see
 https://dypolychord.readthedocs.io/en/latest/demo.html.
 
-dyPolyChord leverages the sophisticated PolyChord sampler in order to
+``dyPolyChord`` leverages the sophisticated PolyChord sampler in order to
 generate samples given some input likelihood and prior. PolyChord was
 originally designed to perform standard nested sampling (with
-a constant number of live points); dyPolyChord is able to perform
+a constant number of live points); ``dyPolyChord`` is able to perform
 dynamic nested sampling by combining multiple PolyChord runs using the
 algorithm described in Appendix F of "Dynamic nested sampling: an
 improved algorithm for parameter estimation and evidence calculation"
@@ -17,10 +17,10 @@ improved algorithm for parameter estimation and evidence calculation"
 
 The code is compatible with Python 2.7 and Python 3.4+.
 
-The drawing of samples with PolyChord (typically the most
+The generation of samples with PolyChord (typically the most
 computationally expensive part of the process for big data sets/slow
 likelihoods) can be optionally parallelised using MPI. Much of the
-processing of samples done by dyPolyChord is not parallelised, and must
+processing of samples done by ``dyPolyChord`` is not parallelised, and must
 be done by a single MPI process which is selected using "if rank == 0:"
 statements. This processing is normally less computationally expensive
 than the sampling, so it not being parallelised does not typically
@@ -28,7 +28,7 @@ impact overall performance too much. For a more detailed discussion of
 computational performance, see
 https://dypolychord.readthedocs.io/en/latest/performance.html.
 """
-from __future__ import division  # Enforce float division for python2
+from __future__ import division  # Enforce float division for Python2
 import copy
 import os
 import traceback
@@ -42,10 +42,11 @@ import nestcheck.io_utils
 import nestcheck.write_polychord_output
 import dyPolyChord.nlive_allocation
 import dyPolyChord.output_processing
-# pylint: disable=bare-except
 
 
-__all__ = ['run_dypolychord', 'check_settings']
+# The only main public-facing API for this module is the run_dypolychord
+# function.
+__all__ = ['run_dypolychord']
 
 
 @nestcheck.io_utils.timing_decorator
@@ -59,7 +60,7 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
     Dynamic nested sampling is performed in 4 steps:
 
     1) Generate an initial nested sampling run with a constant number of live
-    points :math:`n_\mathrm{init}`. This process is run in chuncks using
+    points :math:`n_\mathrm{init}`. This process is run in chunks using
     PolyChord's max_ndead setting to allow periodic saving of .resume files
     so the initial run can be resumed at different points.
 
@@ -92,7 +93,7 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
 
     For more information about the output format, see ``PolyChord``'s
     documentation. Note that ``dyPolyChord`` is not able to produce all of the
-    types of output files made by ``PolyChord`` - see check_settings's
+    types of output files made by ``PolyChord`` - see check_settings'
     documentation for more information.
     In addition, a number of intermediate files are produced during the dynamic
     nested sampling process which are removed by default when the process
@@ -122,7 +123,7 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
         estimated number that would be taken by a nested sampling run with a
         constant number of live points nlive_const.
     ninit: int, optional
-        Number of live points to use for the initial exporatory run (Step 1).
+        Number of live points to use for the initial exploratory run (Step 1).
     ninit_step: int, optional
         Number of samples taken between saving .resume files in Step 1.
     seed_increment: int, optional
@@ -133,14 +134,14 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
         MPI rank using IEOR. Hence you need seed_increment to be > number of
         processors to ensure no two processes use the same seed.
         When running repeated results you need to increment the seed used for
-        each run by some number >> seed_increment.
-    smoothing_filter: func, optional
+        each run by some number > seed_increment.
+    smoothing_filter: func or None, optional
         Smoothing function to apply to the nlive allocation array of target
         live points. Use smoothing_filter=None for no smoothing.
     stats_means_errs: bool, optional
-        Whether to include estimates of logZ and parameter mean values and
-        their uncertainties in the .stats file. This is passed to nestcheck's
-        write_run_output; see its documentation for more details.
+        Whether to include estimates of the log evidence logZ and the
+        parameter mean values and their uncertainties in the .stats file.
+        This is passed to nestcheck's write_run_output; see its documentation for more details.
     clean: bool, optional
         Clean the additional output files made by dyPolyChord, leaving only
         output files for the combined run in PolyChord format.
@@ -178,16 +179,16 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
         rank = comm.Get_rank()
     else:
         rank = 0
-    settings_dict = None  # define for rank != 0
+    settings_dict = None  # Define for rank != 0
     if rank == 0:
         settings_dict_in, output_settings = check_settings(
             settings_dict_in)
         if (settings_dict_in['seed'] >= 0 and comm is not None and
                 comm.Get_size() > 1):
             warnings.warn((
-                'N.B. seeded results will not be reproducable when running '
-                'dyPolyChord with multiple MPI processes. You have seed={} '
-                'and {} MPI processes.').format(
+                'N.B. random seeded results will not be reproducible when '
+                'running dyPolyChord with multiple MPI processes. You have '
+                'seed={} and {} MPI processes.').format(
                     settings_dict_in['seed'], comm.Get_size()), UserWarning)
     root_name = os.path.join(settings_dict_in['base_dir'],
                              settings_dict_in['file_root'])
@@ -199,7 +200,7 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
         files_exist = [os.path.isfile(name) for name in files_needed]
         if all(files_exist):
             skip_initial_run = True
-            print('resume_dyn_run=True so I am skipping the inital '
+            print('resume_dyn_run=True so I am skipping the initial '
                   'exploratory run and resuming the dynamic run')
         else:
             skip_initial_run = False
@@ -223,7 +224,7 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
         # Step 1: do initial run
         # ----------------------
         if rank == 0:
-            # Make a copy of settings dic so we dont edit settings
+            # Make a copy of settings_dict so we don't edit settings
             settings_dict = copy.deepcopy(settings_dict_in)
             settings_dict['file_root'] = settings_dict['file_root'] + '_init'
             settings_dict['nlive'] = ninit
@@ -306,6 +307,173 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
                 comm.Abort(1)
 
 
+# Helper functions
+# ----------------
+
+
+def check_settings(settings_dict_in):
+    """
+    Check the input dictionary of PolyChord settings and add default values.
+    Some setting values are mandatory for dyPolyChord - if one of these is set
+    to a value which is not allowed then a UserWarning is issued and the
+    program proceeds with the mandatory setting.
+
+    Parameters
+    ----------
+    settings_dict_in: dict
+        PolyChord settings to use.
+
+    Returns
+    -------
+    settings_dict: dict
+        Updated settings dictionary including default and mandatory values.
+    output_settings: dict
+        Settings for writing output files which are saved until the final
+        output files are calculated at the end.
+    """
+    default_settings = {'nlive': 100,
+                        'num_repeats': 20,
+                        'file_root': 'temp',
+                        'base_dir': 'chains',
+                        'seed': -1,
+                        'do_clustering': True,
+                        'max_ndead': -1,
+                        'equals': True,
+                        'posteriors': True}
+    mandatory_settings = {'nlives': {},
+                          'write_dead': True,
+                          'write_stats': True,
+                          'write_paramnames': False,
+                          'write_prior': False,
+                          'write_live': False,
+                          'write_resume': False,
+                          'read_resume': False,
+                          'cluster_posteriors': False,
+                          'boost_posterior': 0.0}
+    settings_dict = copy.deepcopy(settings_dict_in)
+    # Assign default settings.
+    for key, value in default_settings.items():
+        if key not in settings_dict:
+            settings_dict[key] = value
+    # Produce warning if settings_dict_in has different values for any
+    # mandatory settings.
+    for key, value in mandatory_settings.items():
+        if key in settings_dict_in and settings_dict_in[key] != value:
+            warnings.warn((
+                'dyPolyChord currently only allows the setting {0}={1}, '
+                'so I am proceeding with this. You tried to specify {0}={2}.'
+                .format(key, value, settings_dict_in[key])), UserWarning)
+        settings_dict[key] = value
+    # Extract output settings (not needed until later)
+    output_settings = {}
+    for key in ['posteriors', 'equals']:
+        output_settings[key] = settings_dict[key]
+        settings_dict[key] = False
+    return settings_dict, output_settings
+
+
+def run_and_save_resumes(run_polychord, settings_dict_in, init_step,
+                         seed_increment, comm=None):
+    """
+    Run PolyChord while pausing after every init_step samples (dead points)
+    generated to save a resume file before continuing.
+
+    Parameters
+    ----------
+    run_polychord: callable
+        Callable which runs PolyChord with the desired likelihood and prior,
+        and takes a settings dictionary as its argument.
+    settings_dict: dict
+        PolyChord settings to use (see check_settings for information on
+        allowed and default settings).
+    ninit_step: int, optional
+        Number of samples taken between saving .resume files in Step 1.
+    seed_increment: int, optional
+        If seeding is used (PolyChord seed setting >= 0), this increment is
+        added to PolyChord's random seed each time it is run to avoid
+        repeated points.
+        When running in parallel using MPI, PolyChord hashes the seed with the
+        MPI rank using IEOR. Hence you need seed_increment to be > number of
+        processors to ensure no two processes use the same seed.
+        When running repeated results you need to increment the seed used for
+        each run by some number > seed_increment.
+    comm: None or mpi4py MPI.COMM object, optional
+        For MPI parallelisation.
+
+    Returns
+    -------
+    step_ndead: list of ints
+        Numbers of dead points at which resume files are saved.
+    resume_outputs: dict
+        Dictionary containing run output (contents of .stats file) at each
+        resume. Keys are elements of step_ndead.
+    final_seed: int
+        Random seed. This is incremented after each run so it can be used
+        when resuming without generating correlated points.
+    """
+    settings_dict = copy.deepcopy(settings_dict_in)
+    # set up rank if running with MPI
+    if comm is not None:
+        # Define variables for rank != 0
+        step_ndead = None
+        resume_outputs = None
+        final_seed = None
+        # Get rank
+        rank = comm.Get_rank()
+    else:
+        rank = 0
+    if rank == 0:
+        root_name = os.path.join(settings_dict['base_dir'],
+                                 settings_dict['file_root'])
+        try:
+            os.remove(root_name + '.resume')
+        except OSError:
+            pass
+        settings_dict['write_resume'] = True
+        settings_dict['read_resume'] = True
+        step_ndead = []
+        resume_outputs = {}
+    add_points = True
+    while add_points:
+        if rank == 0:
+            settings_dict['max_ndead'] = (len(step_ndead) + 1) * init_step
+        run_polychord(settings_dict, comm=comm)
+        if rank == 0:
+            try:
+                if settings_dict['seed'] >= 0:
+                    settings_dict['seed'] += seed_increment
+                run_output = nestcheck.data_processing.process_polychord_stats(
+                    settings_dict['file_root'], settings_dict['base_dir'])
+                # Store run outputs for getting number of likelihood calls
+                # while accounting for resuming a run.
+                resume_outputs[run_output['ndead']] = run_output
+                step_ndead.append(run_output['ndead'] - settings_dict['nlive'])
+                if len(step_ndead) >= 2 and step_ndead[-1] == step_ndead[-2]:
+                    add_points = False
+                # store resume file in new file path
+                shutil.copyfile(
+                    root_name + '.resume',
+                    root_name + '_' + str(step_ndead[-1]) + '.resume')
+            except:
+                # We need a bare except statement here to ensure that if
+                # any type of error occurs in the rank == 0 process when
+                # running in parallel with MPI then we also abort all the
+                # other processes.
+                if comm is None or comm.Get_size() == 1:
+                    raise  # Just one process so raise error normally.
+                else:
+                    # Print error info.
+                    traceback.print_exc(file=sys.stdout)
+                    print('Error in process with rank == 0: forcing MPI abort')
+                    sys.stdout.flush()  # Make sure message prints before abort
+                    comm.Abort(1)
+        if comm is not None:
+            add_points = comm.bcast(add_points, root=0)
+    if rank == 0:
+        final_seed = settings_dict['seed']
+    return step_ndead, resume_outputs, final_seed
+
+
 def process_initial_run(settings_dict_in, **kwargs):
     """Loads the initial exploratory run and analyses it to create information
     about the second, dynamic run. This information is returned as a dictionary
@@ -326,7 +494,7 @@ def process_initial_run(settings_dict_in, **kwargs):
         would be taken by a nested sampling run with a constant number of live
         points nlive_const.
     ninit: int
-        Number of live points to use for the initial exporatory run (Step 1).
+        Number of live points to use for the initial exploratory run (Step 1).
     smoothing_filter: func
         Smoothing to apply to the nlive allocation (if any).
     step_ndead: list of ints
@@ -377,7 +545,7 @@ def process_initial_run(settings_dict_in, **kwargs):
         resume_steps = np.asarray(step_ndead) - 1
         # Work out which resume file to load. This is the first resume file
         # before dyn_info['peak_start_ind']. If there are no such files then we
-        # do not reload and instead start the second dynamic run by samling
+        # do not reload and instead start the second dynamic run by sampling
         # from the entire prior.
         indexes_before_peak = np.where(
             resume_steps < dyn_info['peak_start_ind'])[0]
@@ -406,8 +574,7 @@ def process_initial_run(settings_dict_in, **kwargs):
 
 def get_dynamic_settings(settings_dict_in, dyn_info):
     """Loads the initial exploratory run and analyses it to create information
-    about the second, dynamic run. This information is returned as a dictionary
-    and also cached.
+    about the second, dynamic run. This information is returned in a dictionary.
 
     Parameters
     ----------
@@ -441,168 +608,3 @@ def get_dynamic_settings(settings_dict_in, dyn_info):
         bool(dyn_info['peak_start_ind'] != 0))
     settings_dict['file_root'] = settings_dict_in['file_root'] + '_dyn'
     return settings_dict
-
-
-# Helper functions
-# ----------------
-
-
-def check_settings(settings_dict_in):
-    """
-    Check the input dictionary of PolyChord settings. Issues warnings where
-    the input settings are not appropriate, and add default values.
-
-    Parameters
-    ----------
-    settings_dict_in: dict
-        PolyChord settings to use.
-
-    Returns
-    -------
-    settings_dict: dict
-        Updated settings dictionary including default and mandatory values.
-    output_settings: dict
-        Settings for writing output files which are saved until the final
-        output files are calculated at the end.
-    """
-    default_settings = {'nlive': 100,
-                        'num_repeats': 20,
-                        'file_root': 'temp',
-                        'base_dir': 'chains',
-                        'seed': -1,
-                        'do_clustering': True,
-                        'max_ndead': -1,
-                        'equals': True,
-                        'posteriors': True}
-    mandatory_settings = {'nlives': {},
-                          'write_dead': True,
-                          'write_stats': True,
-                          'write_paramnames': False,
-                          'write_prior': False,
-                          'write_live': False,
-                          'write_resume': False,
-                          'read_resume': False,
-                          'cluster_posteriors': False,
-                          'boost_posterior': 0.0}
-    settings_dict = copy.deepcopy(settings_dict_in)
-    # assign default settings
-    for key, value in default_settings.items():
-        if key not in settings_dict:
-            settings_dict[key] = value
-    # Produce warning if settings_dict_in has different values for any
-    # mandatory settings.
-    for key, value in mandatory_settings.items():
-        if key in settings_dict_in and settings_dict_in[key] != value:
-            warnings.warn((
-                'dyPolyChord currently only allows the setting {0}={1}, '
-                'so I am proceeding with this. You tried to specify {0}={2}.'
-                .format(key, value, settings_dict_in[key])), UserWarning)
-        settings_dict[key] = value
-    # Extract output settings (not needed until later)
-    output_settings = {}
-    for key in ['posteriors', 'equals']:
-        output_settings[key] = settings_dict[key]
-        settings_dict[key] = False
-    return settings_dict, output_settings
-
-
-def run_and_save_resumes(run_polychord, settings_dict_in, init_step,
-                         seed_increment, comm=None):
-    """
-    Run PolyChord while pausing after every init_step samples (dead points)
-    generated to save a resume file before continuing.
-
-    Parameters
-    ----------
-    run_polychord: callable
-        Callable which runs PolyChord with the desired likelihood and prior,
-        and takes a settings dictionary as its argument.
-    settings_dict: dict
-        PolyChord settings to use (see check_settings for information on
-        allowed and default settings).
-    ninit_step: int, optional
-        Number of samples taken between saving .resume files in Step 1.
-    seed_increment: int, optional
-        If seeding is used (PolyChord seed setting >= 0), this increment is
-        added to PolyChord's random seed each time it is run to avoid
-        repeated points.
-        When running in parallel using MPI, PolyChord hashes the seed with the
-        MPI rank using IEOR. Hence you need seed_increment to be > number of
-        processors to ensure no two processes use the same seed.
-        When running repeated results you need to increment the seed used for
-        each run by some number >> seed_increment.
-    comm: None or mpi4py MPI.COMM object, optional
-        For MPI parallelisation.
-
-    Returns
-    -------
-    step_ndead: list of ints
-        Numbers of dead points at which resume files are saved.
-    resume_outputs: dict
-        Dictionary containing run output (contents of .stats file) at each
-        resume. Keys are elements of step_ndead.
-    final_seed: int
-        Random seed. This is incremented after each run so it can be used
-        when resuming without generating correlated points.
-    """
-    settings_dict = copy.deepcopy(settings_dict_in)
-    # set up rank if running with MPI
-    if comm is not None:
-        # Define variables for rank != 0
-        step_ndead = None
-        resume_outputs = None
-        final_seed = None
-        # Get rank
-        rank = comm.Get_rank()
-    else:
-        rank = 0
-    if rank == 0:
-        root_name = os.path.join(settings_dict['base_dir'],
-                                 settings_dict['file_root'])
-        try:
-            os.remove(root_name + '.resume')
-        except OSError:
-            pass
-        settings_dict['write_resume'] = True
-        settings_dict['read_resume'] = True
-        step_ndead = []
-        resume_outputs = {}
-    add_points = True
-    while add_points:
-        if rank == 0:
-            settings_dict['max_ndead'] = (len(step_ndead) + 1) * init_step
-        run_polychord(settings_dict, comm=comm)
-        if rank == 0:
-            try:
-                if settings_dict['seed'] >= 0:
-                    settings_dict['seed'] += seed_increment
-                run_output = nestcheck.data_processing.process_polychord_stats(
-                    settings_dict['file_root'], settings_dict['base_dir'])
-                # Store run outputs for getting number of likelihood calls
-                # while accounding for resuming a run.
-                resume_outputs[run_output['ndead']] = run_output
-                step_ndead.append(run_output['ndead'] - settings_dict['nlive'])
-                if len(step_ndead) >= 2 and step_ndead[-1] == step_ndead[-2]:
-                    add_points = False
-                # store resume file in new file path
-                shutil.copyfile(
-                    root_name + '.resume',
-                    root_name + '_' + str(step_ndead[-1]) + '.resume')
-            except:
-                # We need a bare except statement here to ensure that if
-                # any type of error occurs in the rank == 0 process when
-                # running in parallel with MPI then we also abort all the
-                # other processes.
-                if comm is None or comm.Get_size() == 1:
-                    raise  # Just one process so raise error normally.
-                else:
-                    # Print error info.
-                    traceback.print_exc(file=sys.stdout)
-                    print('Error in process with rank == 0: forcing MPI abort')
-                    sys.stdout.flush()  # Make sure message prints before abort
-                    comm.Abort(1)
-        if comm is not None:
-            add_points = comm.bcast(add_points, root=0)
-    if rank == 0:
-        final_seed = settings_dict['seed']
-    return step_ndead, resume_outputs, final_seed
