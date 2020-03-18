@@ -1,32 +1,11 @@
 #!/usr/bin/env python
 """
-This module contains ``dyPolyChord``'s high-level functionality for
-performing dynamic nested sampling calculations. For more details see
-the ``dyPolyChord`` package documentation at
-https://dypolychord.readthedocs.io/en/latest/. For a demo see
-https://dypolychord.readthedocs.io/en/latest/demo.html.
-
-``dyPolyChord`` leverages the sophisticated PolyChord sampler in order to
-generate samples given some input likelihood and prior. PolyChord was
-originally designed to perform standard nested sampling (with
-a constant number of live points); ``dyPolyChord`` is able to perform
-dynamic nested sampling by combining multiple PolyChord runs using the
+This module contains dyPolyChord's high-level functionality for
+performing dynamic nested sampling calculations. This is done using the
 algorithm described in Appendix F of "Dynamic nested sampling: an
 improved algorithm for parameter estimation and evidence calculation"
-(Higson et al., 2019).
-
-The code is compatible with Python 2.7 and Python 3.4+.
-
-The generation of samples with PolyChord (typically the most
-computationally expensive part of the process for big data sets/slow
-likelihoods) can be optionally parallelised using MPI. Much of the
-processing of samples done by ``dyPolyChord`` is not parallelised, and must
-be done by a single MPI process which is selected using "if rank == 0:"
-statements. This processing is normally less computationally expensive
-than the sampling, so it not being parallelised does not typically
-impact overall performance too much. For a more detailed discussion of
-computational performance, see
-https://dypolychord.readthedocs.io/en/latest/performance.html.
+(Higson et al., 2019). For more details see the dyPolyChord
+doumentation at https://dypolychord.readthedocs.io/en/latest/.
 """
 from __future__ import division  # Enforce float division for Python2
 import copy
@@ -54,15 +33,15 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
     r"""Performs dynamic nested sampling using the algorithm described in
     Appendix F of "Dynamic nested sampling: an improved algorithm for
     parameter estimation and evidence calculation" (Higson et al., 2019).
-    The likelihood, prior and ``PolyChord`` sampler are contained in the
+    The likelihood, prior and PolyChord sampler are contained in the
     run_polychord callable (first argument).
 
     Dynamic nested sampling is performed in 4 steps:
 
     1) Generate an initial nested sampling run with a constant number of live
-    points :math:`n_\mathrm{init}`. This process is run in chunks using
-    PolyChord's max_ndead setting to allow periodic saving of .resume files
-    so the initial run can be resumed at different points.
+    points n_init. This process is run in chunks using PolyChord's max_ndead
+    setting to allow periodic saving of .resume files so the initial run can
+    be resumed at different points.
 
     2) Calculate an allocation of the number of live points at each likelihood
     for use in step 3. Also clean up resume files and save relevant
@@ -75,15 +54,15 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
     in the PolyChord format. Remove the intermediate output files produced
     which are no longer needed.
 
-    The output files are of the same format produced by ``PolyChord``, and
+    The output files are of the same format produced by PolyChord, and
     contain posterior samples and an estimate of the Bayesian evidence.
     Further analysis, including estimating uncertainties, can be performed
-    with the ``nestcheck`` package.
+    with the nestcheck package.
 
-    Like for ``PolyChord``, the output files are saved in base_dir (specified
+    Like for PolyChord, the output files are saved in base_dir (specified
     in settings_dict_in, default value is 'chains'). Their names are
     determined by file_root (also specified in settings_dict_in).
-    ``dyPolyChord`` ensures the following following files are always produced:
+    dyPolyChord ensures the following following files are always produced:
 
         * [base_dir]/[file_root].stats: run statistics including an estimate of
           the Bayesian evidence;
@@ -91,9 +70,9 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
         * [base_dir]/[file_root]_dead-birth.txt: as above but with an extra
           column containing information about when points were sampled.
 
-    For more information about the output format, see ``PolyChord``'s
-    documentation. Note that ``dyPolyChord`` is not able to produce all of the
-    types of output files made by ``PolyChord`` - see check_settings'
+    For more information about the output format, see PolyChord's
+    documentation. Note that dyPolyChord is not able to produce all of the
+    types of output files made by PolyChord - see check_settings'
     documentation for more information.
     In addition, a number of intermediate files are produced during the dynamic
     nested sampling process which are removed by default when the process
