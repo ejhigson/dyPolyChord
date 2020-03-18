@@ -5,6 +5,7 @@ python:
  - '3.5'
  - '3.6'
  - '3.7'
+ - '3.8'
 install:
  - pip install git+https://github.com/ejhigson/nestcheck # for more up to date version than on PyPI
  - pip install .
