@@ -1,8 +1,34 @@
 #!/usr/bin/env python
 """
-Contains main function for running dynamic nested sampling.
+This module contains dyPolyChord's high-level functionality for
+performing dynamic nested sampling calculations. For more details see
+the dyPolyChord package documentation at
+https://dypolychord.readthedocs.io/en/latest/. For a demo see
+https://dypolychord.readthedocs.io/en/latest/demo.html.
+
+dyPolyChord leverages the sophisticated PolyChord sampler in order to
+generate samples given some input likelihood and prior. PolyChord was
+originally designed to perform standard nested sampling (with
+a constant number of live points); dyPolyChord is able to perform
+dynamic nested sampling by combining multiple PolyChord runs using the
+algorithm described in Appendix F of "Dynamic nested sampling: an
+improved algorithm for parameter estimation and evidence calculation"
+(Higson et al., 2019).
+
+The code is compatible with Python 2.7 and Python 3.4+.
+
+The drawing of samples with PolyChord (typically the most
+computationally expensive part of the process for big data sets/slow
+likelihoods) can be optionally parallelised using MPI. Much of the
+processing of samples done by dyPolyChord is not parallelised, and must
+be done by a single MPI process which is selected using "if rank == 0:"
+statements. This processing is normally less computationally expensive
+than the sampling, so it not being parallelised does not typically
+impact overall performance too much. For a more detailed discussion of
+computational performance, see
+https://dypolychord.readthedocs.io/en/latest/performance.html.
 """
-from __future__ import division  # Enforce float division in python2
+from __future__ import division  # Enforce float division for python2
 import copy
 import os
 import traceback
@@ -27,27 +53,31 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
     r"""Performs dynamic nested sampling using the algorithm described in
     Appendix F of "Dynamic nested sampling: an improved algorithm for
     parameter estimation and evidence calculation" (Higson et al., 2019).
-    This proceeds in 4 steps:
+    The likelihood, prior and ``PolyChord`` sampler are contained in the
+    run_polychord callable (first argument).
 
-    1) Generate an initial run with a constant number of live points
-    :math:`n_\mathrm{init}`. This process is run in chuncks using PolyChord's
-    max_ndead setting to allow periodic saving of .resume files so the initial
-    run can be resumed at different points.
+    Dynamic nested sampling is performed in 4 steps:
+
+    1) Generate an initial nested sampling run with a constant number of live
+    points :math:`n_\mathrm{init}`. This process is run in chuncks using
+    PolyChord's max_ndead setting to allow periodic saving of .resume files
+    so the initial run can be resumed at different points.
 
     2) Calculate an allocation of the number of live points at each likelihood
-    for use in step 3. Also cleans up resume files and saves relevant
+    for use in step 3. Also clean up resume files and save relevant
     information.
 
-    3) Generate dynamic nested sampling run using the calculated live point
-    allocation.
+    3) Generate a dynamic nested sampling run using the calculated live point
+    allocation from step 2.
 
-    4) Combine the initial and dynamic runs and write output files in the
-    PolyChord format, and remove the intermediate output files produced.
+    4) Combine the initial and dynamic runs and write combined output files
+    in the PolyChord format. Remove the intermediate output files produced
+    which are no longer needed.
 
     The output files are of the same format produced by ``PolyChord``, and
     contain posterior samples and an estimate of the Bayesian evidence.
     Further analysis, including estimating uncertainties, can be performed
-    with ``nestcheck``.
+    with the ``nestcheck`` package.
 
     Like for ``PolyChord``, the output files are saved in base_dir (specified
     in settings_dict_in, default value is 'chains'). Their names are
@@ -71,10 +101,16 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
     Parameters
     ----------
     run_polychord: callable
-        Callable which runs PolyChord with the desired likelihood and prior,
-        and takes a settings dictionary as its argument.
+        A callable which performs nested sampling using PolyChord
+        for a given likelihood and prior, and takes a settings dictionary as
+        its argument. Note that the likelihood and prior must be specified
+        within the run_polychord callable. For helper functions for creating such
+        callables, see the documentation for dyPolyChord.pypolychord
+        (Python likelihoods) and dyPolyChord.polychord (C++ and Fortran
+        likelihoods). Examples can be found at:
+        https://dypolychord.readthedocs.io/en/latest/demo.html
     dynamic_goal: float or int
-        Number in (0, 1) which determines how to allocate computational effort
+        Number in [0, 1] which determines how to allocate computational effort
         between parameter estimation and evidence calculation. See the dynamic
         nested sampling paper for more details.
     settings_dict: dict
@@ -82,16 +118,16 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
         allowed and default settings).
     nlive_const: int, optional
         Used to calculate total number of samples if max_ndead not specified in
-        settings. The total number of samples used is the estimated number that
-        would be taken by a nested sampling run with a constant number of live
-        points nlive_const.
+        settings. The total number of samples used in this case is the
+        estimated number that would be taken by a nested sampling run with a
+        constant number of live points nlive_const.
     ninit: int, optional
         Number of live points to use for the initial exporatory run (Step 1).
     ninit_step: int, optional
         Number of samples taken between saving .resume files in Step 1.
     seed_increment: int, optional
-        If seeding is used (PolyChord seed setting >= 0), this increment is
-        added to PolyChord's random seed each time it is run to avoid
+        If random seeding is used (PolyChord seed setting >= 0), this increment
+        is added to PolyChord's random seed each time it is run to avoid
         repeated points.
         When running in parallel using MPI, PolyChord hashes the seed with the
         MPI rank using IEOR. Hence you need seed_increment to be > number of
@@ -99,7 +135,8 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
         When running repeated results you need to increment the seed used for
         each run by some number >> seed_increment.
     smoothing_filter: func, optional
-        Smoothing to apply to the nlive allocation (if any).
+        Smoothing function to apply to the nlive allocation array of target
+        live points. Use smoothing_filter=None for no smoothing.
     stats_means_errs: bool, optional
         Whether to include estimates of logZ and parameter mean values and
         their uncertainties in the .stats file. This is passed to nestcheck's
@@ -119,6 +156,8 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
     try:
         nlive_const = kwargs.pop('nlive_const', settings_dict_in['nlive'])
     except KeyError:
+        # If nlive_const is not specified in the arguments or the settings
+        # dictionary, default to nlive_const = 100
         nlive_const = kwargs.pop('nlive_const', 100)
     ninit = kwargs.pop('ninit', 10)
     init_step = kwargs.pop('init_step', ninit)
@@ -134,7 +173,7 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
         raise TypeError('Unexpected **kwargs: {0}'.format(kwargs))
     # Set Up
     # ------
-    # set up rank if running with MPI
+    # Set up rank if running with MPI
     if comm is not None:
         rank = comm.Get_rank()
     else:
@@ -213,11 +252,15 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
                     step_ndead=step_ndead, resume_outputs=resume_outputs,
                     ninit=ninit, dynamic_goal=dynamic_goal,
                     final_seed=final_seed)
-            except:  # pragma: no cover
+            except:
+                # We need a bare except statement here to ensure that if
+                # any type of error occurs in the rank == 0 process when
+                # running in parallel with MPI then we also abort all the
+                # other processes.
                 if comm is None or comm.Get_size() == 1:
-                    raise
+                    raise  # Just one process so raise error normally.
                 else:
-                    # print error info
+                    # Print error info.
                     traceback.print_exc(file=sys.stdout)
                     print('Error in process with rank == 0: forcing MPI abort')
                     sys.stdout.flush()  # Make sure message prints before abort
@@ -248,13 +291,17 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
                 root_name = os.path.join(settings_dict_in['base_dir'],
                                          settings_dict_in['file_root'])
                 clean_extra_output(root_name)
-        except:  # pragma: no cover
+        except:
+            # We need a bare except statement here to ensure that if
+            # any type of error occurs in the rank == 0 process when
+            # running in parallel with MPI then we also abort all the
+            # other processes.
             if comm is None or comm.Get_size() == 1:
-                raise
+                raise  # Just one process so raise error normally.
             else:
-                # print error info
+                # Print error info.
                 traceback.print_exc(file=sys.stdout)
-                print('Error in process with rank == 0: forcing MPI abort.')
+                print('Error in process with rank == 0: forcing MPI abort')
                 sys.stdout.flush()  # Make sure message prints before abort
                 comm.Abort(1)
 
@@ -270,7 +317,7 @@ def process_initial_run(settings_dict_in, **kwargs):
         Initial PolyChord settings (see check_settings for information on
         allowed and default settings).
     dynamic_goal: float or int
-        Number in (0, 1) which determines how to allocate computational effort
+        Number in [0, 1] which determines how to allocate computational effort
         between parameter estimation and evidence calculation. See the dynamic
         nested sampling paper for more details.
     nlive_const: int
@@ -313,8 +360,8 @@ def process_initial_run(settings_dict_in, **kwargs):
         samp_tot = settings_dict_in['max_ndead']
         assert (settings_dict_in['max_ndead']
                 > init_run['logl'].shape[0]), (
-                    'all points used in init run - '
-                    'none left for dynamic')
+                    'all points used in inital run - '
+                    'none left for dynamic run!')
     else:
         samp_tot = init_run['logl'].shape[0] * (nlive_const / ninit)
         assert nlive_const > ninit
@@ -424,8 +471,8 @@ def clean_extra_output(root_name):
 
 def check_settings(settings_dict_in):
     """
-    Checks the input dictionary of PolyChord settings. Issues warnings where
-    these are not appropriate, and adds default values.
+    Check the input dictionary of PolyChord settings. Issues warnings where
+    the input settings are not appropriate, and add default values.
 
     Parameters
     ----------
@@ -484,7 +531,7 @@ def check_settings(settings_dict_in):
 def run_and_save_resumes(run_polychord, settings_dict_in, init_step,
                          seed_increment, comm=None):
     """
-    Run PolyChord pausing after every init_step dead points to save a resume
+    Run PolyChord, pausing after every init_step dead points to save a resume
     file.
 
     Parameters
@@ -563,14 +610,17 @@ def run_and_save_resumes(run_polychord, settings_dict_in, init_step,
                 shutil.copyfile(
                     root_name + '.resume',
                     root_name + '_' + str(step_ndead[-1]) + '.resume')
-            except:  # pragma: no cover
+            except:
+                # We need a bare except statement here to ensure that if
+                # any type of error occurs in the rank == 0 process when
+                # running in parallel with MPI then we also abort all the
+                # other processes.
                 if comm is None or comm.Get_size() == 1:
-                    raise
+                    raise  # Just one process so raise error normally.
                 else:
-                    # print error info
+                    # Print error info.
                     traceback.print_exc(file=sys.stdout)
-                    print('Error in process with rank == 0: '
-                          'forcing MPI abort.')
+                    print('Error in process with rank == 0: forcing MPI abort')
                     sys.stdout.flush()  # Make sure message prints before abort
                     comm.Abort(1)
         if comm is not None:
