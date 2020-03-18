@@ -233,7 +233,7 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
                     step_ndead=step_ndead, resume_outputs=resume_outputs,
                     ninit=ninit, dynamic_goal=dynamic_goal,
                     final_seed=final_seed)
-            except:
+            except:  # pragma: no cover
                 # We need a bare except statement here to ensure that if
                 # any type of error occurs in the rank == 0 process when
                 # running in parallel with MPI then we also abort all the
@@ -272,7 +272,7 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
                 root_name = os.path.join(settings_dict_in['base_dir'],
                                          settings_dict_in['file_root'])
                 dyPolyChord.output_processing.clean_extra_output(root_name)
-        except:
+        except:  # pragma: no cover
             # We need a bare except statement here to ensure that if
             # any type of error occurs in the rank == 0 process when
             # running in parallel with MPI then we also abort all the
@@ -434,7 +434,7 @@ def run_and_save_resumes(run_polychord, settings_dict_in, init_step,
                 shutil.copyfile(
                     root_name + '.resume',
                     root_name + '_' + str(step_ndead[-1]) + '.resume')
-            except:
+            except:  # pragma: no cover
                 # We need a bare except statement here to ensure that if
                 # any type of error occurs in the rank == 0 process when
                 # running in parallel with MPI then we also abort all the
