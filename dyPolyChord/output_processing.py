@@ -203,3 +203,26 @@ def combine_resumed_dyn_run(init, dyn, resume_ndead):
         nestcheck.ns_run_utils.get_run_threads(init),
         assert_birth_point=False)
     return run
+
+
+def clean_extra_output(root_name):
+    """Clean the additional output files made by dyPolyChord, leaving only
+    output files for the combined run in PolyChord format.
+
+    Parameters
+    ----------
+    root_name: str
+        File root. Equivalent to os.path.join(base_dir, file_root).
+    """
+    os.remove(root_name + '_dyn_info.pkl')
+    for extra in ['init', 'dyn']:
+        os.remove(root_name + '_{0}.stats'.format(extra))
+        os.remove(root_name + '_{0}_dead-birth.txt'.format(extra))
+        os.remove(root_name + '_{0}_dead.txt'.format(extra))
+        # tidy up remaining .resume files (if the function has reach this
+        # point, both the initial and dynamic runs have finished so we
+        # shouldn't need to resume)
+        try:
+            os.remove(root_name + '_{0}.resume'.format(extra))
+        except OSError:
+            pass

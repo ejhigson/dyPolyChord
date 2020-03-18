@@ -290,7 +290,7 @@ def run_dypolychord(run_polychord, dynamic_goal, settings_dict_in, **kwargs):
                 # Remove temporary files
                 root_name = os.path.join(settings_dict_in['base_dir'],
                                          settings_dict_in['file_root'])
-                clean_extra_output(root_name)
+                dyPolyChord.output_processing.clean_extra_output(root_name)
         except:
             # We need a bare except statement here to ensure that if
             # any type of error occurs in the rank == 0 process when
@@ -446,28 +446,6 @@ def get_dynamic_settings(settings_dict_in, dyn_info):
 # Helper functions
 # ----------------
 
-def clean_extra_output(root_name):
-    """Clean the additional output files made by dyPolyChord, leaving only
-    output files for the combined run in PolyChord format.
-
-    Parameters
-    ----------
-    root_name: str
-        File root. Equivalent to os.path.join(base_dir, file_root).
-    """
-    os.remove(root_name + '_dyn_info.pkl')
-    for extra in ['init', 'dyn']:
-        os.remove(root_name + '_{0}.stats'.format(extra))
-        os.remove(root_name + '_{0}_dead-birth.txt'.format(extra))
-        os.remove(root_name + '_{0}_dead.txt'.format(extra))
-        # tidy up remaining .resume files (if the function has reach this
-        # point, both the initial and dynamic runs have finished so we
-        # shouldn't need to resume)
-        try:
-            os.remove(root_name + '_{0}.resume'.format(extra))
-        except OSError:
-            pass
-
 
 def check_settings(settings_dict_in):
     """
@@ -531,8 +509,8 @@ def check_settings(settings_dict_in):
 def run_and_save_resumes(run_polychord, settings_dict_in, init_step,
                          seed_increment, comm=None):
     """
-    Run PolyChord, pausing after every init_step dead points to save a resume
-    file.
+    Run PolyChord while pausing after every init_step samples (dead points)
+    generated to save a resume file before continuing.
 
     Parameters
     ----------
