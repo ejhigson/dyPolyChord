@@ -15,6 +15,10 @@ dyPolyChord
    :alt: Maintainability
 .. image:: https://img.shields.io/badge/license-MIT-blue.svg
    :target: https://github.com/ejhigson/dyPolyChord/blob/master/LICENSE
+.. image:: https://pepy.tech/badge/dyPolyChord
+   :target: https://pepy.tech/project/dyPolyChord
+.. image:: https://pepy.tech/badge/dyPolyChord/week
+   :target: https://pepy.tech/project/dyPolyChord/week
 
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 Read the documentation at `http://dyPolyChord.readthedocs.io <http://dyPolyChord.readthedocs.io>`_.
